@@ -1,0 +1,37 @@
+const nodemailer = require('nodemailer');
+
+// Create transporter (this example uses Gmail)
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD // Use an App Password if using Gmail
+  }
+});
+
+const sendExpirationReminder = async (certificate) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: 'admin@yourdomain.com', // Replace with actual admin email
+      subject: 'Certificate Expiration Reminder',
+      html: `
+        <h2>Certificate Expiration Reminder</h2>
+        <p>The following certificate is expiring soon:</p>
+        <ul>
+          <li>Staff Member: ${certificate.staffMember}</li>
+          <li>Certificate Type: ${certificate.certificateType}</li>
+          <li>Expiration Date: ${new Date(certificate.expirationDate).toLocaleDateString()}</li>
+        </ul>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Email sending failed:', error);
+    return false;
+  }
+};
+
+module.exports = { sendExpirationReminder };
