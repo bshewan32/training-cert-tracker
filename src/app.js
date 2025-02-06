@@ -5,6 +5,8 @@ const userRoutes = require('./routes/users');
 const cors = require('cors');
 const adminRoutes = require('./routes/admin');
 const setupRoutes = require('./routes/setup');
+require('dotenv').config({ path: '../.env' });
+
 
 class TrainingCertApp {
   constructor() {
@@ -21,7 +23,7 @@ class TrainingCertApp {
   }
 
   initializeDatabase() {
-    mongoose.connect('mongodb+srv://billshewan:qeoCuQjQWwzHlszl@cluster0.xeorh.mongodb.net/training_certificates', {
+    mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     })
