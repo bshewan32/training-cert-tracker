@@ -8,7 +8,8 @@ const EmployeeSchema = new mongoose.Schema({
     ref: 'Position',
     required: true 
   },
-  email: { type: String }
+  email: { type: String },
+  active: { type: Boolean, default: true }
 });
 
 module.exports = mongoose.model('Employee', EmployeeSchema);
