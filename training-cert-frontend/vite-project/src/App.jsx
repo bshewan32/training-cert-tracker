@@ -216,6 +216,8 @@ function App() {
     const formData = new FormData(e.target)
     const data = Object.fromEntries(formData.entries())
     
+    console.log('Submitting employee data:', data); // Add this
+    
     try {
       const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/employee', {
         method: 'POST',
@@ -225,11 +227,15 @@ function App() {
         },
         body: JSON.stringify(data)
       })
+      const result = await response.json(); // Add this
+      console.log('Server response:', result); // Add this
+      
       if (!response.ok) throw new Error('Failed to add employee')
-      fetchSetupData()
+      await fetchSetupData() // Add await here
       e.target.reset()
       setMessage('Employee added successfully')
     } catch (err) {
+      console.error('Employee submit error:', err); // Add this
       setError(err.message)
     }
   }

@@ -5,20 +5,14 @@ const Position = require('../models/Position');
 const Employee = require('../models/Employee');
 const CertificateType = require('../models/CertificateType');
 
+// In your setup.js route
 router.get('/', async (req, res) => {
   try {
     const positions = await Position.find({ active: true });
-    const employees = await Employee.find({ active: true })
-      .populate({
-        path: 'position',
-        select: 'title department' // explicitly select fields we want
-      });
+    const employees = await Employee.find({ active: true }).populate('position');
     const certificateTypes = await CertificateType.find({ active: true });
 
-    // Add this to see the full objects
-    console.log('Employees with populated positions:', 
-      JSON.stringify(employees, null, 2)
-    );
+    console.log('Fetched employees:', employees); // Add this
 
     res.json({
       positions,
