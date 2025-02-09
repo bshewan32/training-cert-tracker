@@ -17,7 +17,12 @@ class TrainingCertApp {
     this.setupRoutes();
   }
   configureMiddlewares() {
-    this.app.use(cors());  // Add this line
+    this.app.use(cors({
+      origin: 'https://training-cert-tracker.vercel.app', // Your Vercel frontend URL
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization']
+    }));
+    
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
   }
