@@ -34,7 +34,7 @@ function App() {
     const data = Object.fromEntries(formData.entries())
 
     try {
-      const response = await fetch(`http://localhost:3000/api/users/${type}`, {
+        const response = await fetch(`https://training-cert-tracker.onrender.com/api/users/${type}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ function App() {
     console.log('Submitting certificate data:', data);
   
     try {
-      const response = await fetch('http://localhost:3000/api/certificates/upload', {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -120,7 +120,7 @@ function App() {
   }
   const sendReminder = async (certificateId) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/send-reminder/${certificateId}`, {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/admin/send-reminder/${certificateId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -134,7 +134,7 @@ function App() {
   }
   const fetchCertificates = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/certificates', {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -148,7 +148,7 @@ function App() {
   }
   const fetchDashboardStats = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/admin/dashboard', {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/admin/dashboard', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -176,7 +176,7 @@ function App() {
 
   const fetchSetupData = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/setup', {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -197,7 +197,7 @@ function App() {
   
   const handleDelete = async (type, id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/setup/${type}/${id}`, {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/${type}/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -217,7 +217,7 @@ function App() {
     const data = Object.fromEntries(formData.entries())
     
     try {
-      const response = await fetch('http://localhost:3000/api/setup/employee', {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/employee', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -241,7 +241,7 @@ function App() {
     const data = Object.fromEntries(formData.entries())
     
     try {
-      const response = await fetch('http://localhost:3000/api/setup/position', {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/position', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -265,7 +265,7 @@ function App() {
     const data = Object.fromEntries(formData.entries())
     
     try {
-      const response = await fetch('http://localhost:3000/api/setup/certificatetype', {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/certificatetype', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
