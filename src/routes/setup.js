@@ -17,16 +17,25 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
     const data = XLSX.utils.sheet_to_json(worksheet);
 
     for (const row of data) {
-      // Extract employee name and certificate type
       const employeeName = row['Name'];
+      const employeeEmail = row['Company'];
       const certificateType = row['Type'];
-      
+      const positionName = row['Position']; // NEW: Extract Position from Excel file
+
+      // Ensure Position Exists
+      let position = await Position.findOne({ name: positionName });
+      if (!position) {
+        position = new Position({ name: positionName });
+        await position.save();
+      }
+
       // Check if employee exists, create if not
       let employee = await Employee.findOne({ name: employeeName });
       if (!employee) {
         employee = new Employee({
           name: employeeName,
-          email: row['Company'] || '', // Using company as email for now
+          email: employeeEmail,
+          position: position._id,  // ✅ Assign Position
           active: true
         });
         await employee.save();
@@ -37,16 +46,16 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
       if (!certType) {
         certType = new CertificateType({
           name: certificateType,
-          validityPeriod: 12, // Default 12 months
+          validityPeriod: 12,
           active: true
         });
         await certType.save();
       }
 
-      // Create certificate
+      // Create Certificate
       const certificate = new Certificate({
         staffMember: employeeName,
-        certificateType: certificateType,
+        certificateType: certType.name,
         issueDate: row['Booking Date'] || new Date(),
         expirationDate: row['Expiry Date'] || new Date(),
         status: 'Active'
