@@ -1,10 +1,65 @@
-// routes/setup.js
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const XLSX = require('xlsx');
 const Position = require('../models/Position');
 const Employee = require('../models/Employee');
+const Certificate = require('../models/Certificate');
 const CertificateType = require('../models/CertificateType');
 
+const upload = multer({ storage: multer.memoryStorage() });
+
+router.post('/bulk-upload', upload.single('file'), async (req, res) => {
+  try {
+    const workbook = XLSX.read(req.file.buffer);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(worksheet);
+
+    for (const row of data) {
+      // Extract employee name and certificate type
+      const employeeName = row['Name'];
+      const certificateType = row['Type'];
+      
+      // Check if employee exists, create if not
+      let employee = await Employee.findOne({ name: employeeName });
+      if (!employee) {
+        employee = new Employee({
+          name: employeeName,
+          email: row['Company'] || '', // Using company as email for now
+          active: true
+        });
+        await employee.save();
+      }
+
+      // Check if certificate type exists, create if not
+      let certType = await CertificateType.findOne({ name: certificateType });
+      if (!certType) {
+        certType = new CertificateType({
+          name: certificateType,
+          validityPeriod: 12, // Default 12 months
+          active: true
+        });
+        await certType.save();
+      }
+
+      // Create certificate
+      const certificate = new Certificate({
+        staffMember: employeeName,
+        certificateType: certificateType,
+        issueDate: row['Booking Date'] || new Date(),
+        expirationDate: row['Expiry Date'] || new Date(),
+        status: 'Active'
+      });
+      await certificate.save();
+    }
+
+    res.json({ message: `Successfully imported ${data.length} records` });
+  } catch (error) {
+    console.error('Bulk upload error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 router.get('/', async (req, res) => {
   try {

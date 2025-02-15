@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './App.css'
 
 
+
 function App() {
   const [view, setView] = useState('login')
   const [token, setToken] = useState('')
@@ -24,6 +25,36 @@ function App() {
   const [selectedPosition, setSelectedPosition] = useState('');
   const [issueDate, setIssueDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+  const [importFile, setImportFile] = useState(null);
+
+  const handleBulkUpload = async (e) => {
+    e.preventDefault();
+    if (!importFile) {
+      setError('Please select a file to import');
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append('file', importFile);
+  
+    try {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/bulk-upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+  
+      if (!response.ok) throw new Error('Failed to import data');
+      
+      const result = await response.json();
+      setMessage('Data imported successfully');
+      fetchSetupData(); // Refresh the data
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const handleSubmit = async (e, type) => {
     e.preventDefault()
@@ -302,6 +333,7 @@ function App() {
           >Logout</button>
         )}
 
+        {/* Login/Register View */}
         {(view === 'login' || view === 'register') && (
           <form onSubmit={(e) => handleSubmit(e, view)} className="form">
             {view === 'register' && (
@@ -329,47 +361,48 @@ function App() {
           </form>
         )}
 
-{view === 'admin' && (
-  <div className="admin-dashboard">
-    <h2>Admin Dashboard</h2>
-    <div className="dashboard-stats">
-      <div className="stat-card">
-        <h3>Total Certificates</h3>
-        <p className="stat-number">{dashboardStats.totalCertificates}</p>
-      </div>
-      <div className="stat-card warning">
-        <h3>Expiring Soon</h3>
-        <p className="stat-number">{dashboardStats.expiringSoon}</p>
-      </div>
-      <div className="stat-card danger">
-        <h3>Expired</h3>
-        <p className="stat-number">{dashboardStats.expired}</p>
-      </div>
-      <div className="stat-card">
-        <h3>Active Users</h3>
-        <p className="stat-number">{dashboardStats.activeUsers}</p>
-      </div>
-    </div>
+        {/* Admin Dashboard View */}
+        {view === 'admin' && (
+          <div className="admin-dashboard">
+            <h2>Admin Dashboard</h2>
+            <div className="dashboard-stats">
+              <div className="stat-card">
+                <h3>Total Certificates</h3>
+                <p className="stat-number">{dashboardStats.totalCertificates}</p>
+              </div>
+              <div className="stat-card warning">
+                <h3>Expiring Soon</h3>
+                <p className="stat-number">{dashboardStats.expiringSoon}</p>
+              </div>
+              <div className="stat-card danger">
+                <h3>Expired</h3>
+                <p className="stat-number">{dashboardStats.expired}</p>
+              </div>
+              <div className="stat-card">
+                <h3>Active Users</h3>
+                <p className="stat-number">{dashboardStats.activeUsers}</p>
+              </div>
+            </div>
 
-    <div className="admin-buttons">
-      <button 
-        type="button" 
-        onClick={() => setView('setup')}
-        className="admin-button"
-      >
-        System Setup
-      </button>
-      <button 
-        type="button" 
-        onClick={() => setView('certificates')}
-        className="admin-button"
-      >
-        Back to Certificates
-      </button>
-    </div>
+            <div className="admin-buttons">
+              <button 
+                type="button" 
+                onClick={() => setView('setup')}
+                className="admin-button"
+              >
+                System Setup
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setView('certificates')}
+                className="admin-button"
+              >
+                Back to Certificates
+              </button>
+            </div>
 
-    <div className="certificate-alerts">
-      <h3>Certificate Alerts</h3>
+            <div className="certificate-alerts">
+              <h3>Certificate Alerts</h3>
               <table>
                 <thead>
                   <tr>
@@ -421,17 +454,26 @@ function App() {
           </div>
         )}
 
+            {/* Setup View */}
         {view === 'setup' && (
           <div className="setup-dashboard">
             <h2>System Setup</h2>
-            <button 
-              onClick={() => setView('admin')} 
-              className="back-button"
-            >
-              Back to Dashboard
-            </button>
+            <div className="setup-header">
+              <button 
+                onClick={() => setView('admin')} 
+                className="back-button"
+              >
+                Back to Dashboard
+              </button>
+            </div>
 
             <div className="setup-tabs">
+              <button 
+                className={`tab-button ${activeTab === 'bulkImport' ? 'active' : ''}`}
+                onClick={() => setActiveTab('bulkImport')}
+              >
+                Bulk Import
+              </button>
               <button 
                 className={`tab-button ${activeTab === 'employees' ? 'active' : ''}`}
                 onClick={() => setActiveTab('employees')}
@@ -453,6 +495,25 @@ function App() {
             </div>
 
             <div className="setup-content">
+              {/* Bulk Import Tab */}
+              {activeTab === 'bulkImport' && (
+                <div className="setup-section">
+                  <h3>Bulk Import Data</h3>
+                  <form onSubmit={handleBulkUpload} className="setup-form">
+                    <div className="form-group">
+                      <label>Upload Excel File:</label>
+                      <input 
+                        type="file" 
+                        accept=".xlsx, .xls" 
+                        onChange={(e) => setImportFile(e.target.files[0])} 
+                      />
+                    </div>
+                    <button type="submit">Import Data</button>
+                  </form>
+                </div>
+              )}
+
+              {/* Employees Tab */}
               {activeTab === 'employees' && (
                 <div className="setup-section">
                   <h3>Manage Employees</h3>
@@ -494,6 +555,7 @@ function App() {
                 </div>
               )}
 
+              {/* Positions Tab */}
               {activeTab === 'positions' && (
                 <div className="setup-section">
                   <h3>Manage Positions</h3>
@@ -524,6 +586,7 @@ function App() {
                 </div>
               )}
 
+              {/* Certificate Types Tab */}
               {activeTab === 'certificateTypes' && (
                 <div className="setup-section">
                   <h3>Manage Certificate Types</h3>
@@ -561,109 +624,105 @@ function App() {
           </div>
         )}
 
+         {/* Certificates View */}
         {view === 'certificates' && (
           <>
             <form onSubmit={handleCertificateSubmit} className="form">
-  <div className="form-group">
-    <label>Staff Member:</label>
-    <select 
-  name="staffMember" 
-  required
-  onChange={(e) => {
-    const selectedEmployeeId = e.target.value;
-    const employee = employees.find(emp => emp._id === selectedEmployeeId);
-    setSelectedEmployee(employee);
-    console.log('Selected employee:', employee);
-    if (employee && employee.position) {
-      console.log('Employee position:', employee.position);
-      setSelectedPosition(employee.position.title); // directly use the populated position
-      console.log('Set position to:', employee.position.title);
-    }
-  }}
-    > 
-  <option value="">Select Staff Member</option>
-  {employees.map(emp => (
-    <option key={emp._id} value={emp._id}>
-      {emp.name}
-    </option>
-  ))}
-</select>
-  </div>
-  <div className="form-group">
-  <label>Position:</label>
-  <input 
-    type="text" 
-    name="position"
-    value={selectedPosition || 'Position will auto-fill based on selected employee'} 
-    readOnly 
-    className="readonly-input"
-  />
-</div>
-  <div className="form-group">
-    <label>Certificate Type:</label>
-    <select 
-      name="certificateType" 
-      required
-      onChange={(e) => {
-        const certType = certificateTypes.find(cert => cert._id === e.target.value);
-        if (certType && issueDate) {
-          // Auto-calculate expiry date based on validity period
-          const expiryDate = new Date(issueDate);
-          expiryDate.setMonth(expiryDate.getMonth() + certType.validityPeriod);
-          setExpiryDate(expiryDate.toISOString().split('T')[0]);
-        }
-      }}
-    >
-      <option value="">Select Certificate Type</option>
-      {certificateTypes.map(cert => (
-        <option key={cert._id} value={cert._id}>
-          {cert.name}
-        </option>
-      ))}
-    </select>
-  </div>
-  <div className="form-group">
-    <label>Issue Date:</label>
-    <input 
-      type="date" 
-      name="issueDate" 
-      required 
-      value={issueDate}
-      onChange={(e) => {
-        setIssueDate(e.target.value);
-        // Recalculate expiry date when issue date changes
-        const selectedCertType = certificateTypes.find(
-          cert => cert._id === document.querySelector('select[name="certificateType"]').value
-        );
-        if (selectedCertType) {
-          const expiryDate = new Date(e.target.value);
-          expiryDate.setMonth(expiryDate.getMonth() + selectedCertType.validityPeriod);
-          setExpiryDate(expiryDate.toISOString().split('T')[0]);
-        }
-      }}
-    />
-  </div>
-  <div className="form-group">
-    <label>Expiration Date:</label>
-    <input 
-      type="date" 
-      name="expirationDate" 
-      value={expiryDate}
-      readOnly 
-      className="readonly-input"
-    />
-  </div>
-  <button type="submit">Submit Certificate</button>
-  {isAdmin && (
-    <button 
-      type="button" 
-      onClick={() => setView('admin')}
-      className="admin-button"
-    >
-      View Admin Dashboard
-    </button>
-  )}
-</form>
+              <div className="form-group">
+                <label>Staff Member:</label>
+                <select 
+                  name="staffMember" 
+                  required
+                  onChange={(e) => {
+                    const selectedEmployeeId = e.target.value;
+                    const employee = employees.find(emp => emp._id === selectedEmployeeId);
+                    setSelectedEmployee(employee);
+                    if (employee && employee.position) {
+                      setSelectedPosition(employee.position.title);
+                    }
+                  }}
+                > 
+                  <option value="">Select Staff Member</option>
+                  {employees.map(emp => (
+                    <option key={emp._id} value={emp._id}>
+                      {emp.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Position:</label>
+                <input 
+                  type="text" 
+                  name="position"
+                  value={selectedPosition || 'Position will auto-fill based on selected employee'} 
+                  readOnly 
+                  className="readonly-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Certificate Type:</label>
+                <select 
+                  name="certificateType" 
+                  required
+                  onChange={(e) => {
+                    const certType = certificateTypes.find(cert => cert._id === e.target.value);
+                    if (certType && issueDate) {
+                      const expiryDate = new Date(issueDate);
+                      expiryDate.setMonth(expiryDate.getMonth() + certType.validityPeriod);
+                      setExpiryDate(expiryDate.toISOString().split('T')[0]);
+                    }
+                  }}
+                >
+                  <option value="">Select Certificate Type</option>
+                  {certificateTypes.map(cert => (
+                    <option key={cert._id} value={cert._id}>
+                      {cert.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Issue Date:</label>
+                <input 
+                  type="date" 
+                  name="issueDate" 
+                  required 
+                  value={issueDate}
+                  onChange={(e) => {
+                    setIssueDate(e.target.value);
+                    const selectedCertType = certificateTypes.find(
+                      cert => cert._id === document.querySelector('select[name="certificateType"]').value
+                    );
+                    if (selectedCertType) {
+                      const expiryDate = new Date(e.target.value);
+                      expiryDate.setMonth(expiryDate.getMonth() + selectedCertType.validityPeriod);
+                      setExpiryDate(expiryDate.toISOString().split('T')[0]);
+                    }
+                  }}
+                />
+              </div>
+              <div className="form-group">
+                <label>Expiration Date:</label>
+                <input 
+                  type="date" 
+                  name="expirationDate" 
+                  value={expiryDate}
+                  readOnly 
+                  className="readonly-input"
+                />
+              </div>
+              <button type="submit">Submit Certificate</button>
+              {isAdmin && (
+                <button 
+                  type="button" 
+                  onClick={() => setView('admin')}
+                  className="admin-button"
+                >
+                  View Admin Dashboard
+                </button>
+              )}
+            </form>
             
             <div className="certificates-table">
               <h3>Submitted Certificates</h3>
