@@ -20,8 +20,8 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
       const employeeName = row['Name'];
       const employeeEmail = row['Company'];
       const certificateType = row['Type'];
-      const positionTitle = row['Position Title']; // ✅ Extract Position Title
-      const departmentName = row['Department'] || 'General'; // ✅ Default to "General" if missing
+      const positionTitle = row['Position Title']; // ✅ Ensure position is used
+      const departmentName = row['Department'] || 'General'; // ✅ Default if missing
 
       // Ensure Position Exists
       let position = await Position.findOne({ title: positionTitle });
@@ -36,7 +36,7 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
         employee = new Employee({
           name: employeeName,
           email: employeeEmail,
-          position: position._id,  // ✅ Assign Position by ID
+          position: position._id,  // ✅ Assign Position ID
           active: true
         });
         await employee.save();
@@ -53,9 +53,10 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
         await certType.save();
       }
 
-      // Create Certificate
+      // ✅ Ensure the position is assigned when creating a certificate
       const certificate = new Certificate({
         staffMember: employeeName,
+        position: position._id,  // ✅ Assign Position ID
         certificateType: certType.name,
         issueDate: row['Booking Date'] || new Date(),
         expirationDate: row['Expiry Date'] || new Date(),
