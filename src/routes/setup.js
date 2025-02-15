@@ -20,12 +20,13 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
       const employeeName = row['Name'];
       const employeeEmail = row['Company'];
       const certificateType = row['Type'];
-      const positionName = row['Position']; // NEW: Extract Position from Excel file
+      const positionTitle = row['Position Title']; // ✅ Extract Position Title
+      const departmentName = row['Department'] || 'General'; // ✅ Default to "General" if missing
 
       // Ensure Position Exists
-      let position = await Position.findOne({ name: positionName });
+      let position = await Position.findOne({ title: positionTitle });
       if (!position) {
-        position = new Position({ name: positionName });
+        position = new Position({ title: positionTitle, department: departmentName });
         await position.save();
       }
 
@@ -35,7 +36,7 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
         employee = new Employee({
           name: employeeName,
           email: employeeEmail,
-          position: position._id,  // ✅ Assign Position
+          position: position._id,  // ✅ Assign Position by ID
           active: true
         });
         await employee.save();
