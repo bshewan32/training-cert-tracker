@@ -738,27 +738,30 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {certificates.map((cert) => {
-                    const expirationDate = new Date(cert.expirationDate)
-                    const today = new Date()
-                    const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
-                    
-                    let statusClass = 'status-active'
-                    if (daysUntilExpiration <= 0) statusClass = 'status-expired'
-                    else if (daysUntilExpiration <= 30) statusClass = 'status-expiring'
-                    
-                    return (
-                      <tr key={cert._id} className={statusClass}>
-                        <td>{cert.staffMember}</td>
-                        <td>{cert.position}</td>
-                        <td>{cert.certificateType}</td>
-                        <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
-                        <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
-                        <td>{cert.status}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
+                      {certificates.map((cert) => {
+                        const expirationDate = new Date(cert.expirationDate)
+                        const today = new Date()
+                        const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
+                        
+                        let statusClass = 'status-active'
+                        if (daysUntilExpiration <= 0) statusClass = 'status-expired'
+                        else if (daysUntilExpiration <= 30) statusClass = 'status-expiring'
+                        
+                        // Find the position title
+                        const position = positions.find(pos => pos._id === cert.position)
+                        
+                        return (
+                          <tr key={cert._id} className={statusClass}>
+                            <td>{cert.staffMember}</td>
+                            <td>{position ? position.title : cert.position}</td>
+                            <td>{cert.certificateType}</td>
+                            <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
+                            <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
+                            <td>{cert.status}</td>
+                          </tr>
+                        )
+                      })}
+                  </tbody>
               </table>
             </div>
           </>
