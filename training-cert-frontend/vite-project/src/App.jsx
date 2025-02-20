@@ -786,10 +786,12 @@ function App() {
                       if (daysUntilExpiration <= 0) statusClass = 'status-expired'
                       else if (daysUntilExpiration <= 30) statusClass = 'status-expiring'
 
+                      const position = positions.find(pos => pos._id === cert.position)
+
                       return (
                         <tr key={cert._id} className={statusClass}>
                           <td>{cert.staffMember}</td>
-                          <td>{cert.position}</td>
+                          <td>{position ? position.title : cert.position}</td>
                           <td>{cert.certificateType}</td>
                           <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
                           <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
