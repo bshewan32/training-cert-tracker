@@ -4,6 +4,8 @@ import './App.css'
 
 
 function App() {
+  const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
+  const [selectedFilterCertType, setSelectedFilterCertType] = useState('');
   const [view, setView] = useState('login')
   const [token, setToken] = useState('')
   const [error, setError] = useState('')
@@ -11,11 +13,11 @@ function App() {
   const [certificates, setCertificates] = useState([])
   const [isAdmin, setIsAdmin] = useState(false)
   const [dashboardStats, setDashboardStats] = useState({
-  totalCertificates: 0,
-  expiringSoon: 0,
-  expired: 0,
-  activeUsers: 0
-})
+    totalCertificates: 0,
+    expiringSoon: 0,
+    expired: 0,
+    activeUsers: 0
+  })
 
   const [activeTab, setActiveTab] = useState('employees')
   const [employees, setEmployees] = useState([])
@@ -33,10 +35,10 @@ function App() {
       setError('Please select a file to import');
       return;
     }
-  
+
     const formData = new FormData();
     formData.append('file', importFile);
-  
+
     try {
       const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/bulk-upload', {
         method: 'POST',
@@ -45,9 +47,9 @@ function App() {
         },
         body: formData
       });
-  
+
       if (!response.ok) throw new Error('Failed to import data');
-      
+
       const result = await response.json();
       setMessage('Data imported successfully');
       fetchSetupData(); // Refresh the data
@@ -65,7 +67,7 @@ function App() {
     const data = Object.fromEntries(formData.entries())
 
     try {
-        const response = await fetch(`https://training-cert-tracker.onrender.com/api/users/${type}`, {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/users/${type}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +80,7 @@ function App() {
       if (!response.ok) {
         throw new Error(result.message || 'Authentication failed')
       }
-    
+
       setToken(result.token)
       setIsAdmin(result.isAdmin) // Add this line
       setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} successful!`)
@@ -103,13 +105,13 @@ function App() {
     e.preventDefault()
     setError('')
     setMessage('')
-  
+
     const formData = new FormData(e.target)
-    
+
     // Get the selected employee and certificate type
     const employee = employees.find(emp => emp._id === formData.get('staffMember'));
     const certType = certificateTypes.find(cert => cert._id === formData.get('certificateType'));
-    
+
     const data = {
       staffMember: employee?.name,
       position: selectedPosition,
@@ -117,9 +119,9 @@ function App() {
       issueDate: formData.get('issueDate'),
       expirationDate: expiryDate
     }
-  
+
     console.log('Submitting certificate data:', data);
-  
+
     try {
       const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
         method: 'POST',
@@ -129,14 +131,14 @@ function App() {
         },
         body: JSON.stringify(data),
       })
-  
+
       const result = await response.json()
       console.log('Server response:', result);
-  
+
       if (!response.ok) {
         throw new Error(result.message || 'Failed to submit certificate')
       }
-  
+
       setMessage('Certificate submitted successfully!')
       e.target.reset()
       setSelectedPosition('')
@@ -225,7 +227,7 @@ function App() {
       setError(err.message)
     }
   }
-  
+
   const handleDelete = async (type, id) => {
     try {
       const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/${type}/${id}`, {
@@ -241,14 +243,14 @@ function App() {
       setError(err.message)
     }
   }
-  
+
   const handleEmployeeSubmit = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
     const data = Object.fromEntries(formData.entries())
-    
+
     console.log('Submitting employee data:', data); // Add this
-    
+
     try {
       const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/employee', {
         method: 'POST',
@@ -260,7 +262,7 @@ function App() {
       })
       const result = await response.json(); // Add this
       console.log('Server response:', result); // Add this
-      
+
       if (!response.ok) throw new Error('Failed to add employee')
       await fetchSetupData() // Add await here
       e.target.reset()
@@ -270,13 +272,13 @@ function App() {
       setError(err.message)
     }
   }
-  
+
   // Similar handlers for positions and certificate types
   const handlePositionSubmit = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
     const data = Object.fromEntries(formData.entries())
-    
+
     try {
       const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/position', {
         method: 'POST',
@@ -295,12 +297,12 @@ function App() {
     }
     // Similar to handleEmployeeSubmit but for positions
   }
-  
+
   const handleCertTypeSubmit = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
     const data = Object.fromEntries(formData.entries())
-    
+
     try {
       const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/certificatetype', {
         method: 'POST',
@@ -319,7 +321,7 @@ function App() {
     }
     // Similar to handleEmployeeSubmit but for certificate types
   }
-  
+
   return (
     <div className="container">
       <h1>Certificate Tracker</h1>
@@ -327,7 +329,7 @@ function App() {
         {error && <div className="error">{error}</div>}
         {message && <div className="message">{message}</div>}
         {token && (
-          <button 
+          <button
             onClick={handleLogout}
             className="logout-button"
           >Logout</button>
@@ -353,8 +355,8 @@ function App() {
             <button type="submit">
               {view === 'login' ? 'Login' : 'Register'}
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setView(view === 'login' ? 'register' : 'login')}>
               {view === 'login' ? 'Need an account? Register' : 'Have an account? Login'}
             </button>
@@ -385,15 +387,15 @@ function App() {
             </div>
 
             <div className="admin-buttons">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setView('setup')}
                 className="admin-button"
               >
                 System Setup
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setView('certificates')}
                 className="admin-button"
               >
@@ -425,7 +427,7 @@ function App() {
                       const expirationDate = new Date(cert.expirationDate)
                       const today = new Date()
                       const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
-                      
+
                       let status = 'active'
                       if (daysUntilExpiration <= 0) status = 'expired'
                       else if (daysUntilExpiration <= 30) status = 'expiring'
@@ -454,13 +456,13 @@ function App() {
           </div>
         )}
 
-            {/* Setup View */}
+        {/* Setup View */}
         {view === 'setup' && (
           <div className="setup-dashboard">
             <h2>System Setup</h2>
             <div className="setup-header">
-              <button 
-                onClick={() => setView('admin')} 
+              <button
+                onClick={() => setView('admin')}
                 className="back-button"
               >
                 Back to Dashboard
@@ -468,25 +470,25 @@ function App() {
             </div>
 
             <div className="setup-tabs">
-              <button 
+              <button
                 className={`tab-button ${activeTab === 'bulkImport' ? 'active' : ''}`}
                 onClick={() => setActiveTab('bulkImport')}
               >
                 Bulk Import
               </button>
-              <button 
+              <button
                 className={`tab-button ${activeTab === 'employees' ? 'active' : ''}`}
                 onClick={() => setActiveTab('employees')}
               >
                 Employees
               </button>
-              <button 
+              <button
                 className={`tab-button ${activeTab === 'positions' ? 'active' : ''}`}
                 onClick={() => setActiveTab('positions')}
               >
                 Positions
               </button>
-              <button 
+              <button
                 className={`tab-button ${activeTab === 'certificateTypes' ? 'active' : ''}`}
                 onClick={() => setActiveTab('certificateTypes')}
               >
@@ -502,10 +504,10 @@ function App() {
                   <form onSubmit={handleBulkUpload} className="setup-form">
                     <div className="form-group">
                       <label>Upload Excel File:</label>
-                      <input 
-                        type="file" 
-                        accept=".xlsx, .xls" 
-                        onChange={(e) => setImportFile(e.target.files[0])} 
+                      <input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        onChange={(e) => setImportFile(e.target.files[0])}
                       />
                     </div>
                     <button type="submit">Import Data</button>
@@ -543,7 +545,7 @@ function App() {
                     {employees.map(emp => (
                       <div key={emp._id} className="list-item">
                         <span>{emp.name} - {emp.position?.title}</span>
-                        <button 
+                        <button
                           onClick={() => handleDelete('employee', emp._id)}
                           className="delete-button"
                         >
@@ -574,7 +576,7 @@ function App() {
                     {positions.map(pos => (
                       <div key={pos._id} className="list-item">
                         <span>{pos.title} - {pos.department}</span>
-                        <button 
+                        <button
                           onClick={() => handleDelete('position', pos._id)}
                           className="delete-button"
                         >
@@ -609,7 +611,7 @@ function App() {
                     {certificateTypes.map(cert => (
                       <div key={cert._id} className="list-item">
                         <span>{cert.name} ({cert.validityPeriod} months)</span>
-                        <button 
+                        <button
                           onClick={() => handleDelete('certificateType', cert._id)}
                           className="delete-button"
                         >
@@ -624,14 +626,14 @@ function App() {
           </div>
         )}
 
-         {/* Certificates View */}
+        {/* Certificates View */}
         {view === 'certificates' && (
           <>
             <form onSubmit={handleCertificateSubmit} className="form">
               <div className="form-group">
                 <label>Staff Member:</label>
-                <select 
-                  name="staffMember" 
+                <select
+                  name="staffMember"
                   required
                   onChange={(e) => {
                     const selectedEmployeeId = e.target.value;
@@ -641,7 +643,7 @@ function App() {
                       setSelectedPosition(employee.position.title);
                     }
                   }}
-                > 
+                >
                   <option value="">Select Staff Member</option>
                   {employees.map(emp => (
                     <option key={emp._id} value={emp._id}>
@@ -652,18 +654,18 @@ function App() {
               </div>
               <div className="form-group">
                 <label>Position:</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   name="position"
-                  value={selectedPosition || 'Position will auto-fill based on selected employee'} 
-                  readOnly 
+                  value={selectedPosition || 'Position will auto-fill based on selected employee'}
+                  readOnly
                   className="readonly-input"
                 />
               </div>
               <div className="form-group">
                 <label>Certificate Type:</label>
-                <select 
-                  name="certificateType" 
+                <select
+                  name="certificateType"
                   required
                   onChange={(e) => {
                     const certType = certificateTypes.find(cert => cert._id === e.target.value);
@@ -684,10 +686,10 @@ function App() {
               </div>
               <div className="form-group">
                 <label>Issue Date:</label>
-                <input 
-                  type="date" 
-                  name="issueDate" 
-                  required 
+                <input
+                  type="date"
+                  name="issueDate"
+                  required
                   value={issueDate}
                   onChange={(e) => {
                     setIssueDate(e.target.value);
@@ -704,18 +706,18 @@ function App() {
               </div>
               <div className="form-group">
                 <label>Expiration Date:</label>
-                <input 
-                  type="date" 
-                  name="expirationDate" 
+                <input
+                  type="date"
+                  name="expirationDate"
                   value={expiryDate}
-                  readOnly 
+                  readOnly
                   className="readonly-input"
                 />
               </div>
               <button type="submit">Submit Certificate</button>
               {isAdmin && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setView('admin')}
                   className="admin-button"
                 >
@@ -723,9 +725,41 @@ function App() {
                 </button>
               )}
             </form>
-            
+
             <div className="certificates-table">
               <h3>Submitted Certificates</h3>
+
+              {/* Add filter controls here */}
+              <div className="filter-controls">
+                <div className="filter-group">
+                  <label>Filter by Employee: </label>
+                  <select
+                    value={selectedFilterEmployee}
+                    onChange={(e) => setSelectedFilterEmployee(e.target.value)}
+                  >
+                    <option value="">All Employees</option>
+                    {[...new Set(certificates.map(cert => cert.staffMember))]
+                      .sort()
+                      .map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <label>Filter by Certificate Type: </label>
+                  <select
+                    value={selectedFilterCertType}
+                    onChange={(e) => setSelectedFilterCertType(e.target.value)}
+                  >
+                    <option value="">All Certificates</option>
+                    {certificateTypes.map(type => (
+                      <option key={type._id} value={type.name}>{type.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <table>
                 <thead>
                   <tr>
@@ -738,30 +772,32 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                      {certificates.map((cert) => {
-                        const expirationDate = new Date(cert.expirationDate)
-                        const today = new Date()
-                        const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
-                        
-                        let statusClass = 'status-active'
-                        if (daysUntilExpiration <= 0) statusClass = 'status-expired'
-                        else if (daysUntilExpiration <= 30) statusClass = 'status-expiring'
-                        
-                        // Find the position title
-                        const position = positions.find(pos => pos._id === cert.position)
-                        
-                        return (
-                          <tr key={cert._id} className={statusClass}>
-                            <td>{cert.staffMember}</td>
-                            <td>{position ? position.title : cert.position}</td>
-                            <td>{cert.certificateType}</td>
-                            <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
-                            <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
-                            <td>{cert.status}</td>
-                          </tr>
-                        )
-                      })}
-                  </tbody>
+                  {certificates
+                    .filter(cert =>
+                      (!selectedFilterEmployee || cert.staffMember === selectedFilterEmployee) &&
+                      (!selectedFilterCertType || cert.certificateType === selectedFilterCertType)
+                    )
+                    .map((cert) => {
+                      const expirationDate = new Date(cert.expirationDate)
+                      const today = new Date()
+                      const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
+
+                      let statusClass = 'status-active'
+                      if (daysUntilExpiration <= 0) statusClass = 'status-expired'
+                      else if (daysUntilExpiration <= 30) statusClass = 'status-expiring'
+
+                      return (
+                        <tr key={cert._id} className={statusClass}>
+                          <td>{cert.staffMember}</td>
+                          <td>{cert.position}</td>
+                          <td>{cert.certificateType}</td>
+                          <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
+                          <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
+                          <td>{cert.status}</td>
+                        </tr>
+                      )
+                    })}
+                </tbody>
               </table>
             </div>
           </>
