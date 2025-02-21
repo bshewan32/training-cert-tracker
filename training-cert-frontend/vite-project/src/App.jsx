@@ -6,6 +6,7 @@ import './App.css'
 function App() {
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
   const [selectedFilterCertType, setSelectedFilterCertType] = useState('');
+  const [selectedEmployeeForEdit, setSelectedEmployeeForEdit] = useState(null);
   const [view, setView] = useState('login')
   const [token, setToken] = useState('')
   const [error, setError] = useState('')
@@ -321,6 +322,46 @@ function App() {
     }
     // Similar to handleEmployeeSubmit but for certificate types
   }
+  const handleEmployeeUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(selectedEmployeeForEdit)
+      });
+  
+      if (!response.ok) throw new Error('Failed to update employee');
+      
+      setMessage('Employee updated successfully');
+      await fetchSetupData(); // Refresh data
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  
+  const handleCertificateDelete = async (certId) => {
+    if (window.confirm('Are you sure you want to delete this certificate?')) {
+      try {
+        const response = await fetch(`https://training-cert-tracker.onrender.com/api/certificates/${certId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+  
+        if (!response.ok) throw new Error('Failed to delete certificate');
+        
+        setMessage('Certificate deleted successfully');
+        fetchCertificates(); // Refresh certificates
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
 
   return (
     <div className="container">
@@ -729,7 +770,6 @@ function App() {
             <div className="certificates-table">
               <h3>Submitted Certificates</h3>
 
-              {/* Add filter controls here */}
               <div className="filter-controls">
                 <div className="filter-group">
                   <label>Filter by Employee: </label>
@@ -760,6 +800,20 @@ function App() {
                 </div>
               </div>
 
+              {selectedFilterEmployee && (
+                <div className="edit-controls">
+                  <button
+                    className="edit-details-button"
+                    onClick={() => {
+                      const employee = employees.find(emp => emp.name === selectedFilterEmployee);
+                      setSelectedEmployeeForEdit(employee);
+                      setView('employeeDetails');
+                    }}
+                  >
+                    View/Edit {selectedFilterEmployee}'s Details
+                  </button>
+                </div>
+              )}
               <table>
                 <thead>
                   <tr>
@@ -803,6 +857,102 @@ function App() {
               </table>
             </div>
           </>
+        )}
+        {view === 'employeeDetails' && selectedEmployeeForEdit && (
+          <div className="employee-details">
+            <h2>Employee Details: {selectedEmployeeForEdit.name}</h2>
+            <button
+              onClick={() => setView('certificates')}
+              className="back-button"
+            >
+              Back to Certificates
+            </button>
+
+            <div className="details-section">
+              <h3>Personal Information</h3>
+              <form onSubmit={handleEmployeeUpdate} className="form">
+                <div className="form-group">
+                  <label>Name:</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={selectedEmployeeForEdit.name}
+                    onChange={(e) => setSelectedEmployeeForEdit({
+                      ...selectedEmployeeForEdit,
+                      name: e.target.value
+                    })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Position:</label>
+                  <select
+                    name="position"
+                    value={selectedEmployeeForEdit.position?._id || ''}
+                    onChange={(e) => setSelectedEmployeeForEdit({
+                      ...selectedEmployeeForEdit,
+                      position: positions.find(pos => pos._id === e.target.value)
+                    })}
+                  >
+                    {positions.map(pos => (
+                      <option key={pos._id} value={pos._id}>{pos.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Email:</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={selectedEmployeeForEdit.email}
+                    onChange={(e) => setSelectedEmployeeForEdit({
+                      ...selectedEmployeeForEdit,
+                      email: e.target.value
+                    })}
+                  />
+                </div>
+                <button type="submit">Update Employee</button>
+              </form>
+            </div>
+
+            <div className="details-section">
+              <h3>Certificates</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Certificate Type</th>
+                    <th>Issue Date</th>
+                    <th>Expiration Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {certificates
+                    .filter(cert => cert.staffMember === selectedEmployeeForEdit.name)
+                    .map(cert => {
+                      const expirationDate = new Date(cert.expirationDate);
+                      const today = new Date();
+                      const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
+                      let statusClass = 'status-active';
+                      if (daysUntilExpiration <= 0) statusClass = 'status-expired';
+                      else if (daysUntilExpiration <= 30) statusClass = 'status-expiring';
+
+                      return (
+                        <tr key={cert._id} className={statusClass}>
+                          <td>{cert.certificateType}</td>
+                          <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
+                          <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
+                          <td>{cert.status}</td>
+                          <td>
+                            <button onClick={() => handleCertificateDelete(cert._id)}>Delete</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
     </div>
