@@ -20,7 +20,7 @@ function App() {
     activeUsers: 0
   })
 
-  const [activeTab, setActiveTab] = useState('employees')
+  const [activeTab, setActiveTab] = useState('bulkImport')
   const [employees, setEmployees] = useState([])
   const [positions, setPositions] = useState([])
   const [selectedEmployee, setSelectedEmployee] = useState(null);
