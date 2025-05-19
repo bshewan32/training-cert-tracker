@@ -1,7 +1,7 @@
 // Enhanced ExcelTemplateUploader.jsx with XLSX parsing and preview
 import { useState, useCallback } from 'react';
 import { AlertCircle, FileUp, FileDown, Check, Info, Upload, X } from 'lucide-react';
-import ImportPreview from './ImportPreview';
+import ImportPreview from './ComponentsImportPreview';
 import * as XLSX from 'xlsx';
 
 const ExcelTemplateUploader = ({ token, onSuccess, onError }) => {
