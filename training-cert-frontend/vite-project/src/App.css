@@ -464,3 +464,157 @@ select {
 .details-section td button:hover {
   background-color: #c53030;
 }
+
+/* Continue the CSS styles for App.css */
+
+  /* Additional responsive adjustments */
+  .uploader-container {
+    margin-top: 20px;
+  }
+  
+  /* Visual indicators for upload states */
+  .file-preview {
+    transition: all 0.3s ease;
+  }
+  
+  .file-upload-label.has-file {
+    background-color: #e6f7ff;
+    border-color: #1890ff;
+  }
+  
+  /* Drag and drop styling */
+  .file-drop-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    background-color: #f8fafc;
+    transition: all 0.3s ease;
+  }
+  
+  .file-drop-zone.active {
+    border-color: #0ea5e9;
+    background-color: #f0f9ff;
+  }
+  
+  .file-drop-zone p {
+    color: #64748b;
+    margin: 10px 0;
+  }
+  
+  /* Progress indicator for upload */
+  .upload-progress {
+    width: 100%;
+    height: 4px;
+    background-color: #e2e8f0;
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  
+  .upload-progress-bar {
+    height: 100%;
+    background-color: #0ea5e9;
+    transition: width 0.3s ease;
+  }
+  
+  /* Validation results display */
+  .validation-results {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 6px;
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .validation-results h5 {
+    margin-top: 0;
+    color: #0f172a;
+    margin-bottom: 10px;
+  }
+  
+  .validation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .validation-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .validation-item:last-child {
+    border-bottom: none;
+  }
+  
+  .validation-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  
+  .validation-error {
+    color: #dc2626;
+  }
+  
+  .validation-warning {
+    color: #ea580c;
+  }
+  
+  .validation-success {
+    color: #16a34a;
+  }
+  
+  /* Import Results Summary */
+  .import-summary {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f0fdf4;
+    border: 1px solid #dcfce7;
+    border-radius: 6px;
+  }
+  
+  .import-summary h4 {
+    margin-top: 0;
+    color: #166534;
+    margin-bottom: 10px;
+  }
+  
+  .import-stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  
+  .import-stat-label {
+    color: #0f172a;
+    font-weight: 500;
+  }
+  
+  .import-stat-value {
+    font-weight: 600;
+    color: #166534;
+  }
+  
+  /* Excel header cell visual */
+  .excel-header-cell {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: #e2e8f0;
+    color: #1e293b;
+    border-radius: 4px;
+    font-family: monospace;
+    margin-right: 5px;
+    margin-bottom: 5px;
+  }
+  
+  .excel-header-required {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
