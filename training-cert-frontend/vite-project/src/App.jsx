@@ -541,20 +541,14 @@ function App() {
               {/* Bulk Import Tab */}
               {activeTab === 'bulkImport' && (
                 <div className="setup-section">
-                  <h3>Bulk Import Data</h3>
-                  <form onSubmit={handleBulkUpload} className="setup-form">
-                    <div className="form-group">
-                      <label>Upload Excel File:</label>
-                      <input
-                        type="file"
-                        accept=".xlsx, .xls"
-                        onChange={(e) => setImportFile(e.target.files[0])}
-                      />
-                    </div>
-                    <button type="submit">Import Data</button>
-                  </form>
+                  <ExcelTemplateUploader
+                    token={token}
+                    onSuccess={handleBulkUploadSuccess}
+                    onError={handleBulkUploadError}
+                  />
                 </div>
               )}
+              
 
               {/* Employees Tab */}
               {activeTab === 'employees' && (
