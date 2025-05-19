@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import ExcelTemplateUploader from './components/ExcelTemplateUploader'
+import ExcelTemplateUploader from 'src/components/ExcelTemplateUploader'
 
 
 function App() {
