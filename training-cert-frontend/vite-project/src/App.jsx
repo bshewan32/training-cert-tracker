@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-
+import ExcelTemplateUploader from './components/ExcelTemplateUploader'
 
 
 function App() {
@@ -29,6 +29,16 @@ function App() {
   const [issueDate, setIssueDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [importFile, setImportFile] = useState(null);
+
+  // Modified handleBulkUpload - This will be handled by the new component
+  const handleBulkUploadSuccess = (result) => {
+    setMessage(result.message || 'Data imported successfully');
+    fetchSetupData(); // Refresh the data
+  };
+
+  const handleBulkUploadError = (err) => {
+    setError(err.message || 'Error importing data');
+  };
 
   const handleBulkUpload = async (e) => {
     e.preventDefault();
