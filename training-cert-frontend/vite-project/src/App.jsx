@@ -5,6 +5,9 @@ import ExcelDateFormatter from './components/ExcelDateFormatter';
 import ExcelExporter from './components/ExcelExporter';
 import PositionRequirements from './components/PositionRequirements';
 import EmployeeRequirements from './components/EmployeeRequirements';
+import EmployeeForm from './components/MultiPositionEmployeeComponent';
+import EmployeePositionsDashboard from './components/EmployeePositionsDashboard';
+import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard';
 
 function App() {
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
@@ -34,6 +37,7 @@ function App() {
   const [importFile, setImportFile] = useState(null);
   const [activeExcelTool, setActiveExcelTool] = useState('exporter');
   const [selectedPositionForRequirements, setSelectedPositionForRequirements] = useState(null);
+  const [adminActiveTab, setAdminActiveTab] = useState('overview');
 
   // Modified handleBulkUpload - This will be handled by the new component
   const handleBulkUploadSuccess = (result) => {
@@ -438,9 +442,42 @@ function App() {
       )}
 
       {/* Admin Dashboard View */}
-      {view === 'admin' && (
-        <div className="admin-dashboard">
-          <h2>Admin Dashboard</h2>
+{view === 'admin' && (
+  <div className="admin-dashboard">
+    <h2>Admin Dashboard</h2>
+
+    {/* Admin Dashboard Tabs */}
+    <div className="admin-tabs">
+      <button
+        className={`tab-button ${adminActiveTab === 'overview' ? 'active' : ''}`}
+        onClick={() => setAdminActiveTab('overview')}
+      >
+        Overview
+      </button>
+      <button
+        className={`tab-button ${adminActiveTab === 'positions' ? 'active' : ''}`}
+        onClick={() => setAdminActiveTab('positions')}
+      >
+        Employee Positions
+      </button>
+      <button
+        className={`tab-button ${adminActiveTab === 'compliance' ? 'active' : ''}`}
+        onClick={() => setAdminActiveTab('compliance')}
+      >
+        Compliance
+      </button>
+      <button
+        className={`tab-button ${adminActiveTab === 'certificates' ? 'active' : ''}`}
+        onClick={() => setAdminActiveTab('certificates')}
+      >
+        Certificates
+      </button>
+    </div>
+    
+    {/* Tab content based on selected tab */}
+    <div className="tab-content">
+      {adminActiveTab === 'overview' && (
+        <>
           <div className="dashboard-stats">
             <div className="stat-card">
               <h3>Total Certificates</h3>
@@ -468,7 +505,6 @@ function App() {
             >
               System Setup
             </button>
-            {/* New button for Excel tools */}
             <button
               type="button"
               onClick={() => setView('excelTools')}
@@ -535,8 +571,74 @@ function App() {
               </tbody>
             </table>
           </div>
+        </>
+      )}
+      
+      {adminActiveTab === 'positions' && (
+        <EmployeePositionsDashboard token={token} />
+      )}
+      
+      {adminActiveTab === 'compliance' && (
+        <MultiPositionComplianceDashboard token={token} />
+      )}
+      
+      {adminActiveTab === 'certificates' && (
+        <div className="certificate-management">
+          <h3>Certificate Management</h3>
+          <p>View and manage all certificates across all positions.</p>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Staff Member</th>
+                <th>Position</th>
+                <th>Certificate Type</th>
+                <th>Issue Date</th>
+                <th>Expiration Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {certificates.map((cert) => {
+                const expirationDate = new Date(cert.expirationDate)
+                const today = new Date()
+                const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
+
+                let statusClass = 'status-active'
+                if (daysUntilExpiration <= 0) statusClass = 'status-expired'
+                else if (daysUntilExpiration <= 30) statusClass = 'status-expiring'
+
+                // Get position title
+                const position = positions.find(pos => pos._id === cert.position) || {}
+                const positionTitle = position.title || cert.position
+
+                return (
+                  <tr key={cert._id} className={statusClass}>
+                    <td>{cert.staffMember}</td>
+                    <td>{positionTitle}</td>
+                    <td>{cert.certificateType}</td>
+                    <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
+                    <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
+                    <td>{cert.status}</td>
+                    <td>
+                      <button 
+                        onClick={() => handleCertificateDelete(cert._id)}
+                        className="delete-button"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
+    </div>
+  </div>
+)}
 
       {/* Setup View */}
       {view === 'setup' && (
