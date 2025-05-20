@@ -989,40 +989,44 @@ function App() {
         )}
         {/* Add new view for Excel tools */}
         {view === 'excelTools' && (
-    <div className="excel-tools">
-      <h2>Excel Tools</h2>
-      <button
-        onClick={() => setView('admin')}
-        className="back-button"
-      >
-        Back to Dashboard
-      </button>
-      
-      <div className="tool-tabs">
-        <button 
-          className={`tool-tab ${activeExcelTool === 'exporter' ? 'active' : ''}`}
-          onClick={() => setActiveExcelTool('exporter')}
-        >
-          Export Certificates
-        </button>
-        <button 
-          className={`tool-tab ${activeExcelTool === 'formatter' ? 'active' : ''}`}
-          onClick={() => setActiveExcelTool('formatter')}
-        >
-          Date Formatter
-        </button>
-      </div>
-      
-      <div className="tool-content">
-        {activeExcelTool === 'exporter' && (
-          <ExcelExporter token={token} />
-        )}
-        
-        {activeExcelTool === 'formatter' && (
-          <ExcelDateFormatter />
+          <div className="excel-tools">
+            <h2>Excel Tools</h2>
+            <button
+              onClick={() => setView('admin')}
+              className="back-button"
+            >
+              Back to Dashboard
+            </button>
+
+            <div className="tool-tabs">
+              <button
+                className={`tool-tab ${activeExcelTool === 'exporter' ? 'active' : ''}`}
+                onClick={() => setActiveExcelTool('exporter')}
+              >
+                Export Certificates
+              </button>
+              <button
+                className={`tool-tab ${activeExcelTool === 'formatter' ? 'active' : ''}`}
+                onClick={() => setActiveExcelTool('formatter')}
+              >
+                Date Formatter
+              </button>
+            </div>
+
+            <div className="tool-content">
+              {activeExcelTool === 'exporter' && (
+                <ExcelExporter token={token} />
+              )}
+
+              {activeExcelTool === 'formatter' && (
+                <ExcelDateFormatter />
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
-  )}
+  )
+}
 
 export default App
