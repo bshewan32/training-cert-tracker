@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import ExcelTemplateUploader from './components/ExcelTemplateUploader'
-
+import ExcelDateFormatter from './components/ExcelDateFormatter';
 
 function App() {
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
@@ -215,6 +215,9 @@ function App() {
       if (view === 'certificates' || view === 'setup') {
         fetchSetupData(); // Add this to load dropdown data
       }
+      if (window.location.pathname === '/hidden-tools/date-formatter') {
+      setView('formatter');
+      }
     }
   }, [token, view]);
 
@@ -384,6 +387,21 @@ function App() {
             onClick={handleLogout}
             className="logout-button"
           >Logout</button>
+        )}
+
+        {/* Add new hidden Excel Date Formatter view */}
+        {view === 'formatter' && (
+          <div className="hidden-tools">
+            <ExcelDateFormatter />
+            <div className="back-link">
+              <button 
+                onClick={() => setView('certificates')}
+                className="back-button"
+              >
+                Back to Certificate Tracker
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Login/Register View */}
