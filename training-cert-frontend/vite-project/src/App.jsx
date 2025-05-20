@@ -463,6 +463,14 @@ function App() {
               >
                 System Setup
               </button>
+              {/* New button for Excel tools */}
+              <button
+                type="button"
+                onClick={() => setView('excelTools')}
+                className="admin-button"
+              >
+                Excel Tools
+              </button>
               <button
                 type="button"
                 onClick={() => setView('certificates')}
@@ -974,6 +982,20 @@ function App() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+        {/* Add new view for Excel tools */}
+        {view === 'excelTools' && (
+          <div className="excel-tools">
+            <h2>Excel Tools</h2>
+            <button
+              onClick={() => setView('admin')}
+              className="back-button"
+            >
+              Back to Dashboard
+            </button>
+
+            <ExcelDateFormatter />
           </div>
         )}
       </div>
