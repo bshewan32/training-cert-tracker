@@ -126,19 +126,21 @@ router.get('/employee/:employeeId', authenticateToken, async (req, res) => {
     const Employee = require('../models/Employee');
     const Certificate = require('../models/Certificate');
     
-    const employee = await Employee.findById(req.params.employeeId).populate('position');
+    const employee = await Employee.findById(req.params.employeeId)
+      .populate('positions')
+      .populate('primaryPosition');
     
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
     
-    if (!employee.position) {
-      return res.status(404).json({ message: 'Employee has no assigned position' });
+    if (!employee.primaryPosition) {
+      return res.status(404).json({ message: 'Employee has no assigned primary position' });
     }
     
-    // Get all requirements for the employee's position
+    // Get all requirements for the employee's primary position
     const requirements = await PositionRequirement.find({
-      position: employee.position._id,
+      position: employee.primaryPosition._id,
       active: true
     });
     
@@ -193,7 +195,8 @@ router.get('/employee/:employeeId', authenticateToken, async (req, res) => {
       employee: {
         _id: employee._id,
         name: employee.name,
-        position: employee.position
+        primaryPosition: employee.primaryPosition,
+        positions: employee.positions
       },
       requirements: requirementsWithStatus
     });

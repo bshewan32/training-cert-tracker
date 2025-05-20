@@ -153,14 +153,23 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
         employee = new Employee({
           name: record.employeeName,
           email: record.employeeEmail,
-          position: position._id,
+          positions: [position._id],
+          primaryPosition: position._id,
           active: true
         });
         await employee.save();
         importStats.newEmployees++;
-      } else if (employee.position.toString() !== position._id.toString()) {
-        // Update position if it has changed
-        employee.position = position._id;
+      } else {
+        // Update position if needed - check if position is already in positions array
+        if (!employee.positions.includes(position._id)) {
+          employee.positions.push(position._id);
+          
+          // If no primary position is set, make this the primary
+          if (!employee.primaryPosition) {
+            employee.primaryPosition = position._id;
+          }
+        }
+        
         if (record.employeeEmail && employee.email !== record.employeeEmail) {
           employee.email = record.employeeEmail;
         }
@@ -219,7 +228,8 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const positions = await Position.find({ active: true });
-    const employees = await Employee.find({ active: true }).populate('position');
+    // Update populate to match schema - populate positions and primaryPosition instead of position
+    const employees = await Employee.find({ active: true }).populate('positions primaryPosition');
     const certificateTypes = await CertificateType.find({ active: true });
 
     console.log('Fetched employees:', employees);
@@ -257,8 +267,8 @@ router.get('/', async (req, res) => {
         // Special handling for employee
         item = new Model(itemData);
         await item.save();
-        // Populate the position field after saving
-        item = await Employee.findById(item._id).populate('position');
+        // Populate positions and primaryPosition fields after saving
+        item = await Employee.findById(item._id).populate('positions primaryPosition');
       } else {
         item = new Model(itemData);
         await item.save();
