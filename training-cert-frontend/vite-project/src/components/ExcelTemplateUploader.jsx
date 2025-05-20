@@ -193,8 +193,37 @@ const ExcelTemplateUploader = ({ token, onSuccess, onError }) => {
   };
 
   // Function to download the template
-  const downloadTemplate = () => {
-    window.location.href = 'https://training-cert-tracker.onrender.com/api/setup/template';
+  // const downloadTemplate = () => {
+  //   window.location.href = 'https://training-cert-tracker.onrender.com/api/setup/template';
+  // };
+  const downloadTemplate = async () => {
+    try {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/template', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download template. Please check your authentication.');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'TrainingTemplate.xlsx'); // Adjust filename if needed
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setUploadStatus({
+        type: 'error',
+        message: error.message || 'Error downloading the template file'
+      });
+    }
   };
 
   // Function to upload the file
