@@ -8,6 +8,7 @@ const adminRoutes = require('./routes/admin');
 const setupRoutes = require('./routes/setup');
 const templateRoutes = require('./routes/template'); // Add new template routes
 require('dotenv').config({ path: '../.env' });
+const positionRequirementsRoutes = require('./routes/positionRequirements'); 
 
 class TrainingCertApp {
   constructor() {
@@ -43,7 +44,8 @@ class TrainingCertApp {
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/admin', adminRoutes);
     this.app.use('/api/setup', setupRoutes);
-    this.app.use('/api/setup/template', templateRoutes); // Register new template routes
+    this.app.use('/api/setup/template', templateRoutes); 
+    this.app.use('/api/position-requirements', positionRequirementsRoutes);
 
     // Global error handler
     this.app.use((err, req, res, next) => {

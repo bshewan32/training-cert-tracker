@@ -3,7 +3,8 @@ import './App.css'
 import ExcelTemplateUploader from './components/ExcelTemplateUploader'
 import ExcelDateFormatter from './components/ExcelDateFormatter';
 import ExcelExporter from './components/ExcelExporter';
-
+import PositionRequirements from './components/PositionRequirements';
+import EmployeeRequirements from './components/EmployeeRequirements';
 
 function App() {
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
@@ -32,6 +33,7 @@ function App() {
   const [expiryDate, setExpiryDate] = useState('');
   const [importFile, setImportFile] = useState(null);
   const [activeExcelTool, setActiveExcelTool] = useState('exporter');
+  const [selectedPositionForRequirements, setSelectedPositionForRequirements] = useState(null);
 
   // Modified handleBulkUpload - This will be handled by the new component
   const handleBulkUploadSuccess = (result) => {
@@ -380,276 +382,283 @@ function App() {
   };
 
   return (
-    <div className="container">
-      <h1>Certificate Tracker</h1>
-      <div className="content">
-        {error && <div className="error">{error}</div>}
-        {message && <div className="message">{message}</div>}
-        {token && (
-          <button
-            onClick={handleLogout}
-            className="logout-button"
-          >Logout</button>
-        )}
+  <div className="container">
+    <h1>Certificate Tracker</h1>
+    <div className="content">
+      {error && <div className="error">{error}</div>}
+      {message && <div className="message">{message}</div>}
+      {token && (
+        <button
+          onClick={handleLogout}
+          className="logout-button"
+        >Logout</button>
+      )}
 
-        {/* Add new hidden Excel Date Formatter view */}
-        {view === 'formatter' && (
-          <div className="hidden-tools">
-            <ExcelDateFormatter />
-            <div className="back-link">
-              <button 
-                onClick={() => setView('certificates')}
-                className="back-button"
-              >
-                Back to Certificate Tracker
-              </button>
+      {/* Add new hidden Excel Date Formatter view */}
+      {view === 'formatter' && (
+        <div className="hidden-tools">
+          <ExcelDateFormatter />
+          <div className="back-link">
+            <button 
+              onClick={() => setView('certificates')}
+              className="back-button"
+            >
+              Back to Certificate Tracker
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Login/Register View */}
+      {(view === 'login' || view === 'register') && (
+        <form onSubmit={(e) => handleSubmit(e, view)} className="form">
+          {view === 'register' && (
+            <div className="form-group">
+              <label>Email:</label>
+              <input type="email" name="email" required />
+            </div>
+          )}
+          <div className="form-group">
+            <label>Username:</label>
+            <input type="text" name="username" required />
+          </div>
+          <div className="form-group">
+            <label>Password:</label>
+            <input type="password" name="password" required />
+          </div>
+          <button type="submit">
+            {view === 'login' ? 'Login' : 'Register'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setView(view === 'login' ? 'register' : 'login')}>
+            {view === 'login' ? 'Need an account? Register' : 'Have an account? Login'}
+          </button>
+        </form>
+      )}
+
+      {/* Admin Dashboard View */}
+      {view === 'admin' && (
+        <div className="admin-dashboard">
+          <h2>Admin Dashboard</h2>
+          <div className="dashboard-stats">
+            <div className="stat-card">
+              <h3>Total Certificates</h3>
+              <p className="stat-number">{dashboardStats.totalCertificates}</p>
+            </div>
+            <div className="stat-card warning">
+              <h3>Expiring Soon</h3>
+              <p className="stat-number">{dashboardStats.expiringSoon}</p>
+            </div>
+            <div className="stat-card danger">
+              <h3>Expired</h3>
+              <p className="stat-number">{dashboardStats.expired}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Active Users</h3>
+              <p className="stat-number">{dashboardStats.activeUsers}</p>
             </div>
           </div>
-        )}
 
-        {/* Login/Register View */}
-        {(view === 'login' || view === 'register') && (
-          <form onSubmit={(e) => handleSubmit(e, view)} className="form">
-            {view === 'register' && (
-              <div className="form-group">
-                <label>Email:</label>
-                <input type="email" name="email" required />
-              </div>
-            )}
-            <div className="form-group">
-              <label>Username:</label>
-              <input type="text" name="username" required />
-            </div>
-            <div className="form-group">
-              <label>Password:</label>
-              <input type="password" name="password" required />
-            </div>
-            <button type="submit">
-              {view === 'login' ? 'Login' : 'Register'}
+          <div className="admin-buttons">
+            <button
+              type="button"
+              onClick={() => setView('setup')}
+              className="admin-button"
+            >
+              System Setup
+            </button>
+            {/* New button for Excel tools */}
+            <button
+              type="button"
+              onClick={() => setView('excelTools')}
+              className="admin-button"
+            >
+              Excel Tools
             </button>
             <button
               type="button"
-              onClick={() => setView(view === 'login' ? 'register' : 'login')}>
-              {view === 'login' ? 'Need an account? Register' : 'Have an account? Login'}
+              onClick={() => setView('certificates')}
+              className="admin-button"
+            >
+              Back to Certificates
             </button>
-          </form>
-        )}
-
-        {/* Admin Dashboard View */}
-        {view === 'admin' && (
-          <div className="admin-dashboard">
-            <h2>Admin Dashboard</h2>
-            <div className="dashboard-stats">
-              <div className="stat-card">
-                <h3>Total Certificates</h3>
-                <p className="stat-number">{dashboardStats.totalCertificates}</p>
-              </div>
-              <div className="stat-card warning">
-                <h3>Expiring Soon</h3>
-                <p className="stat-number">{dashboardStats.expiringSoon}</p>
-              </div>
-              <div className="stat-card danger">
-                <h3>Expired</h3>
-                <p className="stat-number">{dashboardStats.expired}</p>
-              </div>
-              <div className="stat-card">
-                <h3>Active Users</h3>
-                <p className="stat-number">{dashboardStats.activeUsers}</p>
-              </div>
-            </div>
-
-            <div className="admin-buttons">
-              <button
-                type="button"
-                onClick={() => setView('setup')}
-                className="admin-button"
-              >
-                System Setup
-              </button>
-              {/* New button for Excel tools */}
-              <button
-                type="button"
-                onClick={() => setView('excelTools')}
-                className="admin-button"
-              >
-                Excel Tools
-              </button>
-              <button
-                type="button"
-                onClick={() => setView('certificates')}
-                className="admin-button"
-              >
-                Back to Certificates
-              </button>
-            </div>
-
-            <div className="certificate-alerts">
-              <h3>Certificate Alerts</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Staff Member</th>
-                    <th>Certificate</th>
-                    <th>Expiration</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {certificates
-                    .filter(cert => {
-                      const daysUntilExpiration = Math.ceil(
-                        (new Date(cert.expirationDate) - new Date()) / (1000 * 60 * 60 * 24)
-                      )
-                      return daysUntilExpiration <= 30
-                    })
-                    .map(cert => {
-                      const expirationDate = new Date(cert.expirationDate)
-                      const today = new Date()
-                      const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
-
-                      let status = 'active'
-                      if (daysUntilExpiration <= 0) status = 'expired'
-                      else if (daysUntilExpiration <= 30) status = 'expiring'
-
-                      return (
-                        <tr key={cert._id}>
-                          <td>{cert.staffMember}</td>
-                          <td>{cert.certificateType}</td>
-                          <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
-                          <td>
-                            <span className={`status-badge ${status}`}>
-                              {status.toUpperCase()}
-                            </span>
-                          </td>
-                          <td>
-                            <button onClick={() => sendReminder(cert._id)}>
-                              Send Reminder
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                </tbody>
-              </table>
-            </div>
           </div>
-        )}
 
-        {/* Setup View */}
-        {view === 'setup' && (
-          <div className="setup-dashboard">
-            <h2>System Setup</h2>
-            <div className="setup-header">
-              <button
-                onClick={() => setView('admin')}
-                className="back-button"
-              >
-                Back to Dashboard
-              </button>
-            </div>
+          <div className="certificate-alerts">
+            <h3>Certificate Alerts</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Staff Member</th>
+                  <th>Certificate</th>
+                  <th>Expiration</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {certificates
+                  .filter(cert => {
+                    const daysUntilExpiration = Math.ceil(
+                      (new Date(cert.expirationDate) - new Date()) / (1000 * 60 * 60 * 24)
+                    )
+                    return daysUntilExpiration <= 30
+                  })
+                  .map(cert => {
+                    const expirationDate = new Date(cert.expirationDate)
+                    const today = new Date()
+                    const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
 
-            <div className="setup-tabs">
-              <button
-                className={`tab-button ${activeTab === 'bulkImport' ? 'active' : ''}`}
-                onClick={() => setActiveTab('bulkImport')}
-              >
-                Bulk Import
-              </button>
-              <button
-                className={`tab-button ${activeTab === 'employees' ? 'active' : ''}`}
-                onClick={() => setActiveTab('employees')}
-              >
-                Employees
-              </button>
-              <button
-                className={`tab-button ${activeTab === 'positions' ? 'active' : ''}`}
-                onClick={() => setActiveTab('positions')}
-              >
-                Positions
-              </button>
-              <button
-                className={`tab-button ${activeTab === 'certificateTypes' ? 'active' : ''}`}
-                onClick={() => setActiveTab('certificateTypes')}
-              >
-                Certificate Types
-              </button>
-            </div>
+                    let status = 'active'
+                    if (daysUntilExpiration <= 0) status = 'expired'
+                    else if (daysUntilExpiration <= 30) status = 'expiring'
 
-            <div className="setup-content">
-              {/* Bulk Import Tab */}
-              {activeTab === 'bulkImport' && (
-                <div className="setup-section">
-                  <ExcelTemplateUploader
-                    token={token}
-                    onSuccess={handleBulkUploadSuccess}
-                    onError={handleBulkUploadError}
-                  />
-                </div>
-              )}
-              
+                    return (
+                      <tr key={cert._id}>
+                        <td>{cert.staffMember}</td>
+                        <td>{cert.certificateType}</td>
+                        <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
+                        <td>
+                          <span className={`status-badge ${status}`}>
+                            {status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td>
+                          <button onClick={() => sendReminder(cert._id)}>
+                            Send Reminder
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-              {/* Employees Tab */}
-              {activeTab === 'employees' && (
-                <div className="setup-section">
-                  <h3>Manage Employees</h3>
-                  <form onSubmit={handleEmployeeSubmit} className="setup-form">
-                    <div className="form-group">
-                      <label>Employee Name:</label>
-                      <input type="text" name="name" required />
-                    </div>
-                    <div className="form-group">
-                      <label>Position:</label>
-                      <select name="position" required>
-                        <option value="">Select Position</option>
-                        {positions.map(pos => (
-                          <option key={pos._id} value={pos._id}>
-                            {pos.title}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Email:</label>
-                      <input type="email" name="email" required />
-                    </div>
-                    <button type="submit">Add Employee</button>
-                  </form>
-                  <div className="setup-list">
-                    {employees.map(emp => (
-                      <div key={emp._id} className="list-item">
-                        <span>{emp.name} - {emp.position?.title}</span>
-                        <button
-                          onClick={() => handleDelete('employee', emp._id)}
-                          className="delete-button"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
+      {/* Setup View */}
+      {view === 'setup' && (
+        <div className="setup-dashboard">
+          <h2>System Setup</h2>
+          <div className="setup-header">
+            <button
+              onClick={() => setView('admin')}
+              className="back-button"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+
+          <div className="setup-tabs">
+            <button
+              className={`tab-button ${activeTab === 'bulkImport' ? 'active' : ''}`}
+              onClick={() => setActiveTab('bulkImport')}
+            >
+              Bulk Import
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'employees' ? 'active' : ''}`}
+              onClick={() => setActiveTab('employees')}
+            >
+              Employees
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'positions' ? 'active' : ''}`}
+              onClick={() => setActiveTab('positions')}
+            >
+              Positions
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'certificateTypes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('certificateTypes')}
+            >
+              Certificate Types
+            </button>
+          </div>
+
+          <div className="setup-content">
+            {/* Bulk Import Tab */}
+            {activeTab === 'bulkImport' && (
+              <div className="setup-section">
+                <ExcelTemplateUploader
+                  token={token}
+                  onSuccess={handleBulkUploadSuccess}
+                  onError={handleBulkUploadError}
+                />
+              </div>
+            )}
+            
+
+            {/* Employees Tab */}
+            {activeTab === 'employees' && (
+              <div className="setup-section">
+                <h3>Manage Employees</h3>
+                <form onSubmit={handleEmployeeSubmit} className="setup-form">
+                  <div className="form-group">
+                    <label>Employee Name:</label>
+                    <input type="text" name="name" required />
                   </div>
+                  <div className="form-group">
+                    <label>Position:</label>
+                    <select name="position" required>
+                      <option value="">Select Position</option>
+                      {positions.map(pos => (
+                        <option key={pos._id} value={pos._id}>
+                          {pos.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Email:</label>
+                    <input type="email" name="email" required />
+                  </div>
+                  <button type="submit">Add Employee</button>
+                </form>
+                <div className="setup-list">
+                  {employees.map(emp => (
+                    <div key={emp._id} className="list-item">
+                      <span>{emp.name} - {emp.position?.title}</span>
+                      <button
+                        onClick={() => handleDelete('employee', emp._id)}
+                        className="delete-button"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Positions Tab */}
-              {activeTab === 'positions' && (
-                <div className="setup-section">
-                  <h3>Manage Positions</h3>
-                  <form onSubmit={handlePositionSubmit} className="setup-form">
-                    <div className="form-group">
-                      <label>Position Title:</label>
-                      <input type="text" name="title" required />
-                    </div>
-                    <div className="form-group">
-                      <label>Department:</label>
-                      <input type="text" name="department" />
-                    </div>
-                    <button type="submit">Add Position</button>
-                  </form>
-                  <div className="setup-list">
-                    {positions.map(pos => (
-                      <div key={pos._id} className="list-item">
-                        <span>{pos.title} - {pos.department}</span>
+            {/* Positions Tab */}
+            {activeTab === 'positions' && (
+              <div className="setup-section">
+                <h3>Manage Positions</h3>
+                <form onSubmit={handlePositionSubmit} className="setup-form">
+                  <div className="form-group">
+                    <label>Position Title:</label>
+                    <input type="text" name="title" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Department:</label>
+                    <input type="text" name="department" />
+                  </div>
+                  <button type="submit">Add Position</button>
+                </form>
+                <div className="setup-list">
+                  {positions.map(pos => (
+                    <div key={pos._id} className="list-item">
+                      <span>{pos.title} - {pos.department}</span>
+                      <div className="button-group">
+                        <button
+                          onClick={() => setSelectedPositionForRequirements(pos)}
+                          className="manage-button"
+                        >
+                          Manage Requirements
+                        </button>
                         <button
                           onClick={() => handleDelete('position', pos._id)}
                           className="delete-button"
@@ -657,376 +666,407 @@ function App() {
                           Remove
                         </button>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
+                
+                {/* Add the Position Requirements component here */}
+                {selectedPositionForRequirements && (
+                  <div className="requirements-section">
+                    <PositionRequirements 
+                      position={selectedPositionForRequirements}
+                      token={token}
+                      certificateTypes={certificateTypes}
+                      onUpdate={() => {
+                        // This will refresh data after requirements are updated
+                        fetchSetupData();
+                      }}
+                    />
+                    <button
+                      onClick={() => setSelectedPositionForRequirements(null)}
+                      className="close-button"
+                    >
+                      Close Requirements
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
-              {/* Certificate Types Tab */}
-              {activeTab === 'certificateTypes' && (
-                <div className="setup-section">
-                  <h3>Manage Certificate Types</h3>
-                  <form onSubmit={handleCertTypeSubmit} className="setup-form">
-                    <div className="form-group">
-                      <label>Certificate Name:</label>
-                      <input type="text" name="name" required />
-                    </div>
-                    <div className="form-group">
-                      <label>Validity Period (months):</label>
-                      <input type="number" name="validityPeriod" min="1" required />
-                    </div>
-                    <div className="form-group">
-                      <label>Description:</label>
-                      <textarea name="description" />
-                    </div>
-                    <button type="submit">Add Certificate Type</button>
-                  </form>
-                  <div className="setup-list">
-                    {certificateTypes.map(cert => (
-                      <div key={cert._id} className="list-item">
-                        <span>{cert.name} ({cert.validityPeriod} months)</span>
-                        <button
-                          onClick={() => handleDelete('certificateType', cert._id)}
-                          className="delete-button"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
+            {/* Certificate Types Tab */}
+            {activeTab === 'certificateTypes' && (
+              <div className="setup-section">
+                <h3>Manage Certificate Types</h3>
+                <form onSubmit={handleCertTypeSubmit} className="setup-form">
+                  <div className="form-group">
+                    <label>Certificate Name:</label>
+                    <input type="text" name="name" required />
                   </div>
+                  <div className="form-group">
+                    <label>Validity Period (months):</label>
+                    <input type="number" name="validityPeriod" min="1" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Description:</label>
+                    <textarea name="description" />
+                  </div>
+                  <button type="submit">Add Certificate Type</button>
+                </form>
+                <div className="setup-list">
+                  {certificateTypes.map(cert => (
+                    <div key={cert._id} className="list-item">
+                      <span>{cert.name} ({cert.validityPeriod} months)</span>
+                      <button
+                        onClick={() => handleDelete('certificateType', cert._id)}
+                        className="delete-button"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Certificates View */}
-        {view === 'certificates' && (
-          <>
-            <form onSubmit={handleCertificateSubmit} className="form">
-              <div className="form-group">
-                <label>Staff Member:</label>
+      {/* Certificates View */}
+      {view === 'certificates' && (
+        <>
+          <form onSubmit={handleCertificateSubmit} className="form">
+            <div className="form-group">
+              <label>Staff Member:</label>
+              <select
+                name="staffMember"
+                required
+                onChange={(e) => {
+                  const selectedEmployeeId = e.target.value;
+                  const employee = employees.find(emp => emp._id === selectedEmployeeId);
+                  setSelectedEmployee(employee);
+                  if (employee && employee.position) {
+                    setSelectedPosition(employee.position.title);
+                  }
+                }}
+              >
+                <option value="">Select Staff Member</option>
+                {employees.map(emp => (
+                  <option key={emp._id} value={emp._id}>
+                    {emp.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Position:</label>
+              <input
+                type="text"
+                name="position"
+                value={selectedPosition || 'Position will auto-fill based on selected employee'}
+                readOnly
+                className="readonly-input"
+              />
+            </div>
+            <div className="form-group">
+              <label>Certificate Type:</label>
+              <select
+                name="certificateType"
+                required
+                onChange={(e) => {
+                  const certType = certificateTypes.find(cert => cert._id === e.target.value);
+                  if (certType && issueDate) {
+                    const expiryDate = new Date(issueDate);
+                    expiryDate.setMonth(expiryDate.getMonth() + certType.validityPeriod);
+                    setExpiryDate(expiryDate.toISOString().split('T')[0]);
+                  }
+                }}
+              >
+                <option value="">Select Certificate Type</option>
+                {certificateTypes.map(cert => (
+                  <option key={cert._id} value={cert._id}>
+                    {cert.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Issue Date:</label>
+              <input
+                type="date"
+                name="issueDate"
+                required
+                value={issueDate}
+                onChange={(e) => {
+                  setIssueDate(e.target.value);
+                  const selectedCertType = certificateTypes.find(
+                    cert => cert._id === document.querySelector('select[name="certificateType"]').value
+                  );
+                  if (selectedCertType) {
+                    const expiryDate = new Date(e.target.value);
+                    expiryDate.setMonth(expiryDate.getMonth() + selectedCertType.validityPeriod);
+                    setExpiryDate(expiryDate.toISOString().split('T')[0]);
+                  }
+                }}
+              />
+            </div>
+            <div className="form-group">
+              <label>Expiration Date:</label>
+              <input
+                type="date"
+                name="expirationDate"
+                value={expiryDate}
+                readOnly
+                className="readonly-input"
+              />
+            </div>
+            <button type="submit">Submit Certificate</button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setView('admin')}
+                className="admin-button"
+              >
+                View Admin Dashboard
+              </button>
+            )}
+          </form>
+
+          <div className="certificates-table">
+            <h3>Submitted Certificates</h3>
+
+            <div className="filter-controls">
+              <div className="filter-group">
+                <label>Filter by Employee: </label>
                 <select
-                  name="staffMember"
-                  required
-                  onChange={(e) => {
-                    const selectedEmployeeId = e.target.value;
-                    const employee = employees.find(emp => emp._id === selectedEmployeeId);
-                    setSelectedEmployee(employee);
-                    if (employee && employee.position) {
-                      setSelectedPosition(employee.position.title);
-                    }
-                  }}
+                  value={selectedFilterEmployee}
+                  onChange={(e) => setSelectedFilterEmployee(e.target.value)}
                 >
-                  <option value="">Select Staff Member</option>
-                  {employees.map(emp => (
-                    <option key={emp._id} value={emp._id}>
-                      {emp.name}
-                    </option>
+                  <option value="">All Employees</option>
+                  {[...new Set(certificates.map(cert => cert.staffMember))]
+                    .sort()
+                    .map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Filter by Certificate Type: </label>
+                <select
+                  value={selectedFilterCertType}
+                  onChange={(e) => setSelectedFilterCertType(e.target.value)}
+                >
+                  <option value="">All Certificates</option>
+                  {certificateTypes.map(type => (
+                    <option key={type._id} value={type.name}>{type.name}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {selectedFilterEmployee && (
+              <div className="edit-controls">
+                <button
+                  className="edit-details-button"
+                  onClick={() => {
+                    const employee = employees.find(emp => emp.name === selectedFilterEmployee);
+                    setSelectedEmployeeForEdit(employee);
+                    setView('employeeDetails');
+                  }}
+                >
+                  View/Edit {selectedFilterEmployee}'s Details
+                </button>
+              </div>
+            )}
+            <table>
+              <thead>
+                <tr>
+                  <th>Staff Member</th>
+                  <th>Position</th>
+                  <th>Certificate Type</th>
+                  <th>Issue Date</th>
+                  <th>Expiration Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {certificates
+                  .filter(cert =>
+                    (!selectedFilterEmployee || cert.staffMember === selectedFilterEmployee) &&
+                    (!selectedFilterCertType || cert.certificateType === selectedFilterCertType)
+                  )
+                  .map((cert) => {
+                    const expirationDate = new Date(cert.expirationDate)
+                    const today = new Date()
+                    const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
+
+                    let statusClass = 'status-active'
+                    if (daysUntilExpiration <= 0) statusClass = 'status-expired'
+                    else if (daysUntilExpiration <= 30) statusClass = 'status-expiring'
+
+                    const position = positions.find(pos => pos._id === cert.position)
+
+                    return (
+                      <tr key={cert._id} className={statusClass}>
+                        <td>{cert.staffMember}</td>
+                        <td>{position ? position.title : cert.position}</td>
+                        <td>{cert.certificateType}</td>
+                        <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
+                        <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
+                        <td>{cert.status}</td>
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+      {view === 'employeeDetails' && selectedEmployeeForEdit && (
+        <div className="employee-details">
+          <h2>Employee Details: {selectedEmployeeForEdit.name}</h2>
+          <button
+            onClick={() => setView('certificates')}
+            className="back-button"
+          >
+            Back to Certificates
+          </button>
+
+          <div className="details-section">
+            <h3>Personal Information</h3>
+            <form onSubmit={handleEmployeeUpdate} className="form">
+              <div className="form-group">
+                <label>Name:</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={selectedEmployeeForEdit.name}
+                  onChange={(e) => setSelectedEmployeeForEdit({
+                    ...selectedEmployeeForEdit,
+                    name: e.target.value
+                  })}
+                />
               </div>
               <div className="form-group">
                 <label>Position:</label>
-                <input
-                  type="text"
-                  name="position"
-                  value={selectedPosition || 'Position will auto-fill based on selected employee'}
-                  readOnly
-                  className="readonly-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>Certificate Type:</label>
                 <select
-                  name="certificateType"
-                  required
-                  onChange={(e) => {
-                    const certType = certificateTypes.find(cert => cert._id === e.target.value);
-                    if (certType && issueDate) {
-                      const expiryDate = new Date(issueDate);
-                      expiryDate.setMonth(expiryDate.getMonth() + certType.validityPeriod);
-                      setExpiryDate(expiryDate.toISOString().split('T')[0]);
-                    }
-                  }}
+                  name="position"
+                  value={selectedEmployeeForEdit.position?._id || ''}
+                  onChange={(e) => setSelectedEmployeeForEdit({
+                    ...selectedEmployeeForEdit,
+                    position: positions.find(pos => pos._id === e.target.value)
+                  })}
                 >
-                  <option value="">Select Certificate Type</option>
-                  {certificateTypes.map(cert => (
-                    <option key={cert._id} value={cert._id}>
-                      {cert.name}
-                    </option>
+                  {positions.map(pos => (
+                    <option key={pos._id} value={pos._id}>{pos.title}</option>
                   ))}
                 </select>
               </div>
               <div className="form-group">
-                <label>Issue Date:</label>
+                <label>Email:</label>
                 <input
-                  type="date"
-                  name="issueDate"
-                  required
-                  value={issueDate}
-                  onChange={(e) => {
-                    setIssueDate(e.target.value);
-                    const selectedCertType = certificateTypes.find(
-                      cert => cert._id === document.querySelector('select[name="certificateType"]').value
-                    );
-                    if (selectedCertType) {
-                      const expiryDate = new Date(e.target.value);
-                      expiryDate.setMonth(expiryDate.getMonth() + selectedCertType.validityPeriod);
-                      setExpiryDate(expiryDate.toISOString().split('T')[0]);
-                    }
-                  }}
+                  type="email"
+                  name="email"
+                  value={selectedEmployeeForEdit.email}
+                  onChange={(e) => setSelectedEmployeeForEdit({
+                    ...selectedEmployeeForEdit,
+                    email: e.target.value
+                  })}
                 />
               </div>
-              <div className="form-group">
-                <label>Expiration Date:</label>
-                <input
-                  type="date"
-                  name="expirationDate"
-                  value={expiryDate}
-                  readOnly
-                  className="readonly-input"
-                />
-              </div>
-              <button type="submit">Submit Certificate</button>
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => setView('admin')}
-                  className="admin-button"
-                >
-                  View Admin Dashboard
-                </button>
-              )}
+              <button type="submit">Update Employee</button>
             </form>
-
-            <div className="certificates-table">
-              <h3>Submitted Certificates</h3>
-
-              <div className="filter-controls">
-                <div className="filter-group">
-                  <label>Filter by Employee: </label>
-                  <select
-                    value={selectedFilterEmployee}
-                    onChange={(e) => setSelectedFilterEmployee(e.target.value)}
-                  >
-                    <option value="">All Employees</option>
-                    {[...new Set(certificates.map(cert => cert.staffMember))]
-                      .sort()
-                      .map(name => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                  </select>
-                </div>
-
-                <div className="filter-group">
-                  <label>Filter by Certificate Type: </label>
-                  <select
-                    value={selectedFilterCertType}
-                    onChange={(e) => setSelectedFilterCertType(e.target.value)}
-                  >
-                    <option value="">All Certificates</option>
-                    {certificateTypes.map(type => (
-                      <option key={type._id} value={type.name}>{type.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {selectedFilterEmployee && (
-                <div className="edit-controls">
-                  <button
-                    className="edit-details-button"
-                    onClick={() => {
-                      const employee = employees.find(emp => emp.name === selectedFilterEmployee);
-                      setSelectedEmployeeForEdit(employee);
-                      setView('employeeDetails');
-                    }}
-                  >
-                    View/Edit {selectedFilterEmployee}'s Details
-                  </button>
-                </div>
-              )}
-              <table>
-                <thead>
-                  <tr>
-                    <th>Staff Member</th>
-                    <th>Position</th>
-                    <th>Certificate Type</th>
-                    <th>Issue Date</th>
-                    <th>Expiration Date</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {certificates
-                    .filter(cert =>
-                      (!selectedFilterEmployee || cert.staffMember === selectedFilterEmployee) &&
-                      (!selectedFilterCertType || cert.certificateType === selectedFilterCertType)
-                    )
-                    .map((cert) => {
-                      const expirationDate = new Date(cert.expirationDate)
-                      const today = new Date()
-                      const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24))
-
-                      let statusClass = 'status-active'
-                      if (daysUntilExpiration <= 0) statusClass = 'status-expired'
-                      else if (daysUntilExpiration <= 30) statusClass = 'status-expiring'
-
-                      const position = positions.find(pos => pos._id === cert.position)
-
-                      return (
-                        <tr key={cert._id} className={statusClass}>
-                          <td>{cert.staffMember}</td>
-                          <td>{position ? position.title : cert.position}</td>
-                          <td>{cert.certificateType}</td>
-                          <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
-                          <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
-                          <td>{cert.status}</td>
-                        </tr>
-                      )
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-        {view === 'employeeDetails' && selectedEmployeeForEdit && (
-          <div className="employee-details">
-            <h2>Employee Details: {selectedEmployeeForEdit.name}</h2>
-            <button
-              onClick={() => setView('certificates')}
-              className="back-button"
-            >
-              Back to Certificates
-            </button>
-
-            <div className="details-section">
-              <h3>Personal Information</h3>
-              <form onSubmit={handleEmployeeUpdate} className="form">
-                <div className="form-group">
-                  <label>Name:</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={selectedEmployeeForEdit.name}
-                    onChange={(e) => setSelectedEmployeeForEdit({
-                      ...selectedEmployeeForEdit,
-                      name: e.target.value
-                    })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Position:</label>
-                  <select
-                    name="position"
-                    value={selectedEmployeeForEdit.position?._id || ''}
-                    onChange={(e) => setSelectedEmployeeForEdit({
-                      ...selectedEmployeeForEdit,
-                      position: positions.find(pos => pos._id === e.target.value)
-                    })}
-                  >
-                    {positions.map(pos => (
-                      <option key={pos._id} value={pos._id}>{pos.title}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Email:</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={selectedEmployeeForEdit.email}
-                    onChange={(e) => setSelectedEmployeeForEdit({
-                      ...selectedEmployeeForEdit,
-                      email: e.target.value
-                    })}
-                  />
-                </div>
-                <button type="submit">Update Employee</button>
-              </form>
-            </div>
-
-            <div className="details-section">
-              <h3>Certificates</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Certificate Type</th>
-                    <th>Issue Date</th>
-                    <th>Expiration Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {certificates
-                    .filter(cert => cert.staffMember === selectedEmployeeForEdit.name)
-                    .map(cert => {
-                      const expirationDate = new Date(cert.expirationDate);
-                      const today = new Date();
-                      const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
-                      let statusClass = 'status-active';
-                      if (daysUntilExpiration <= 0) statusClass = 'status-expired';
-                      else if (daysUntilExpiration <= 30) statusClass = 'status-expiring';
-
-                      return (
-                        <tr key={cert._id} className={statusClass}>
-                          <td>{cert.certificateType}</td>
-                          <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
-                          <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
-                          <td>{cert.status}</td>
-                          <td>
-                            <button onClick={() => handleCertificateDelete(cert._id)}>Delete</button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
           </div>
-        )}
-        {/* Add new view for Excel tools */}
-        {view === 'excelTools' && (
-          <div className="excel-tools">
-            <h2>Excel Tools</h2>
-            <button
-              onClick={() => setView('admin')}
-              className="back-button"
-            >
-              Back to Dashboard
-            </button>
 
-            <div className="tool-tabs">
-              <button
-                className={`tool-tab ${activeExcelTool === 'exporter' ? 'active' : ''}`}
-                onClick={() => setActiveExcelTool('exporter')}
-              >
-                Export Certificates
-              </button>
-              <button
-                className={`tool-tab ${activeExcelTool === 'formatter' ? 'active' : ''}`}
-                onClick={() => setActiveExcelTool('formatter')}
-              >
-                Date Formatter
-              </button>
-            </div>
-
-            <div className="tool-content">
-              {activeExcelTool === 'exporter' && (
-                <ExcelExporter token={token} />
-              )}
-
-              {activeExcelTool === 'formatter' && (
-                <ExcelDateFormatter />
-              )}
-            </div>
+          {/* Add new Position Requirements section */}
+          <div className="details-section">
+            <h3>Position Requirements</h3>
+            <EmployeeRequirements 
+              employeeId={selectedEmployeeForEdit._id}
+              token={token}
+            />
           </div>
-        )}
-      </div>
+          
+          <div className="details-section">
+            <h3>Certificates</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Certificate Type</th>
+                  <th>Issue Date</th>
+                  <th>Expiration Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {certificates
+                  .filter(cert => cert.staffMember === selectedEmployeeForEdit.name)
+                  .map(cert => {
+                    const expirationDate = new Date(cert.expirationDate);
+                    const today = new Date();
+                    const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
+                    let statusClass = 'status-active';
+                    if (daysUntilExpiration <= 0) statusClass = 'status-expired';
+                    else if (daysUntilExpiration <= 30) statusClass = 'status-expiring';
+
+                    return (
+                      <tr key={cert._id} className={statusClass}>
+                        <td>{cert.certificateType}</td>
+                        <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
+                        <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
+                        <td>{cert.status}</td>
+                        <td>
+                          <button onClick={() => handleCertificateDelete(cert._id)}>Delete</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      
+      {/* Excel Tools view */}
+      {view === 'excelTools' && (
+        <div className="excel-tools">
+          <h2>Excel Tools</h2>
+          <button
+            onClick={() => setView('admin')}
+            className="back-button"
+          >
+            Back to Dashboard
+          </button>
+
+          <div className="tool-tabs">
+            <button
+              className={`tool-tab ${activeExcelTool === 'exporter' ? 'active' : ''}`}
+              onClick={() => setActiveExcelTool('exporter')}
+            >
+              Export Certificates
+            </button>
+            <button
+              className={`tool-tab ${activeExcelTool === 'formatter' ? 'active' : ''}`}
+              onClick={() => setActiveExcelTool('formatter')}
+            >
+              Date Formatter
+            </button>
+          </div>
+
+          <div className="tool-content">
+            {activeExcelTool === 'exporter' && (
+              <ExcelExporter token={token} />
+            )}
+
+            {activeExcelTool === 'formatter' && (
+              <ExcelDateFormatter />
+            )}
+          </div>
+        </div>
+      )}
     </div>
-  )
+  </div>
+);
 }
-
 export default App
