@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 const ExcelTemplateUploader = ({ token, onSuccess, onError }) => {
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState({ type: null, message: '' });
   const [previewData, setPreviewData] = useState(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -192,9 +193,76 @@ const ExcelTemplateUploader = ({ token, onSuccess, onError }) => {
     reader.readAsArrayBuffer(file);
   };
 
-  // Function to download the template
-  const downloadTemplate = () => {
-    window.location.href = 'https://training-cert-tracker.onrender.com/api/setup/template';
+  // Function to download the template with proper authentication
+  const downloadTemplate = async () => {
+    if (!token) {
+      setUploadStatus({
+        type: 'error',
+        message: 'Authentication required. Please log in again.'
+      });
+      return;
+    }
+
+    setIsDownloading(true);
+    setUploadStatus({ type: 'uploading', message: 'Downloading template...' });
+
+    try {
+      // Fetch with proper authorization header
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/template', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Authentication failed. Please log in again.');
+        }
+        throw new Error(`Failed to download template (${response.status})`);
+      }
+
+      // Get file as blob
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = 'training_records_template.xlsx';
+      
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setUploadStatus({ 
+        type: 'success', 
+        message: 'Template downloaded successfully!'
+      });
+      
+      // Clear success message after a few seconds
+      setTimeout(() => {
+        setUploadStatus({ type: null, message: '' });
+      }, 3000);
+      
+    } catch (err) {
+      console.error('Template download error:', err);
+      setUploadStatus({ 
+        type: 'error', 
+        message: err.message || 'Failed to download template'
+      });
+      
+      if (onError) {
+        onError(err);
+      }
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   // Function to upload the file
@@ -295,11 +363,12 @@ const ExcelTemplateUploader = ({ token, onSuccess, onError }) => {
                 </p>
               </div>
               <button 
-                className="template-download-btn" 
+                className="template-download-btn"
+                disabled={isDownloading}
                 onClick={downloadTemplate}
               >
                 <FileDown size={20} />
-                Download Template
+                {isDownloading ? 'Downloading...' : 'Download Template'}
               </button>
             </div>
 
@@ -537,8 +606,13 @@ const ExcelTemplateUploader = ({ token, onSuccess, onError }) => {
           max-width: 200px;
         }
         
-        .template-download-btn:hover {
+        .template-download-btn:hover:not(:disabled) {
           background-color: #0284c7;
+        }
+        
+        .template-download-btn:disabled {
+          background-color: #94a3b8;
+          cursor: not-allowed;
         }
         
         .file-drop-zone {
