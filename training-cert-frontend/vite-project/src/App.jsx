@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import ExcelTemplateUploader from './components/ExcelTemplateUploader'
 import ExcelDateFormatter from './components/ExcelDateFormatter';
+import ExcelExporter from './components/ExcelExporter';
+
 
 function App() {
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
@@ -29,6 +31,7 @@ function App() {
   const [issueDate, setIssueDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [importFile, setImportFile] = useState(null);
+  const [activeExcelTool, setActiveExcelTool] = useState('exporter');
 
   // Modified handleBulkUpload - This will be handled by the new component
   const handleBulkUploadSuccess = (result) => {
@@ -986,21 +989,40 @@ function App() {
         )}
         {/* Add new view for Excel tools */}
         {view === 'excelTools' && (
-          <div className="excel-tools">
-            <h2>Excel Tools</h2>
-            <button
-              onClick={() => setView('admin')}
-              className="back-button"
-            >
-              Back to Dashboard
-            </button>
-
-            <ExcelDateFormatter />
-          </div>
+    <div className="excel-tools">
+      <h2>Excel Tools</h2>
+      <button
+        onClick={() => setView('admin')}
+        className="back-button"
+      >
+        Back to Dashboard
+      </button>
+      
+      <div className="tool-tabs">
+        <button 
+          className={`tool-tab ${activeExcelTool === 'exporter' ? 'active' : ''}`}
+          onClick={() => setActiveExcelTool('exporter')}
+        >
+          Export Certificates
+        </button>
+        <button 
+          className={`tool-tab ${activeExcelTool === 'formatter' ? 'active' : ''}`}
+          onClick={() => setActiveExcelTool('formatter')}
+        >
+          Date Formatter
+        </button>
+      </div>
+      
+      <div className="tool-content">
+        {activeExcelTool === 'exporter' && (
+          <ExcelExporter token={token} />
+        )}
+        
+        {activeExcelTool === 'formatter' && (
+          <ExcelDateFormatter />
         )}
       </div>
     </div>
-  )
-}
+  )}
 
 export default App
