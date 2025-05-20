@@ -5,7 +5,7 @@ import ExcelDateFormatter from './components/ExcelDateFormatter';
 import ExcelExporter from './components/ExcelExporter';
 import PositionRequirements from './components/PositionRequirements';
 import EmployeeRequirements from './components/EmployeeRequirements';
-import EmployeeForm from './components/MultiPositionEmployeeComponent';
+import EmployeeForm from './components/EmployeeForm';
 import EmployeePositionsDashboard from './components/EmployeePositionsDashboard';
 import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard';
 
