@@ -121,37 +121,37 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
 // Endpoint to get required certificates status for an employee
 router.get('/employee/:employeeId', authenticateToken, async (req, res) => {
-  try {
+    try {
     // Get the employee with their position
     const Employee = require('../models/Employee');
     const Certificate = require('../models/Certificate');
     
-    console.log('Fetching employee with ID:', req.params.employeeId); // Debug log
-    
-    const employee = await Employee.findById(req.params.employeeId);
-    
-    // Separately populate positions and primaryPosition to ensure correct handling
-    await employee.populate('positions');
-    await employee.populate('primaryPosition');
+    const employee = await Employee.findById(req.params.employeeId)
+      .populate('positions')
+      .populate('primaryPosition');
     
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
     
-    console.log('Employee found:', employee); // Debug employee object
+    // Handle the case where primaryPosition might not be set
+    let positionId = null;
     
-    if (!employee.primaryPosition) {
-      return res.status(404).json({ message: 'Employee has no assigned primary position' });
+    if (employee.primaryPosition) {
+      // Handle both cases: when it's already populated or when it's just an ID
+      positionId = typeof employee.primaryPosition === 'object' 
+        ? employee.primaryPosition._id 
+        : employee.primaryPosition;
+    } else if (employee.positions && employee.positions.length > 0) {
+      // Fallback to first position if primary is not set
+      const firstPosition = employee.positions[0];
+      positionId = typeof firstPosition === 'object' 
+        ? firstPosition._id 
+        : firstPosition;
     }
-    
-    // Check if primaryPosition is populated correctly
-    console.log('Employee primary position:', employee.primaryPosition);
-    
-    // Make sure we have an ID to work with
-    const positionId = employee.primaryPosition?._id || employee.primaryPosition;
-    
+
     if (!positionId) {
-      return res.status(404).json({ message: 'Invalid primary position reference' });
+      return res.status(404).json({ message: 'Employee has no assigned positions' });
     }
     
     // Get all requirements for the employee's primary position
