@@ -121,10 +121,12 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
 // Endpoint to get required certificates status for an employee
 router.get('/employee/:employeeId', authenticateToken, async (req, res) => {
-    try {
+  try {
     // Get the employee with their position
     const Employee = require('../models/Employee');
     const Certificate = require('../models/Certificate');
+    
+    console.log('Employee ID provided:', req.params.employeeId);
     
     const employee = await Employee.findById(req.params.employeeId)
       .populate('positions')

@@ -8,7 +8,6 @@ import EmployeeRequirements from './components/EmployeeRequirements';
 import EmployeeForm from './components/EmployeeForm';
 import EmployeePositionsDashboard from './components/EmployeePositionsDashboard';
 import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard';
-import EmployeePositionDebugger from './components/EmployeePositionDebugger';
 
 function App() {
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
@@ -389,7 +388,6 @@ function App() {
   return (
   <div className="container">
     <h1>Certificate Tracker</h1>
-    {view === 'admin' && <EmployeePositionDebugger />}
     <div className="content">
       {error && <div className="error">{error}</div>}
       {message && <div className="message">{message}</div>}
