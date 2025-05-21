@@ -344,26 +344,7 @@ function App() {
     }
     // Similar to handleEmployeeSubmit but for certificate types
   }
-  const handleEmployeeUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(selectedEmployeeForEdit)
-      });
-  
-      if (!response.ok) throw new Error('Failed to update employee');
-      
-      setMessage('Employee updated successfully');
-      await fetchSetupData(); // Refresh data
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  // No longer need the handleEmployeeUpdate function since it's handled in the EmployeeForm component now
   
   const handleCertificateDelete = async (certId) => {
     if (window.confirm('Are you sure you want to delete this certificate?')) {
@@ -697,32 +678,34 @@ function App() {
             {activeTab === 'employees' && (
               <div className="setup-section">
                 <h3>Manage Employees</h3>
-                <form onSubmit={handleEmployeeSubmit} className="setup-form">
-                  <div className="form-group">
-                    <label>Employee Name:</label>
-                    <input type="text" name="name" required />
-                  </div>
-                  <div className="form-group">
-                    <label>Position:</label>
-                    <select name="position" required>
-                      <option value="">Select Position</option>
-                      {positions.map(pos => (
-                        <option key={pos._id} value={pos._id}>
-                          {pos.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Email:</label>
-                    <input type="email" name="email" required />
-                  </div>
-                  <button type="submit">Add Employee</button>
-                </form>
+                <EmployeeForm 
+                  positions={positions}
+                  token={token}
+                  onSubmit={async (employeeData) => {
+                    try {
+                      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/employee', {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(employeeData)
+                      });
+                      
+                      if (!response.ok) throw new Error('Failed to add employee');
+                      
+                      setMessage('Employee added successfully');
+                      await fetchSetupData();
+                    } catch (err) {
+                      setError(err.message);
+                    }
+                  }}
+                  onCancel={() => {}}
+                />
                 <div className="setup-list">
                   {employees.map(emp => (
                     <div key={emp._id} className="list-item">
-                      <span>{emp.name} - {emp.position?.title}</span>
+                      <span>{emp.name} - {emp.primaryPosition?.title || (emp.positions && emp.positions.length > 0 ? emp.positions[0].title : 'No position')}</span>
                       <button
                         onClick={() => handleDelete('employee', emp._id)}
                         className="delete-button"
@@ -1036,48 +1019,35 @@ function App() {
 
           <div className="details-section">
             <h3>Personal Information</h3>
-            <form onSubmit={handleEmployeeUpdate} className="form">
-              <div className="form-group">
-                <label>Name:</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={selectedEmployeeForEdit.name}
-                  onChange={(e) => setSelectedEmployeeForEdit({
-                    ...selectedEmployeeForEdit,
-                    name: e.target.value
-                  })}
-                />
-              </div>
-              <div className="form-group">
-                <label>Position:</label>
-                <select
-                  name="position"
-                  value={selectedEmployeeForEdit.position?._id || ''}
-                  onChange={(e) => setSelectedEmployeeForEdit({
-                    ...selectedEmployeeForEdit,
-                    position: positions.find(pos => pos._id === e.target.value)
-                  })}
-                >
-                  {positions.map(pos => (
-                    <option key={pos._id} value={pos._id}>{pos.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Email:</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={selectedEmployeeForEdit.email}
-                  onChange={(e) => setSelectedEmployeeForEdit({
-                    ...selectedEmployeeForEdit,
-                    email: e.target.value
-                  })}
-                />
-              </div>
-              <button type="submit">Update Employee</button>
-            </form>
+            <EmployeeForm
+              employee={selectedEmployeeForEdit}
+              positions={positions}
+              token={token}
+              onSubmit={async (updatedEmployee) => {
+                try {
+                  const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}`, {
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedEmployee)
+                  });
+              
+                  if (!response.ok) throw new Error('Failed to update employee');
+                  
+                  setMessage('Employee updated successfully');
+                  await fetchSetupData(); // Refresh data
+                  
+                  // Update the selected employee with the new data
+                  const updatedData = await response.json();
+                  setSelectedEmployeeForEdit(updatedData);
+                } catch (err) {
+                  setError(err.message);
+                }
+              }}
+              onCancel={() => setView('certificates')}
+            />
           </div>
 
           {/* Add new Position Requirements section */}

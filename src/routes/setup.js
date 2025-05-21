@@ -285,11 +285,24 @@ router.get('/', async (req, res) => {
   // Update item
   router.put(`/${type}/:id`, async (req, res) => {
     try {
-      const item = await Model.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true }
-      );
+      let item;
+      if (type === 'employee') {
+        // Special handling for employee
+        item = await Model.findByIdAndUpdate(
+          req.params.id,
+          req.body,
+          { new: true }
+        );
+        // Populate the employee's positions and primaryPosition
+        await item.populate('positions');
+        await item.populate('primaryPosition');
+      } else {
+        item = await Model.findByIdAndUpdate(
+          req.params.id,
+          req.body,
+          { new: true }
+        );
+      }
       res.json(item);
     } catch (error) {
       res.status(400).json({ message: error.message });
