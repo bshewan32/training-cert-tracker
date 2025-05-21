@@ -43,6 +43,7 @@ const EmployeeRequirements = ({ employeeId, token }) => {
     setError('');
     
     try {
+      console.log('Fetching requirements for employee ID:', employeeId); // Debug log
       const response = await fetch(`https://training-cert-tracker.onrender.com/api/positionRequirements/employee/${employeeId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -54,6 +55,7 @@ const EmployeeRequirements = ({ employeeId, token }) => {
       }
       
       const data = await response.json();
+      console.log('Employee requirements data:', data); // Debug log
       setEmployee(data.employee);
       setRequirements(data.requirements);
     } catch (err) {
@@ -121,10 +123,10 @@ const EmployeeRequirements = ({ employeeId, token }) => {
             <div className="employee-info">
               <div className="info-item"></div>
               <div className="info-item">
-                <strong>Position:</strong> {employee.position.title}
+                <strong>Primary Position:</strong> {employee.primaryPosition.title}
               </div>
               <div className="info-item">
-                <strong>Department:</strong> {employee.position.department || 'N/A'}
+                <strong>Department:</strong> {employee.primaryPosition.department || 'N/A'}
               </div>
             </div>
           )}

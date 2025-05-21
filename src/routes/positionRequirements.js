@@ -126,21 +126,37 @@ router.get('/employee/:employeeId', authenticateToken, async (req, res) => {
     const Employee = require('../models/Employee');
     const Certificate = require('../models/Certificate');
     
-    const employee = await Employee.findById(req.params.employeeId)
-      .populate('positions')
-      .populate('primaryPosition');
+    console.log('Fetching employee with ID:', req.params.employeeId); // Debug log
+    
+    const employee = await Employee.findById(req.params.employeeId);
+    
+    // Separately populate positions and primaryPosition to ensure correct handling
+    await employee.populate('positions');
+    await employee.populate('primaryPosition');
     
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
     
+    console.log('Employee found:', employee); // Debug employee object
+    
     if (!employee.primaryPosition) {
       return res.status(404).json({ message: 'Employee has no assigned primary position' });
     }
     
+    // Check if primaryPosition is populated correctly
+    console.log('Employee primary position:', employee.primaryPosition);
+    
+    // Make sure we have an ID to work with
+    const positionId = employee.primaryPosition?._id || employee.primaryPosition;
+    
+    if (!positionId) {
+      return res.status(404).json({ message: 'Invalid primary position reference' });
+    }
+    
     // Get all requirements for the employee's primary position
     const requirements = await PositionRequirement.find({
-      position: employee.primaryPosition._id,
+      position: positionId,
       active: true
     });
     
