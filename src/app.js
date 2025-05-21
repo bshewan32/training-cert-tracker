@@ -9,6 +9,11 @@ const setupRoutes = require('./routes/setup');
 const templateRoutes = require('./routes/template'); // Add new template routes
 require('dotenv').config({ path: '../.env' });
 const positionRequirementsRoutes = require('./routes/positionRequirements'); 
+const allowedOrigins = [
+  'https://training-cert-tracker.vercel.app',
+  'https://training-cert-tracker-d1lezctbu-bill-shewans-projects.vercel.app',
+  // Add any other URLs where your frontend might be deployed
+];
 
 class TrainingCertApp {
   constructor() {
@@ -21,7 +26,17 @@ class TrainingCertApp {
   
   configureMiddlewares() {
     this.app.use(cors({
-      origin: 'https://training-cert-tracker.vercel.app', // Your Vercel frontend URL
+      origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) === -1) {
+          const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+          return callback(new Error(msg), false);
+        }
+
+        return callback(null, true);
+      },
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization']
     }));
