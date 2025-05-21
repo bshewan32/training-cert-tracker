@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import ExcelTemplateUploader from './components/ExcelTemplateUploader'
-import ExcelDateFormatter from './components/ExcelDateFormatter';
-import ExcelExporter from './components/ExcelExporter';
-import PositionRequirements from './components/PositionRequirements';
-import EmployeeRequirements from './components/EmployeeRequirements';
-import EmployeeForm from './components/EmployeeForm';
-import EmployeePositionsDashboard from './components/EmployeePositionsDashboard';
-import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard';
+import ExcelExporter from './components/ExcelExporter'
+import ExcelDateFormatter from './components/ExcelDateFormatter'
+import PositionRequirements from './components/PositionRequirements'
+import EmployeeRequirements from './components/EmployeeRequirements'
+import EmployeeForm from './components/EmployeeForm'
+import EmployeePositionsDashboard from './components/EmployeePositionsDashboard'
+import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard'
 
 function App() {
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
   const [selectedFilterCertType, setSelectedFilterCertType] = useState('');
   const [selectedEmployeeForEdit, setSelectedEmployeeForEdit] = useState(null);
+  const [selectedPositionForRequirements, setSelectedPositionForRequirements] = useState(null);
+  const [activeExcelTool, setActiveExcelTool] = useState('exporter');
   const [view, setView] = useState('login')
   const [token, setToken] = useState('')
   const [error, setError] = useState('')
@@ -35,8 +37,6 @@ function App() {
   const [issueDate, setIssueDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [importFile, setImportFile] = useState(null);
-  const [activeExcelTool, setActiveExcelTool] = useState('exporter');
-  const [selectedPositionForRequirements, setSelectedPositionForRequirements] = useState(null);
   const [adminActiveTab, setAdminActiveTab] = useState('overview');
 
   // Modified handleBulkUpload - This will be handled by the new component
@@ -224,11 +224,37 @@ function App() {
       if (view === 'certificates' || view === 'setup') {
         fetchSetupData(); // Add this to load dropdown data
       }
-      if (window.location.pathname === '/hidden-tools/date-formatter') {
-      setView('formatter');
-      }
     }
   }, [token, view]);
+
+  // Set view to formatter if on hidden-tools/date-formatter path
+  useEffect(() => {
+    if (window.location.pathname === '/hidden-tools/date-formatter') {
+      setView('formatter');
+    }
+  }, []);
+
+  // Handler for updating employee (for employeeDetails view)
+  const handleEmployeeUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(selectedEmployeeForEdit)
+      });
+
+      if (!response.ok) throw new Error('Failed to update employee');
+
+      setMessage('Employee updated successfully');
+      await fetchSetupData(); // Refresh data
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const fetchSetupData = async () => {
     try {
