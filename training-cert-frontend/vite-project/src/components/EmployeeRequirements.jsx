@@ -43,7 +43,7 @@ const EmployeeRequirements = ({ employeeId, token }) => {
     setError('');
     
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/position-requirements/employee/${employeeId}`, {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/positionRequirements/employee/${employeeId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

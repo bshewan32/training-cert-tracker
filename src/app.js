@@ -45,7 +45,7 @@ class TrainingCertApp {
     this.app.use('/api/admin', adminRoutes);
     this.app.use('/api/setup', setupRoutes);
     this.app.use('/api/setup/template', templateRoutes); 
-    this.app.use('/api/position-requirements', positionRequirementsRoutes);
+    this.app.use('/api/positionRequirements', positionRequirementsRoutes);
 
     // Global error handler
     this.app.use((err, req, res, next) => {
