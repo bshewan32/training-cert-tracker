@@ -1,7 +1,7 @@
 // src/components/PositionRequirements.jsx
 import { useState, useEffect } from 'react';
 
-const PositionRequirements = ({ position, token, certificateTypes, onUpdate }) => {
+const PositionRequirements = ({ position, token, certificateTypes, onUpdate, readOnly = false }) => {
   const [requirements, setRequirements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -161,79 +161,9 @@ const PositionRequirements = ({ position, token, certificateTypes, onUpdate }) =
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
       
-      <div className="requirements-container">
-        {/* Form to add new requirement */}
-        <form onSubmit={addRequirement} className="add-requirement-form">
-          <h4>Add New Requirement</h4>
-          
-          <div className="form-group">
-            <label>Certificate Type:</label>
-            <select 
-              name="certificateType"
-              value={newRequirement.certificateType}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">-- Select Certificate Type --</option>
-              {certificateTypes.map(type => (
-                <option 
-                  key={type._id} 
-                  value={type.name}
-                  disabled={isCertificateTypeAdded(type.name)}
-                >
-                  {type.name} {isCertificateTypeAdded(type.name) ? '(Already Added)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="form-group">
-            <label>Validity Period (months):</label>
-            <input 
-              type="number"
-              name="validityPeriod"
-              value={newRequirement.validityPeriod}
-              onChange={handleInputChange}
-              min="1"
-              required
-            />
-          </div>
-          
-          <div className="form-group checkbox-group">
-            <input 
-              type="checkbox"
-              id="isRequired"
-              name="isRequired"
-              checked={newRequirement.isRequired}
-              onChange={handleInputChange}
-            />
-            <label htmlFor="isRequired">Required Certificate</label>
-          </div>
-          
-          <div className="form-group">
-            <label>Notes:</label>
-            <textarea 
-              name="notes"
-              value={newRequirement.notes}
-              onChange={handleInputChange}
-              placeholder="Optional notes about this requirement"
-              rows="2"
-            ></textarea>
-          </div>
-          
-          <button 
-            type="submit" 
-            className="add-button"
-            disabled={loading || !newRequirement.certificateType}
-          >
-            Add Requirement
-          </button>
-        </form>
-        
-        {/* List of current requirements */}
-        <div className="requirements-list">
-          <h4>Current Requirements</h4>
-          
+      {readOnly ? (
+        // Read-only view for employee details
+        <div className="requirements-list read-only">
           {requirements.length === 0 ? (
             <p className="no-requirements">No certificate requirements defined for this position.</p>
           ) : (
@@ -244,7 +174,6 @@ const PositionRequirements = ({ position, token, certificateTypes, onUpdate }) =
                   <th>Validity Period</th>
                   <th>Required</th>
                   <th>Notes</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -254,22 +183,124 @@ const PositionRequirements = ({ position, token, certificateTypes, onUpdate }) =
                     <td>{req.validityPeriod} months</td>
                     <td>{req.isRequired ? 'Yes' : 'No'}</td>
                     <td>{req.notes || '-'}</td>
-                    <td>
-                      <button 
-                        onClick={() => deleteRequirement(req._id)}
-                        className="delete-button"
-                        disabled={loading}
-                      >
-                        Remove
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
         </div>
-      </div>
+      ) : (
+        // Editable view for position management
+        <div className="requirements-container">
+          {/* Form to add new requirement */}
+          <form onSubmit={addRequirement} className="add-requirement-form">
+            <h4>Add New Requirement</h4>
+            
+            <div className="form-group">
+              <label>Certificate Type:</label>
+              <select 
+                name="certificateType"
+                value={newRequirement.certificateType}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">-- Select Certificate Type --</option>
+                {certificateTypes.map(type => (
+                  <option 
+                    key={type._id} 
+                    value={type.name}
+                    disabled={isCertificateTypeAdded(type.name)}
+                  >
+                    {type.name} {isCertificateTypeAdded(type.name) ? '(Already Added)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label>Validity Period (months):</label>
+              <input 
+                type="number"
+                name="validityPeriod"
+                value={newRequirement.validityPeriod}
+                onChange={handleInputChange}
+                min="1"
+                required
+              />
+            </div>
+            
+            <div className="form-group checkbox-group">
+              <input 
+                type="checkbox"
+                id="isRequired"
+                name="isRequired"
+                checked={newRequirement.isRequired}
+                onChange={handleInputChange}
+              />
+              <label htmlFor="isRequired">Required Certificate</label>
+            </div>
+            
+            <div className="form-group">
+              <label>Notes:</label>
+              <textarea 
+                name="notes"
+                value={newRequirement.notes}
+                onChange={handleInputChange}
+                placeholder="Optional notes about this requirement"
+                rows="2"
+              ></textarea>
+            </div>
+            
+            <button 
+              type="submit" 
+              className="add-button"
+              disabled={loading || !newRequirement.certificateType}
+            >
+              Add Requirement
+            </button>
+          </form>
+          
+          {/* List of current requirements */}
+          <div className="requirements-list">
+            <h4>Current Requirements</h4>
+            
+            {requirements.length === 0 ? (
+              <p className="no-requirements">No certificate requirements defined for this position.</p>
+            ) : (
+              <table className="requirements-table">
+                <thead>
+                  <tr>
+                    <th>Certificate Type</th>
+                    <th>Validity Period</th>
+                    <th>Required</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requirements.map(req => (
+                    <tr key={req._id}>
+                      <td>{req.certificateType}</td>
+                      <td>{req.validityPeriod} months</td>
+                      <td>{req.isRequired ? 'Yes' : 'No'}</td>
+                      <td>{req.notes || '-'}</td>
+                      <td>
+                        <button 
+                          onClick={() => deleteRequirement(req._id)}
+                          className="delete-button"
+                          disabled={loading}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
       
       <style jsx>{`
         .position-requirements {
@@ -371,6 +402,12 @@ const PositionRequirements = ({ position, token, certificateTypes, onUpdate }) =
           background-color: #f7fafc;
           padding: 15px;
           border-radius: 6px;
+        }
+        
+        .requirements-list.read-only {
+          background-color: #f8fafc;
+          box-shadow: none;
+          padding: 0;
         }
         
         .no-requirements {
