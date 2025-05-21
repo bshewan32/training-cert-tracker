@@ -29,7 +29,7 @@ const PositionRequirements = ({ position, token, certificateTypes, onUpdate }) =
     setError('');
     
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/position-requirements/position/${position._id}`, {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/positionRequirements/position/${position._id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -62,7 +62,7 @@ const PositionRequirements = ({ position, token, certificateTypes, onUpdate }) =
     setSuccess('');
     
     try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/position-requirements', {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -112,7 +112,7 @@ const PositionRequirements = ({ position, token, certificateTypes, onUpdate }) =
     setSuccess('');
     
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/position-requirements/${requirementId}`, {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/positionRequirements/${requirementId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

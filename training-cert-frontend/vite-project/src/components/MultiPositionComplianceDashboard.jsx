@@ -75,7 +75,7 @@ const MultiPositionComplianceDashboard = ({ token }) => {
       setCertificates(certificatesData || []);
       
       // Fetch position requirements
-      const reqResponse = await fetch('https://training-cert-tracker.onrender.com/api/position-requirements', {
+      const reqResponse = await fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
