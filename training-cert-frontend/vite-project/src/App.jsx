@@ -344,7 +344,6 @@ function App() {
     }
     // Similar to handleEmployeeSubmit but for certificate types
   }
-  // No longer need the handleEmployeeUpdate function since it's handled in the EmployeeForm component now
   
   const handleCertificateDelete = async (certId) => {
     if (window.confirm('Are you sure you want to delete this certificate?')) {
@@ -377,51 +376,6 @@ function App() {
           onClick={handleLogout}
           className="logout-button"
         >Logout</button>
-      )}
-      
-      {/* Edit Employee View */}
-      {view === 'editEmployee' && selectedEmployeeForEdit && (
-        <div className="edit-employee-container">
-          <h2>Edit Employee: {selectedEmployeeForEdit.name}</h2>
-          <button
-            onClick={() => setView('employeeDetails')}
-            className="back-button"
-          >
-            Back to Employee Details
-          </button>
-          
-          <EmployeeForm
-            employee={selectedEmployeeForEdit}
-            positions={positions}
-            token={token}
-            onSubmit={async (updatedEmployee) => {
-              try {
-                const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}`, {
-                  method: 'PUT',
-                  headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify(updatedEmployee)
-                });
-            
-                if (!response.ok) throw new Error('Failed to update employee');
-                
-                setMessage('Employee updated successfully');
-                
-                // Update the selected employee with the new data
-                const updatedData = await response.json();
-                setSelectedEmployeeForEdit(updatedData);
-                
-                await fetchSetupData(); // Refresh all data
-                setView('employeeDetails'); // Return to details view
-              } catch (err) {
-                setError(err.message);
-              }
-            }}
-            onCancel={() => setView('employeeDetails')}
-          />
-        </div>
       )}
 
       {/* Add new hidden Excel Date Formatter view */}
@@ -1052,6 +1006,8 @@ function App() {
           </div>
         </>
       )}
+      
+      {/* Employee Details View - UPDATED to use EmployeeForm component */}
       {view === 'employeeDetails' && selectedEmployeeForEdit && (
         <div className="employee-details">
           <h2>Employee Details: {selectedEmployeeForEdit.name}</h2>
@@ -1064,79 +1020,51 @@ function App() {
 
           <div className="details-section">
             <h3>Personal Information</h3>
-            <div className="personal-info-display">
-              <div className="info-row">
-                <strong>Name:</strong> 
-                <span>{selectedEmployeeForEdit.name}</span>
-              </div>
-              <div className="info-row">
-                <strong>Email:</strong> 
-                <span>{selectedEmployeeForEdit.email}</span>
-              </div>
-              <button 
-                onClick={() => setView('editEmployee')}
-                className="edit-button"
-              >
-                Edit Employee Details
-              </button>
-            </div>
-            
-            <div className="positions-container">
-              <h4>Assigned Positions</h4>
-              {!selectedEmployeeForEdit.positions || selectedEmployeeForEdit.positions.length === 0 ? (
-                <p className="no-positions">No positions assigned</p>
-              ) : (
-                <div className="positions-list">
-                  <table className="positions-table">
-                    <thead>
-                      <tr>
-                        <th>Position</th>
-                        <th>Department</th>
-                        <th>Primary</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedEmployeeForEdit.positions.map(position => {
-                        const isPrimary = selectedEmployeeForEdit.primaryPosition &&
-                          (position._id === selectedEmployeeForEdit.primaryPosition._id || 
-                           position._id === selectedEmployeeForEdit.primaryPosition);
-                        
-                        return (
-                          <tr key={position._id}>
-                            <td>{position.title}</td>
-                            <td>{position.department || 'N/A'}</td>
-                            <td>
-                              {isPrimary ? '✓' : ''}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <EmployeeForm
+              employee={selectedEmployeeForEdit}
+              positions={positions}
+              token={token}
+              onSubmit={async (updatedEmployee) => {
+                try {
+                  const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}`, {
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedEmployee)
+                  });
+              
+                  if (!response.ok) throw new Error('Failed to update employee');
+                  
+                  setMessage('Employee updated successfully');
+                  
+                  // Refresh data
+                  await fetchSetupData();
+                  
+                  // Update the selected employee with the new data
+                  const updatedData = await response.json();
+                  setSelectedEmployeeForEdit(updatedData);
+                } catch (err) {
+                  setError(err.message);
+                }
+              }}
+              onCancel={() => setView('certificates')}
+            />
           </div>
 
-          {/* Position Requirements section for each position */}
-          {selectedEmployeeForEdit.positions && selectedEmployeeForEdit.positions.map(position => (
-            <div className="details-section" key={position._id}>
-              <h3>Requirements for Position: {position.title}</h3>
-              {position._id === (selectedEmployeeForEdit.primaryPosition?._id || selectedEmployeeForEdit.primaryPosition) ? (
-                <div className="primary-position-badge">Primary Position</div>
-              ) : null}
-              <PositionRequirements 
-                position={position}
-                token={token}
-                certificateTypes={certificateTypes}
-                readOnly={true}
-              />
-            </div>
-          ))}
+          {/* Position Requirements section */}
+          <div className="details-section">
+            <h3>Position Requirements</h3>
+            <EmployeeRequirements 
+              employeeId={selectedEmployeeForEdit._id}
+              token={token}
+            />
+          </div>
           
           <div className="details-section">
             <h3>Certificates</h3>
-            <table className="certificates-table">
+            <table>
               <thead>
                 <tr>
                   <th>Certificate Type</th>
@@ -1162,163 +1090,16 @@ function App() {
                         <td>{cert.certificateType}</td>
                         <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
                         <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
+                        <td>{cert.status}</td>
                         <td>
-                          <span className={`status-badge ${
-                            daysUntilExpiration <= 0 ? 'expired' : 
-                            daysUntilExpiration <= 30 ? 'expiring' : 'active'
-                          }`}>
-                            {daysUntilExpiration <= 0 ? 'EXPIRED' : 
-                             daysUntilExpiration <= 30 ? 'EXPIRING SOON' : 'ACTIVE'}
-                          </span>
-                        </td>
-                        <td>
-                          <button 
-                            onClick={() => handleCertificateDelete(cert._id)}
-                            className="delete-button"
-                          >
-                            Delete
-                          </button>
+                          <button onClick={() => handleCertificateDelete(cert._id)}>Delete</button>
                         </td>
                       </tr>
                     );
                   })}
               </tbody>
             </table>
-            {certificates.filter(cert => cert.staffMember === selectedEmployeeForEdit.name).length === 0 && (
-              <div className="no-certificates">No certificates found for this employee</div>
-            )}
           </div>
-
-          <style jsx>{`
-            .personal-info-display {
-              background-color: #f8fafc;
-              padding: 15px;
-              border-radius: 6px;
-              margin-bottom: 15px;
-            }
-            
-            .info-row {
-              margin-bottom: 10px;
-              display: flex;
-            }
-            
-            .info-row strong {
-              width: 100px;
-              margin-right: 10px;
-            }
-            
-            .edit-button {
-              background-color: #4299e1;
-              color: white;
-              border: none;
-              border-radius: 4px;
-              padding: 8px 16px;
-              margin-top: 10px;
-              cursor: pointer;
-            }
-            
-            .positions-container {
-              margin-top: 20px;
-            }
-            
-            .positions-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 10px;
-            }
-            
-            .positions-table th,
-            .positions-table td {
-              padding: 8px 12px;
-              text-align: left;
-              border-bottom: 1px solid #e2e8f0;
-            }
-            
-            .positions-table th {
-              background-color: #f1f5f9;
-              font-weight: 600;
-            }
-            
-            .no-positions {
-              color: #64748b;
-              font-style: italic;
-            }
-            
-            .primary-position-badge {
-              display: inline-block;
-              background-color: #4299e1;
-              color: white;
-              padding: 4px 8px;
-              border-radius: 4px;
-              font-size: 0.8rem;
-              margin-bottom: 10px;
-            }
-            
-            .certificates-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 10px;
-            }
-            
-            .certificates-table th,
-            .certificates-table td {
-              padding: 10px;
-              text-align: left;
-              border-bottom: 1px solid #e2e8f0;
-            }
-            
-            .certificates-table th {
-              background-color: #f1f5f9;
-              font-weight: 600;
-            }
-            
-            .status-badge {
-              display: inline-block;
-              padding: 4px 8px;
-              border-radius: 4px;
-              font-size: 0.8rem;
-              font-weight: 600;
-            }
-            
-            .status-badge.active {
-              background-color: #d1fae5;
-              color: #065f46;
-            }
-            
-            .status-badge.expiring {
-              background-color: #fef3c7;
-              color: #92400e;
-            }
-            
-            .status-badge.expired {
-              background-color: #fee2e2;
-              color: #b91c1c;
-            }
-            
-            .no-certificates {
-              padding: 20px;
-              text-align: center;
-              color: #64748b;
-              font-style: italic;
-              background-color: #f8fafc;
-              border-radius: 6px;
-              margin-top: 10px;
-            }
-            
-            .delete-button {
-              background-color: #ef4444;
-              color: white;
-              border: none;
-              border-radius: 4px;
-              padding: 4px 8px;
-              cursor: pointer;
-              font-size: 0.8rem;
-            }
-            
-            .delete-button:hover {
-              background-color: #dc2626;
-            }
-          `}</style>
         </div>
       )}
       
@@ -1363,4 +1144,5 @@ function App() {
   </div>
 );
 }
+
 export default App
