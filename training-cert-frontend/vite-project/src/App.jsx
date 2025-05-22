@@ -883,11 +883,13 @@ function App() {
                 }}
               >
                 <option value="">Select Staff Member</option>
-                {employees.map(emp => (
-                  <option key={emp._id} value={emp._id}>
-                    {emp.name}
-                  </option>
-                ))}
+                {employees
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(emp => (
+                    <option key={emp._id} value={emp._id}>
+                      {emp.name}
+                    </option>
+                  ))}
               </select>
             </div>
             
