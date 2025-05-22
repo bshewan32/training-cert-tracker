@@ -946,11 +946,13 @@ function App() {
                 }}
               >
                 <option value="">Select Certificate Type</option>
-                {certificateTypes.map(cert => (
-                  <option key={cert._id} value={cert._id}>
-                    {cert.name}
-                  </option>
-                ))}
+                {certificateTypes
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(cert => (
+                    <option key={cert._id} value={cert._id}>
+                      {cert.name}
+                    </option>
+                  ))}
               </select>
             </div>
             <div className="form-group">
