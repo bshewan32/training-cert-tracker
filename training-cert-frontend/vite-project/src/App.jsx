@@ -132,9 +132,22 @@ function App() {
     const employee = employees.find(emp => emp._id === formData.get('staffMember'));
     const certType = certificateTypes.find(cert => cert._id === formData.get('certificateType'));
 
+    // Get position data - either from dropdown selection or from the selected position
+    let positionData;
+    if (selectedEmployee && selectedEmployee.positions && selectedEmployee.positions.length > 1) {
+      // Multiple positions - use the selected position ID
+      positionData = selectedPosition;
+    } else if (selectedEmployee && selectedEmployee.positions && selectedEmployee.positions.length === 1) {
+      // Single position - use that position's ID
+      positionData = selectedEmployee.positions[0]._id;
+    } else {
+      // Fallback to selected position
+      positionData = selectedPosition;
+    }
+
     const data = {
       staffMember: employee?.name,
-      position: selectedPosition,
+      position: positionData, // This should now be the position ID
       certificateType: certType?.name,
       issueDate: formData.get('issueDate'),
       expirationDate: expiryDate
@@ -171,7 +184,7 @@ function App() {
       setError(err.message)
     }
   }
-  const sendReminder = async (certificateId) => {
+    const sendReminder = async (certificateId) => {
     try {
       const response = await fetch(`https://training-cert-tracker.onrender.com/api/admin/send-reminder/${certificateId}`, {
         method: 'POST',
@@ -854,8 +867,18 @@ function App() {
                   const selectedEmployeeId = e.target.value;
                   const employee = employees.find(emp => emp._id === selectedEmployeeId);
                   setSelectedEmployee(employee);
-                  if (employee && employee.position) {
-                    setSelectedPosition(employee.position.title);
+                  
+                  // Auto-populate primary position or first position
+                  if (employee) {
+                    if (employee.primaryPosition) {
+                      setSelectedPosition(employee.primaryPosition._id || employee.primaryPosition);
+                    } else if (employee.positions && employee.positions.length > 0) {
+                      setSelectedPosition(employee.positions[0]._id);
+                    } else {
+                      setSelectedPosition('');
+                    }
+                  } else {
+                    setSelectedPosition('');
                   }
                 }}
               >
@@ -867,16 +890,45 @@ function App() {
                 ))}
               </select>
             </div>
+            
             <div className="form-group">
               <label>Position:</label>
-              <input
-                type="text"
-                name="position"
-                value={selectedPosition || 'Position will auto-fill based on selected employee'}
-                readOnly
-                className="readonly-input"
-              />
+              {selectedEmployee && selectedEmployee.positions && selectedEmployee.positions.length > 1 ? (
+                // Show dropdown if employee has multiple positions
+                <select
+                  name="position"
+                  value={selectedPosition}
+                  onChange={(e) => setSelectedPosition(e.target.value)}
+                  required
+                >
+                  <option value="">Select Position</option>
+                  {selectedEmployee.positions.map(pos => (
+                    <option key={pos._id} value={pos._id}>
+                      {pos.title} {pos._id === (selectedEmployee.primaryPosition?._id || selectedEmployee.primaryPosition) ? '(Primary)' : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : selectedEmployee && selectedEmployee.positions && selectedEmployee.positions.length === 1 ? (
+                // Show read-only field if employee has only one position
+                <input
+                  type="text"
+                  name="position"
+                  value={selectedEmployee.positions[0].title}
+                  readOnly
+                  className="readonly-input"
+                />
+              ) : (
+                // Show placeholder text if no employee selected
+                <input
+                  type="text"
+                  name="position"
+                  value={selectedPosition ? positions.find(p => p._id === selectedPosition)?.title || '' : 'Select staff member first'}
+                  readOnly
+                  className="readonly-input"
+                />
+              )}
             </div>
+            
             <div className="form-group">
               <label>Certificate Type:</label>
               <select

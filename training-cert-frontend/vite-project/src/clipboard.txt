@@ -1,0 +1,135 @@
+<form onSubmit={handleCertificateSubmit} className="form">
+            <div className="form-group">
+              <label>Staff Member:</label>
+              <select
+                name="staffMember"
+                required
+                onChange={(e) => {
+                  const selectedEmployeeId = e.target.value;
+                  const employee = employees.find(emp => emp._id === selectedEmployeeId);
+                  setSelectedEmployee(employee);
+                  
+                  // Auto-populate primary position or first position
+                  if (employee) {
+                    if (employee.primaryPosition) {
+                      setSelectedPosition(employee.primaryPosition._id || employee.primaryPosition);
+                    } else if (employee.positions && employee.positions.length > 0) {
+                      setSelectedPosition(employee.positions[0]._id);
+                    } else {
+                      setSelectedPosition('');
+                    }
+                  } else {
+                    setSelectedPosition('');
+                  }
+                }}
+              >
+                <option value="">Select Staff Member</option>
+                {employees.map(emp => (
+                  <option key={emp._id} value={emp._id}>
+                    {emp.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label>Position:</label>
+              {selectedEmployee && selectedEmployee.positions && selectedEmployee.positions.length > 1 ? (
+                // Show dropdown if employee has multiple positions
+                <select
+                  name="position"
+                  value={selectedPosition}
+                  onChange={(e) => setSelectedPosition(e.target.value)}
+                  required
+                >
+                  <option value="">Select Position</option>
+                  {selectedEmployee.positions.map(pos => (
+                    <option key={pos._id} value={pos._id}>
+                      {pos.title} {pos._id === (selectedEmployee.primaryPosition?._id || selectedEmployee.primaryPosition) ? '(Primary)' : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : selectedEmployee && selectedEmployee.positions && selectedEmployee.positions.length === 1 ? (
+                // Show read-only field if employee has only one position
+                <input
+                  type="text"
+                  name="position"
+                  value={selectedEmployee.positions[0].title}
+                  readOnly
+                  className="readonly-input"
+                />
+              ) : (
+                // Show placeholder text if no employee selected
+                <input
+                  type="text"
+                  name="position"
+                  value={selectedPosition ? positions.find(p => p._id === selectedPosition)?.title || '' : 'Select staff member first'}
+                  readOnly
+                  className="readonly-input"
+                />
+              )}
+            </div>
+            
+            <div className="form-group">
+              <label>Certificate Type:</label>
+              <select
+                name="certificateType"
+                required
+                onChange={(e) => {
+                  const certType = certificateTypes.find(cert => cert._id === e.target.value);
+                  if (certType && issueDate) {
+                    const expiryDate = new Date(issueDate);
+                    expiryDate.setMonth(expiryDate.getMonth() + certType.validityPeriod);
+                    setExpiryDate(expiryDate.toISOString().split('T')[0]);
+                  }
+                }}
+              >
+                <option value="">Select Certificate Type</option>
+                {certificateTypes.map(cert => (
+                  <option key={cert._id} value={cert._id}>
+                    {cert.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Issue Date:</label>
+              <input
+                type="date"
+                name="issueDate"
+                required
+                value={issueDate}
+                onChange={(e) => {
+                  setIssueDate(e.target.value);
+                  const selectedCertType = certificateTypes.find(
+                    cert => cert._id === document.querySelector('select[name="certificateType"]').value
+                  );
+                  if (selectedCertType) {
+                    const expiryDate = new Date(e.target.value);
+                    expiryDate.setMonth(expiryDate.getMonth() + selectedCertType.validityPeriod);
+                    setExpiryDate(expiryDate.toISOString().split('T')[0]);
+                  }
+                }}
+              />
+            </div>
+            <div className="form-group">
+              <label>Expiration Date:</label>
+              <input
+                type="date"
+                name="expirationDate"
+                value={expiryDate}
+                readOnly
+                className="readonly-input"
+              />
+            </div>
+            <button type="submit">Submit Certificate</button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setView('admin')}
+                className="admin-button"
+              >
+                View Admin Dashboard
+              </button>
+            )}
+          </form>
