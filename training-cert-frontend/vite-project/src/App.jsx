@@ -78,6 +78,38 @@ function App() {
     }
   };
 
+  // const handleSubmit = async (e, type) => {
+  //   e.preventDefault()
+  //   setError('')
+  //   setMessage('')
+
+  //   const formData = new FormData(e.target)
+  //   const data = Object.fromEntries(formData.entries())
+
+  //   try {
+  //     const response = await fetch(`https://training-cert-tracker.onrender.com/api/users/${type}`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify(data),
+  //     })
+
+  //     const result = await response.json()
+
+  //     if (!response.ok) {
+  //       throw new Error(result.message || 'Authentication failed')
+  //     }
+
+  //     setToken(result.token)
+  //     setIsAdmin(result.isAdmin) // Add this line
+  //     setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} successful!`)
+  //     setView('certificates')
+  //   } catch (err) {
+  //     setError(err.message)
+  //   }
+  // }
+
   const handleSubmit = async (e, type) => {
     e.preventDefault()
     setError('')
@@ -102,13 +134,20 @@ function App() {
       }
 
       setToken(result.token)
-      setIsAdmin(result.isAdmin) // Add this line
+      setIsAdmin(result.isAdmin)
       setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} successful!`)
-      setView('certificates')
+      
+      // Set landing page based on user role
+      if (result.isAdmin) {
+        setView('certificates') // Admin users go to certificates page
+      } else {
+        setView('dashboard') // Non-admin users go to compliance dashboard
+      }
     } catch (err) {
       setError(err.message)
     }
   }
+
   const handleLogout = () => {
     setToken('')
     setIsAdmin(false)
@@ -659,6 +698,96 @@ function App() {
   </div>
 )}
 
+      {/* Dashboard View - New landing page for non-admin users */}
+      {view === 'dashboard' && (
+        <div className="dashboard-container">
+          <div className="dashboard-header">
+            <h2>Certification Compliance Dashboard</h2>
+            <div className="dashboard-nav">
+              <button
+                onClick={() => setView('certificates')}
+                className="nav-button"
+              >
+                Add Certificates
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setView('admin')}
+                  className="nav-button admin-button"
+                >
+                  Admin Dashboard
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <MultiPositionComplianceDashboard token={token} />
+          
+          <style jsx>{`
+            .dashboard-container {
+              padding: 20px;
+            }
+            
+            .dashboard-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 24px;
+              padding-bottom: 16px;
+              border-bottom: 2px solid #e2e8f0;
+            }
+            
+            .dashboard-header h2 {
+              margin: 0;
+              color: #1e293b;
+              font-size: 1.75rem;
+              font-weight: 600;
+            }
+            
+            .dashboard-nav {
+              display: flex;
+              gap: 12px;
+            }
+            
+            .nav-button {
+              background-color: #3b82f6;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              padding: 10px 16px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: background-color 0.2s;
+            }
+            
+            .nav-button:hover {
+              background-color: #2563eb;
+            }
+            
+            .admin-button {
+              background-color: #dc2626;
+            }
+            
+            .admin-button:hover {
+              background-color: #b91c1c;
+            }
+            
+            @media (max-width: 768px) {
+              .dashboard-header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: stretch;
+              }
+              
+              .dashboard-nav {
+                justify-content: center;
+              }
+            }
+          `}</style>
+        </div>
+      )}
+
+
       {/* Setup View */}
       {view === 'setup' && (
         <div className="setup-dashboard">
@@ -857,6 +986,26 @@ function App() {
       {/* Certificates View */}
       {view === 'certificates' && (
         <>
+        <div className="certificates-header">
+            <h2>Add New Certificate</h2>
+            <div className="certificates-nav">
+              <button
+                onClick={() => setView('dashboard')}
+                className="nav-button"
+              >
+                View Dashboard
+              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setView('admin')}
+                  className="nav-button admin-button"
+                >
+                  Admin Dashboard
+                </button>
+              )}
+            </div>
+          </div>
           <form onSubmit={handleCertificateSubmit} className="form">
             <div className="form-group">
               <label>Staff Member:</label>

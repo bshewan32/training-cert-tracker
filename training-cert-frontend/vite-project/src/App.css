@@ -894,3 +894,59 @@ select {
 .close-button:hover {
   background-color: #4a5568;
 }
+
+.certificates-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.certificates-header h2 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.certificates-nav {
+  display: flex;
+  gap: 12px;
+}
+
+.nav-button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.nav-button:hover {
+  background-color: #2563eb;
+}
+
+.admin-button {
+  background-color: #dc2626 !important;
+}
+
+.admin-button:hover {
+  background-color: #b91c1c !important;
+}
+
+@media (max-width: 768px) {
+  .certificates-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .certificates-nav {
+    justify-content: center;
+  }
+}
