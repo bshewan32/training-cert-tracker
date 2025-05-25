@@ -946,9 +946,13 @@ function App() {
             )}
 
             {/* Certificate Types Tab */}
+            {/* Certificate Types Tab */}
             {activeTab === 'certificateTypes' && (
               <div className="setup-section">
                 <h3>Manage Certificate Types</h3>
+                <div className="cert-type-info">
+                  <p><strong>Note:</strong> The validity period you set here will be used automatically when issuing certificates of this type.</p>
+                </div>
                 <form onSubmit={handleCertTypeSubmit} className="setup-form">
                   <div className="form-group">
                     <label>Certificate Name:</label>
@@ -956,18 +960,33 @@ function App() {
                   </div>
                   <div className="form-group">
                     <label>Validity Period (months):</label>
-                    <input type="number" name="validityPeriod" min="1" required />
+                    <input 
+                      type="number" 
+                      name="validityPeriod" 
+                      min="1" 
+                      max="120"
+                      required 
+                      placeholder="e.g., 12 for 1 year, 36 for 3 years"
+                    />
+                    <small className="validity-help">
+                      Common periods: First Aid (36 months), CPR (12 months), Safety Training (24 months)
+                    </small>
                   </div>
                   <div className="form-group">
-                    <label>Description:</label>
-                    <textarea name="description" />
+                    <label>Description (Optional):</label>
+                    <textarea name="description" placeholder="Brief description of this certificate type"></textarea>
                   </div>
                   <button type="submit">Add Certificate Type</button>
                 </form>
                 <div className="setup-list">
+                  <h4>Existing Certificate Types</h4>
                   {certificateTypes.map(cert => (
-                    <div key={cert._id} className="list-item">
-                      <span>{cert.name} ({cert.validityPeriod} months)</span>
+                    <div key={cert._id} className="list-item cert-type-item">
+                      <div className="cert-type-details">
+                        <span className="cert-name">{cert.name}</span>
+                        <span className="cert-validity">Valid for {cert.validityPeriod} months</span>
+                        {cert.description && <span className="cert-description">{cert.description}</span>}
+                      </div>
                       <button
                         onClick={() => handleDelete('certificateType', cert._id)}
                         className="delete-button"
@@ -1087,10 +1106,16 @@ function App() {
                 required
                 onChange={(e) => {
                   const certType = certificateTypes.find(cert => cert._id === e.target.value);
+                  console.log('Selected certificate type:', certType); // Debug log
+                  
                   if (certType && issueDate) {
                     const expiryDate = new Date(issueDate);
-                    expiryDate.setMonth(expiryDate.getMonth() + certType.validityPeriod);
+                    expiryDate.setMonth(expiryDate.getMonth() + (certType.validityPeriod || 12));
                     setExpiryDate(expiryDate.toISOString().split('T')[0]);
+                    console.log(`Calculated expiry: ${certType.validityPeriod || 12} months from ${issueDate}`); // Debug log
+                  } else if (certType) {
+                    // Store the certificate type for later calculation when issue date is set
+                    console.log('Certificate type selected, waiting for issue date');
                   }
                 }}
               >
@@ -1099,7 +1124,7 @@ function App() {
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(cert => (
                     <option key={cert._id} value={cert._id}>
-                      {cert.name}
+                      {cert.name} ({cert.validityPeriod || 12} months)
                     </option>
                   ))}
               </select>
@@ -1113,13 +1138,19 @@ function App() {
                 value={issueDate}
                 onChange={(e) => {
                   setIssueDate(e.target.value);
-                  const selectedCertType = certificateTypes.find(
-                    cert => cert._id === document.querySelector('select[name="certificateType"]').value
-                  );
-                  if (selectedCertType) {
+                  
+                  // Find the currently selected certificate type
+                  const selectedCertTypeId = document.querySelector('select[name="certificateType"]')?.value;
+                  const selectedCertType = certificateTypes.find(cert => cert._id === selectedCertTypeId);
+                  
+                  console.log('Issue date changed:', e.target.value); // Debug log
+                  console.log('Selected cert type for calculation:', selectedCertType); // Debug log
+                  
+                  if (selectedCertType && e.target.value) {
                     const expiryDate = new Date(e.target.value);
-                    expiryDate.setMonth(expiryDate.getMonth() + selectedCertType.validityPeriod);
+                    expiryDate.setMonth(expiryDate.getMonth() + (selectedCertType.validityPeriod || 12));
                     setExpiryDate(expiryDate.toISOString().split('T')[0]);
+                    console.log(`Calculated expiry: ${selectedCertType.validityPeriod || 12} months from ${e.target.value}`); // Debug log
                   }
                 }}
               />
@@ -1132,8 +1163,13 @@ function App() {
                 value={expiryDate}
                 readOnly
                 className="readonly-input"
+                title="Automatically calculated based on certificate type validity period"
               />
+              <small className="expiry-note">
+                Automatically calculated based on certificate type's validity period
+              </small>
             </div>
+            
             <button type="submit">Submit Certificate</button>
             {isAdmin && (
               <button

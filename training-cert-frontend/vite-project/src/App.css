@@ -950,3 +950,71 @@ select {
     justify-content: center;
   }
 }
+
+.expiry-note {
+  display: block;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.readonly-input {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+.cert-type-info {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+
+.cert-type-info p {
+  margin: 0;
+  color: #1e40af;
+}
+
+.validity-help {
+  display: block;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.cert-type-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.cert-type-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cert-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.cert-validity {
+  font-size: 0.875rem;
+  color: #059669;
+  font-weight: 500;
+}
+
+.cert-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+}
