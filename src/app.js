@@ -38,7 +38,8 @@ class TrainingCertApp {
         return callback(null, true);
       },
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization']
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true
     }));
     
     this.app.use(express.json());
