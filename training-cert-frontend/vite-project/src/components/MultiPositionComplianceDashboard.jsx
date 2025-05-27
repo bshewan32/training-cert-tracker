@@ -97,23 +97,32 @@ const MultiPositionComplianceDashboard = ({ token }) => {
   
   // Process compliance data
   const processComplianceData = () => {
-    // Process each employee and their positions
-    const employeeCompliance = [];
-    
-    for (const employee of employees) {
-      // Get employee positions
-      const employeePositions = employee.positions || [];
+    try {
+      // Process each employee and their positions
+      const employeeCompliance = [];
+      
+      for (const employee of employees) {
+        // Skip employees without basic data
+        if (!employee || !employee._id || !employee.name) continue;
+        
+        // Get employee positions
+        const employeePositions = employee.positions || [];
       
       // For each position, check compliance with requirements
       for (const positionId of employeePositions) {
-        const posObj = positions.find(p => p._id === (typeof positionId === 'object' ? positionId._id : positionId));
+        // Handle null/undefined positionId
+        if (!positionId) continue;
+        
+        const posObj = positions.find(p => p._id === (typeof positionId === 'object' && positionId._id ? positionId._id : positionId));
         
         if (!posObj) continue;
         
         // Get requirements for this position
-        const positionRequirements = requirements.filter(req => 
-          (typeof req.position === 'object' ? req.position._id : req.position) === posObj._id
-        );
+        const positionRequirements = requirements.filter(req => {
+          if (!req.position) return false;
+          const reqPositionId = typeof req.position === 'object' && req.position._id ? req.position._id : req.position;
+          return reqPositionId === posObj._id;
+        });
         
         // If no requirements, skip
         if (positionRequirements.length === 0) continue;
@@ -128,7 +137,8 @@ const MultiPositionComplianceDashboard = ({ token }) => {
         const requirementsStatus = positionRequirements.map(req => {
           // Find matching certificate
           const matchingCert = employeeCertificates.find(cert => 
-            cert.certificateType === req.certificateType
+            cert.certificateType === req.certificateType ||
+            cert.certificateName === req.certificateType
           );
           
           // Determine status
@@ -170,7 +180,7 @@ const MultiPositionComplianceDashboard = ({ token }) => {
           positionTitle: posObj.title,
           department: posObj.department || 'No Department',
           isPrimary: employee.primaryPosition && 
-            ((typeof employee.primaryPosition === 'object' && employee.primaryPosition._id === posObj._id) || 
+            ((typeof employee.primaryPosition === 'object' && employee.primaryPosition._id && employee.primaryPosition._id === posObj._id) || 
              (typeof employee.primaryPosition === 'string' && employee.primaryPosition === posObj._id)),
           requirements: requirementsStatus,
           stats: {
@@ -244,6 +254,10 @@ const MultiPositionComplianceDashboard = ({ token }) => {
       expiredRequirements,
       complianceRate: overallComplianceRate
     });
+    } catch (error) {
+      console.error('Error processing compliance data:', error);
+      setError('Error processing compliance data: ' + error.message);
+    }
   };
   
   // Get all departments from positions
