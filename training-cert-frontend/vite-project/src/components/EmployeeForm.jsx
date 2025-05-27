@@ -21,6 +21,10 @@ const EmployeeForm = ({
   const [availablePositions, setAvailablePositions] = useState([]);
   // State to control requirements visibility
   const [showRequirements, setShowRequirements] = useState(false);
+  // State for detailed position data with requirements
+  const [detailedPositions, setDetailedPositions] = useState([]);
+  // Loading state for requirements
+  const [loadingRequirements, setLoadingRequirements] = useState(false);
   
   // Initialize selected positions from employee data
   useEffect(() => {
@@ -97,14 +101,111 @@ const EmployeeForm = ({
     onSubmit(submissionData);
   };
 
+  // Fetch detailed position data including requirements
+  const fetchPositionDetails = async (positionIds) => {
+    if (!positionIds.length || !token) return;
+    
+    setLoadingRequirements(true);
+    try {
+      // Fetch requirements for each position
+      const detailPromises = positionIds.map(async (positionId) => {
+        try {
+          // Get basic position info and requirements separately
+          const [positionResponse, requirementsResponse] = await Promise.all([
+            fetch(`/api/positions/${positionId}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }),
+            fetch(`/api/positionRequirements/position/${positionId}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+          ]);
+          
+          let positionData = null;
+          let requirementsData = [];
+          
+          if (positionResponse.ok) {
+            positionData = await positionResponse.json();
+          } else {
+            console.warn(`Failed to fetch position data for ${positionId}`);
+            // Find position data from selectedPositions as fallback
+            positionData = selectedPositions.find(pos => pos._id === positionId);
+          }
+          
+          if (requirementsResponse.ok) {
+            requirementsData = await requirementsResponse.json();
+          } else {
+            console.warn(`Failed to fetch requirements for position ${positionId}`);
+          }
+          
+          if (positionData) {
+            // Transform requirements data to match expected format
+            const transformedRequirements = requirementsData.map(req => ({
+              _id: req._id,
+              name: req.certificateType,
+              title: req.certificateType,
+              description: req.notes || `${req.certificateType} certification`,
+              type: 'certification',
+              validityPeriod: req.validityPeriod,
+              isRequired: req.isRequired
+            }));
+            
+            return {
+              ...positionData,
+              requirements: transformedRequirements
+            };
+          }
+          
+          return null;
+        } catch (error) {
+          console.error(`Error fetching data for position ${positionId}:`, error);
+          return null;
+        }
+      });
+      
+      const results = await Promise.all(detailPromises);
+      const validResults = results.filter(result => result !== null);
+      setDetailedPositions(validResults);
+    } catch (error) {
+      console.error('Error fetching position details:', error);
+    } finally {
+      setLoadingRequirements(false);
+    }
+  };
+
+  // Handle show requirements toggle
+  const handleShowRequirements = async () => {
+    if (!showRequirements && selectedPositions.length > 0) {
+      // Fetch detailed position data when showing requirements
+      const positionIds = selectedPositions.map(pos => pos._id);
+      await fetchPositionDetails(positionIds);
+    }
+    setShowRequirements(!showRequirements);
+  };
+
+  // Update detailed positions when selected positions change
+  useEffect(() => {
+    if (showRequirements && selectedPositions.length > 0) {
+      const positionIds = selectedPositions.map(pos => pos._id);
+      fetchPositionDetails(positionIds);
+    } else if (selectedPositions.length === 0) {
+      setDetailedPositions([]);
+    }
+  }, [selectedPositions, showRequirements]);
+
   // Get all unique requirements across all selected positions
   const getAllRequirements = () => {
     const allRequirements = new Map();
     
-    selectedPositions.forEach(position => {
+    detailedPositions.forEach(position => {
       if (position.requirements && Array.isArray(position.requirements)) {
         position.requirements.forEach(req => {
-          const key = typeof req === 'object' ? req._id || req.name : req;
+          const key = typeof req === 'object' ? (req._id || req.name || req.title) : req;
           if (key) {
             allRequirements.set(key, {
               requirement: typeof req === 'object' ? req : { name: req },
@@ -221,77 +322,119 @@ const EmployeeForm = ({
               <button
                 type="button"
                 className="toggle-requirements-btn"
-                onClick={() => setShowRequirements(!showRequirements)}
+                onClick={handleShowRequirements}
+                disabled={loadingRequirements}
               >
-                {showRequirements ? 'Hide Requirements' : 'Show Requirements'}
+                {loadingRequirements ? 'Loading...' : showRequirements ? 'Hide Requirements' : 'Show Requirements'}
               </button>
             </div>
             
             {showRequirements && (
               <div className="requirements-container">
-                <div className="requirements-summary">
-                  <h4>All Requirements Summary</h4>
-                  <div className="requirements-grid">
-                    {getAllRequirements().map((item, index) => (
-                      <div key={index} className="requirement-card">
-                        <div className="requirement-name">
-                          {item.requirement.name || item.requirement.title || 'Requirement'}
-                        </div>
-                        {item.requirement.description && (
-                          <div className="requirement-description">
-                            {item.requirement.description}
-                          </div>
-                        )}
-                        <div className="requirement-positions">
-                          <strong>Required for:</strong> {item.positions.join(', ')}
-                        </div>
-                        {item.requirement.type && (
-                          <div className="requirement-type">
-                            <span className={`type-badge ${item.requirement.type.toLowerCase()}`}>
-                              {item.requirement.type}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                {loadingRequirements ? (
+                  <div className="loading-message">
+                    <p>Loading position requirements...</p>
                   </div>
-                </div>
-
-                <div className="requirements-by-position">
-                  <h4>Requirements by Position</h4>
-                  {selectedPositions.map(position => (
-                    <div key={position._id} className="position-requirements">
-                      <div className="position-header">
-                        <h5>{position.title}</h5>
-                        {employeeData.primaryPosition === position._id && (
-                          <span className="primary-badge">Primary</span>
-                        )}
-                      </div>
-                      
-                      {position.requirements && position.requirements.length > 0 ? (
-                        <ul className="requirements-list">
-                          {position.requirements.map((req, reqIndex) => (
-                            <li key={reqIndex} className="requirement-item">
-                              <span className="req-name">
-                                {typeof req === 'object' ? (req.name || req.title) : req}
-                              </span>
-                              {typeof req === 'object' && req.description && (
-                                <span className="req-description"> - {req.description}</span>
-                              )}
-                              {typeof req === 'object' && req.type && (
-                                <span className={`req-type-badge ${req.type.toLowerCase()}`}>
-                                  {req.type}
-                                </span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
+                ) : detailedPositions.length === 0 ? (
+                  <div className="no-data-message">
+                    <p>No detailed position data available. This might be due to:</p>
+                    <ul>
+                      <li>Network connectivity issues</li>
+                      <li>Positions not having requirements configured</li>
+                      <li>Backend API endpoint not available</li>
+                    </ul>
+                  </div>
+                ) : (
+                  <>
+                    <div className="requirements-summary">
+                      <h4>All Requirements Summary</h4>
+                      {getAllRequirements().length === 0 ? (
+                        <p className="no-requirements">No requirements found across all positions.</p>
                       ) : (
-                        <p className="no-requirements">No specific requirements listed</p>
+                        <div className="requirements-grid">
+                          {getAllRequirements().map((item, index) => (
+                            <div key={index} className="requirement-card">
+                              <div className="requirement-name">
+                                {item.requirement.name || item.requirement.title || 'Requirement'}
+                              </div>
+                              {item.requirement.description && (
+                                <div className="requirement-description">
+                                  {item.requirement.description}
+                                </div>
+                              )}
+                              {item.requirement.validityPeriod && (
+                                <div className="requirement-validity">
+                                  <strong>Validity:</strong> {item.requirement.validityPeriod} months
+                                </div>
+                              )}
+                              <div className="requirement-positions">
+                                <strong>Required for:</strong> {item.positions.join(', ')}
+                              </div>
+                              {item.requirement.isRequired !== undefined && (
+                                <div className="requirement-mandatory">
+                                  <span className={`mandatory-badge ${item.requirement.isRequired ? 'required' : 'optional'}`}>
+                                    {item.requirement.isRequired ? 'Required' : 'Optional'}
+                                  </span>
+                                </div>
+                              )}
+                              {item.requirement.type && (
+                                <div className="requirement-type">
+                                  <span className={`type-badge ${item.requirement.type.toLowerCase()}`}>
+                                    {item.requirement.type}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  ))}
-                </div>
+
+                    <div className="requirements-by-position">
+                      <h4>Requirements by Position</h4>
+                      {detailedPositions.map(position => (
+                        <div key={position._id} className="position-requirements">
+                          <div className="position-header">
+                            <h5>{position.title}</h5>
+                            {employeeData.primaryPosition === position._id && (
+                              <span className="primary-badge">Primary</span>
+                            )}
+                          </div>
+                          
+                          {position.requirements && position.requirements.length > 0 ? (
+                            <ul className="requirements-list">
+                              {position.requirements.map((req, reqIndex) => (
+                                <li key={reqIndex} className="requirement-item">
+                                  <span className="req-name">
+                                    {typeof req === 'object' ? (req.name || req.title) : req}
+                                  </span>
+                                  {typeof req === 'object' && req.description && (
+                                    <span className="req-description"> - {req.description}</span>
+                                  )}
+                                  {typeof req === 'object' && req.validityPeriod && (
+                                    <span className="req-validity"> (Valid for {req.validityPeriod} months)</span>
+                                  )}
+                                  {typeof req === 'object' && req.isRequired !== undefined && (
+                                    <span className={`req-mandatory-badge ${req.isRequired ? 'required' : 'optional'}`}>
+                                      {req.isRequired ? 'Required' : 'Optional'}
+                                    </span>
+                                  )}
+                                  {typeof req === 'object' && req.type && (
+                                    <span className={`req-type-badge ${req.type.toLowerCase()}`}>
+                                      {req.type}
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="no-requirements">No specific requirements listed</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -427,6 +570,27 @@ const EmployeeForm = ({
           background-color: #6b46c1;
         }
 
+        .toggle-requirements-btn:disabled {
+          background-color: #a0aec0;
+          cursor: not-allowed;
+        }
+
+        .loading-message, .no-data-message {
+          text-align: center;
+          padding: 20px;
+          color: #4a5568;
+        }
+
+        .no-data-message ul {
+          text-align: left;
+          display: inline-block;
+          margin-top: 10px;
+        }
+
+        .no-data-message li {
+          margin-bottom: 5px;
+        }
+
         .requirements-container {
           background-color: white;
           border: 1px solid #e2e8f0;
@@ -469,6 +633,40 @@ const EmployeeForm = ({
           color: #2b6cb0;
           font-size: 0.85rem;
           margin-bottom: 8px;
+        }
+
+        .requirement-validity {
+          color: #805ad5;
+          font-size: 0.85rem;
+          margin-bottom: 8px;
+        }
+
+        .requirement-mandatory {
+          margin-bottom: 8px;
+        }
+
+        .mandatory-badge, .req-mandatory-badge {
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: 500;
+          text-transform: uppercase;
+        }
+
+        .mandatory-badge.required, .req-mandatory-badge.required {
+          background-color: #fed7d7;
+          color: #c53030;
+        }
+
+        .mandatory-badge.optional, .req-mandatory-badge.optional {
+          background-color: #e6fffa;
+          color: #319795;
+        }
+
+        .req-validity {
+          color: #805ad5;
+          font-size: 0.85rem;
+          font-style: italic;
         }
 
         .requirement-type {
