@@ -12,7 +12,8 @@ router.post('/upload', authenticateToken, async (req, res) => {
     const certificate = new Certificate({
       staffMember: req.body.staffMember,
       position: req.body.position,
-      certificateType: req.body.certificateType,
+      //certificateType: req.body.certificateType,
+      CertType: req.body.certificateType,  // Use CertType to match existing data
       issueDate: req.body.issueDate,
       expirationDate: req.body.expirationDate,
       documentPath: req.body.documentPath || 'pending'
@@ -27,9 +28,50 @@ router.post('/upload', authenticateToken, async (req, res) => {
 });
 
 // Get all certificates
+// router.get('/', authenticateToken, async (req, res) => {
+//   try {
+//     const certificates = await Certificate.find();
+//     res.json(certificates);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+// Get all certificates
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const certificates = await Certificate.find();
+    const certificates = await Certificate.aggregate([
+      {
+        $lookup: {
+          from: "certificatetypes",
+          localField: "CertType",
+          foreignField: "name",
+          as: "certificateTypeDetails"
+        }
+      },
+      {
+        $unwind: {
+          path: "$certificateTypeDetails",
+          preserveNullAndEmptyArrays: true  // Keep certificates even if no matching type
+        }
+      },
+      {
+        $addFields: {
+          certificateName: {
+            $ifNull: ["$certificateTypeDetails.name", "$CertType"]  // Fallback to CertType if no match
+          },
+          validityPeriod: "$certificateTypeDetails.validityPeriod",
+          status: {
+            $cond: {
+              if: { $lt: ["$expirationDate", new Date()] },
+              then: "EXPIRED",
+              else: "ACTIVE"
+            }
+          }
+        }
+      }
+    ]);
+    
     res.json(certificates);
   } catch (error) {
     res.status(500).json({ message: error.message });
