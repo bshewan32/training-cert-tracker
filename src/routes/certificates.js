@@ -12,8 +12,7 @@ router.post('/upload', authenticateToken, async (req, res) => {
     const certificate = new Certificate({
       staffMember: req.body.staffMember,
       position: req.body.position,
-      //certificateType: req.body.certificateType,
-      CertType: req.body.certificateType,  // Use CertType to match existing data
+      certificateType: req.body.certificateType,
       issueDate: req.body.issueDate,
       expirationDate: req.body.expirationDate,
       documentPath: req.body.documentPath || 'pending'
@@ -44,7 +43,7 @@ router.get('/', authenticateToken, async (req, res) => {
       {
         $lookup: {
           from: "certificatetypes",
-          localField: "CertType",
+          localField: "certificateType",
           foreignField: "name",
           as: "certificateTypeDetails"
         }
@@ -58,7 +57,7 @@ router.get('/', authenticateToken, async (req, res) => {
       {
         $addFields: {
           certificateName: {
-            $ifNull: ["$certificateTypeDetails.name", "$CertType"]  // Fallback to CertType if no match
+            $ifNull: ["$certificateTypeDetails.name", "$certificateType"]  // Fallback to certificateType if no match
           },
           validityPeriod: "$certificateTypeDetails.validityPeriod",
           status: {

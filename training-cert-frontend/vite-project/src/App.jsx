@@ -209,6 +209,7 @@ function App() {
       staffMember: employee?.name,
       position: positionData, // This should now be the position ID
       certificateType: certType?.name,
+      certificateTypeId: certType?._id,
       issueDate: formData.get('issueDate'),
       expirationDate: expiryDate
     }
@@ -632,7 +633,7 @@ function App() {
                     return (
                       <tr key={cert._id}>
                         <td>{cert.staffMember}</td>
-                        <td>{cert.certificateType}</td>
+                        <td>{cert.certificateName || cert.certificateType}</td>
                         <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
                         <td>
                           <span className={`status-badge ${status}`}>
@@ -696,7 +697,7 @@ function App() {
                   <tr key={cert._id} className={statusClass}>
                     <td>{cert.staffMember}</td>
                     <td>{positionTitle}</td>
-                    <td>{cert.certificateType}</td>
+                    <td>{cert.certificateName || cert.certificateType}</td>
                     <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
                     <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
                     <td>{cert.status}</td>
@@ -1265,7 +1266,7 @@ function App() {
                 {certificates
                   .filter(cert =>
                     (!selectedFilterEmployee || cert.staffMember === selectedFilterEmployee) &&
-                    (!selectedFilterCertType || cert.certificateType === selectedFilterCertType)
+                    (!selectedFilterCertType || (cert.certificateName || cert.certificateType) === selectedFilterCertType)
                   )
                   .map((cert) => {
                     const expirationDate = new Date(cert.expirationDate)
@@ -1282,7 +1283,7 @@ function App() {
                       <tr key={cert._id} className={statusClass}>
                         <td>{cert.staffMember}</td>
                         <td>{position ? position.title : cert.position}</td>
-                        <td>{cert.certificateType}</td>
+                        <td>{cert.certificateName || cert.certificateType}</td>
                         <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
                         <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
                         <td>{cert.status}</td>
@@ -1375,7 +1376,7 @@ function App() {
 
                     return (
                       <tr key={cert._id} className={statusClass}>
-                        <td>{cert.certificateType}</td>
+                        <td>{cert.certificateName || cert.certificateType}</td>
                         <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
                         <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
                         <td>{cert.status}</td>
