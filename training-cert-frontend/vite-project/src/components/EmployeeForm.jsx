@@ -107,72 +107,66 @@ const EmployeeForm = ({
     
     setLoadingRequirements(true);
     try {
-      // Fetch requirements for each position
-      const detailPromises = positionIds.map(async (positionId) => {
-        try {
-          // Get basic position info and requirements separately
-          const [positionResponse, requirementsResponse] = await Promise.all([
-            fetch(`/api/positions/${positionId}`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            }),
-            fetch(`/api/positionRequirements/position/${positionId}`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            })
-          ]);
-          
-          let positionData = null;
-          let requirementsData = [];
-          
-          if (positionResponse.ok) {
-            positionData = await positionResponse.json();
-          } else {
-            console.warn(`Failed to fetch position data for ${positionId}`);
-            // Find position data from selectedPositions as fallback
-            positionData = selectedPositions.find(pos => pos._id === positionId);
-          }
-          
-          if (requirementsResponse.ok) {
-            requirementsData = await requirementsResponse.json();
-          } else {
-            console.warn(`Failed to fetch requirements for position ${positionId}`);
-          }
-          
-          if (positionData) {
-            // Transform requirements data to match expected format
-            const transformedRequirements = requirementsData.map(req => ({
-              _id: req._id,
-              name: req.certificateType,
-              title: req.certificateType,
-              description: req.notes || `${req.certificateType} certification`,
-              type: 'certification',
-              validityPeriod: req.validityPeriod,
-              isRequired: req.isRequired
-            }));
-            
-            return {
-              ...positionData,
-              requirements: transformedRequirements
-            };
-          }
-          
-          return null;
-        } catch (error) {
-          console.error(`Error fetching data for position ${positionId}:`, error);
-          return null;
+      // Use the correct base URL that matches your app
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      const results = await Promise.all(detailPromises);
-      const validResults = results.filter(result => result !== null);
-      setDetailedPositions(validResults);
+      if (response.ok) {
+        const allRequirements = await response.json();
+        console.log('All requirements fetched:', allRequirements);
+        
+        // Create detailed positions by combining selected positions with their requirements
+        const detailedPositionsData = selectedPositions.map(position => {
+          // Find requirements for this position
+          const positionRequirements = allRequirements.filter(req => 
+            req.position && (
+              (typeof req.position === 'object' && req.position._id === position._id) ||
+              (typeof req.position === 'string' && req.position === position._id)
+            )
+          );
+          
+          console.log(`Requirements for position ${position.title}:`, positionRequirements);
+          
+          // Transform requirements to expected format
+          const transformedRequirements = positionRequirements.map(req => ({
+            _id: req._id,
+            name: req.certificateType,
+            title: req.certificateType,
+            description: req.notes || `${req.certificateType} certification required`,
+            type: 'certification',
+            validityPeriod: req.validityPeriod,
+            isRequired: req.isRequired
+          }));
+          
+          return {
+            ...position,
+            requirements: transformedRequirements
+          };
+        });
+        
+        console.log('Detailed positions created:', detailedPositionsData);
+        setDetailedPositions(detailedPositionsData);
+      } else {
+        console.error('Failed to fetch requirements:', response.status, response.statusText);
+        // Fallback: create detailed positions without requirements
+        const fallbackPositions = selectedPositions.map(position => ({
+          ...position,
+          requirements: []
+        }));
+        setDetailedPositions(fallbackPositions);
+      }
     } catch (error) {
       console.error('Error fetching position details:', error);
+      // Fallback: create detailed positions without requirements
+      const fallbackPositions = selectedPositions.map(position => ({
+        ...position,
+        requirements: []
+      }));
+      setDetailedPositions(fallbackPositions);
     } finally {
       setLoadingRequirements(false);
     }
@@ -337,12 +331,14 @@ const EmployeeForm = ({
                   </div>
                 ) : detailedPositions.length === 0 ? (
                   <div className="no-data-message">
-                    <p>No detailed position data available. This might be due to:</p>
+                    <p>No position requirements found.</p>
+                    <p>This could mean:</p>
                     <ul>
-                      <li>Network connectivity issues</li>
-                      <li>Positions not having requirements configured</li>
-                      <li>Backend API endpoint not available</li>
+                      <li>The selected positions don't have any requirements configured</li>
+                      <li>The requirements data is still loading</li>
+                      <li>There may be an issue with the API connection</li>
                     </ul>
+                    <p><small>Check the browser console for detailed error messages.</small></p>
                   </div>
                 ) : (
                   <>
