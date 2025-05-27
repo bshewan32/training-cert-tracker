@@ -25,6 +25,8 @@ const EmployeeForm = ({
   const [detailedPositions, setDetailedPositions] = useState([]);
   // Loading state for requirements
   const [loadingRequirements, setLoadingRequirements] = useState(false);
+  // State for employee certificates
+  const [employeeCertificates, setEmployeeCertificates] = useState([]);
   
   // Initialize selected positions from employee data
   useEffect(() => {
@@ -107,61 +109,114 @@ const EmployeeForm = ({
     
     setLoadingRequirements(true);
     try {
-      // Use the correct base URL that matches your app
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Fetch both requirements and employee certificates
+      const [requirementsResponse, certificatesResponse] = await Promise.all([
+        fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        // Fetch all certificates to find ones for this employee
+        fetch('https://training-cert-tracker.onrender.com/api/certificates', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
       
-      if (response.ok) {
-        const allRequirements = await response.json();
+      let allRequirements = [];
+      let allCertificates = [];
+      
+      if (requirementsResponse.ok) {
+        allRequirements = await requirementsResponse.json();
         console.log('All requirements fetched:', allRequirements);
+      } else {
+        console.error('Failed to fetch requirements:', requirementsResponse.status);
+      }
+      
+      if (certificatesResponse.ok) {
+        allCertificates = await certificatesResponse.json();
+        console.log('All certificates fetched:', allCertificates);
         
-        // Create detailed positions by combining selected positions with their requirements
-        const detailedPositionsData = selectedPositions.map(position => {
-          // Find requirements for this position
-          const positionRequirements = allRequirements.filter(req => 
-            req.position && (
-              (typeof req.position === 'object' && req.position._id === position._id) ||
-              (typeof req.position === 'string' && req.position === position._id)
-            )
+        // Filter certificates for this employee
+        const employeeName = employeeData.name;
+        const empCerts = allCertificates.filter(cert => cert.staffMember === employeeName);
+        setEmployeeCertificates(empCerts);
+        console.log(`Certificates for ${employeeName}:`, empCerts);
+      } else {
+        console.error('Failed to fetch certificates:', certificatesResponse.status);
+      }
+      
+      // Create detailed positions by combining selected positions with their requirements and certificate status
+      const detailedPositionsData = selectedPositions.map(position => {
+        // Find requirements for this position
+        const positionRequirements = allRequirements.filter(req => 
+          req.position && (
+            (typeof req.position === 'object' && req.position._id === position._id) ||
+            (typeof req.position === 'string' && req.position === position._id)
+          )
+        );
+        
+        console.log(`Requirements for position ${position.title}:`, positionRequirements);
+        
+        // Transform requirements to expected format and check certificate status
+        const transformedRequirements = positionRequirements.map(req => {
+          // Find matching certificates for this requirement
+          const employeeName = employeeData.name;
+          const matchingCerts = allCertificates.filter(cert => 
+            cert.staffMember === employeeName && 
+            (cert.certificateType === req.certificateType || cert.certificateName === req.certificateType)
           );
           
-          console.log(`Requirements for position ${position.title}:`, positionRequirements);
+          // Find the most recent valid certificate
+          let isCompliant = false;
+          let certificateInfo = null;
           
-          // Transform requirements to expected format
-          const transformedRequirements = positionRequirements.map(req => ({
+          if (matchingCerts.length > 0) {
+            // Sort by expiration date descending to get the most recent
+            matchingCerts.sort((a, b) => new Date(b.expirationDate) - new Date(a.expirationDate));
+            const latestCert = matchingCerts[0];
+            
+            // Check if certificate is still valid
+            const expirationDate = new Date(latestCert.expirationDate);
+            const now = new Date();
+            isCompliant = expirationDate > now;
+            
+            certificateInfo = {
+              issueDate: latestCert.issueDate,
+              expirationDate: latestCert.expirationDate,
+              status: latestCert.status || (isCompliant ? 'ACTIVE' : 'EXPIRED')
+            };
+          }
+          
+          return {
             _id: req._id,
             name: req.certificateType,
             title: req.certificateType,
             description: req.notes || `${req.certificateType} certification required`,
             type: 'certification',
             validityPeriod: req.validityPeriod,
-            isRequired: req.isRequired
-          }));
-          
-          return {
-            ...position,
-            requirements: transformedRequirements
+            isRequired: req.isRequired,
+            // Add compliance status
+            isCompliant,
+            certificateInfo,
+            status: isCompliant ? 'Compliant' : 'Missing'
           };
         });
         
-        console.log('Detailed positions created:', detailedPositionsData);
-        setDetailedPositions(detailedPositionsData);
-      } else {
-        console.error('Failed to fetch requirements:', response.status, response.statusText);
-        // Fallback: create detailed positions without requirements
-        const fallbackPositions = selectedPositions.map(position => ({
+        return {
           ...position,
-          requirements: []
-        }));
-        setDetailedPositions(fallbackPositions);
-      }
+          requirements: transformedRequirements
+        };
+      });
+      
+      console.log('Detailed positions created:', detailedPositionsData);
+      setDetailedPositions(detailedPositionsData);
+      
     } catch (error) {
       console.error('Error fetching position details:', error);
-      // Fallback: create detailed positions without requirements
       const fallbackPositions = selectedPositions.map(position => ({
         ...position,
         requirements: []
@@ -349,13 +404,23 @@ const EmployeeForm = ({
                       ) : (
                         <div className="requirements-grid">
                           {getAllRequirements().map((item, index) => (
-                            <div key={index} className="requirement-card">
+                            <div key={index} className={`requirement-card ${item.requirement.isCompliant ? 'compliant' : 'non-compliant'}`}>
                               <div className="requirement-name">
                                 {item.requirement.name || item.requirement.title || 'Requirement'}
+                                <span className={`compliance-badge ${item.requirement.isCompliant ? 'compliant' : 'missing'}`}>
+                                  {item.requirement.status}
+                                </span>
                               </div>
                               {item.requirement.description && (
                                 <div className="requirement-description">
                                   {item.requirement.description}
+                                </div>
+                              )}
+                              {item.requirement.certificateInfo && (
+                                <div className="certificate-info">
+                                  <div><strong>Issue:</strong> {new Date(item.requirement.certificateInfo.issueDate).toLocaleDateString()}</div>
+                                  <div><strong>Expires:</strong> {new Date(item.requirement.certificateInfo.expirationDate).toLocaleDateString()}</div>
+                                  <div><strong>Status:</strong> {item.requirement.certificateInfo.status}</div>
                                 </div>
                               )}
                               {item.requirement.validityPeriod && (
@@ -400,26 +465,44 @@ const EmployeeForm = ({
                           {position.requirements && position.requirements.length > 0 ? (
                             <ul className="requirements-list">
                               {position.requirements.map((req, reqIndex) => (
-                                <li key={reqIndex} className="requirement-item">
-                                  <span className="req-name">
-                                    {typeof req === 'object' ? (req.name || req.title) : req}
-                                  </span>
+                                <li key={reqIndex} className={`requirement-item ${req.isCompliant ? 'compliant' : 'non-compliant'}`}>
+                                  <div className="req-header">
+                                    <span className="req-name">
+                                      {typeof req === 'object' ? (req.name || req.title) : req}
+                                    </span>
+                                    <span className={`compliance-badge ${req.isCompliant ? 'compliant' : 'missing'}`}>
+                                      {req.status}
+                                    </span>
+                                  </div>
+                                  
+                                  {typeof req === 'object' && req.certificateInfo && (
+                                    <div className="certificate-details">
+                                      <span className="cert-dates">
+                                        Issued: {new Date(req.certificateInfo.issueDate).toLocaleDateString()} | 
+                                        Expires: {new Date(req.certificateInfo.expirationDate).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
                                   {typeof req === 'object' && req.description && (
                                     <span className="req-description"> - {req.description}</span>
                                   )}
-                                  {typeof req === 'object' && req.validityPeriod && (
-                                    <span className="req-validity"> (Valid for {req.validityPeriod} months)</span>
-                                  )}
-                                  {typeof req === 'object' && req.isRequired !== undefined && (
-                                    <span className={`req-mandatory-badge ${req.isRequired ? 'required' : 'optional'}`}>
-                                      {req.isRequired ? 'Required' : 'Optional'}
-                                    </span>
-                                  )}
-                                  {typeof req === 'object' && req.type && (
-                                    <span className={`req-type-badge ${req.type.toLowerCase()}`}>
-                                      {req.type}
-                                    </span>
-                                  )}
+                                  
+                                  <div className="req-badges">
+                                    {typeof req === 'object' && req.validityPeriod && (
+                                      <span className="req-validity">Valid for {req.validityPeriod} months</span>
+                                    )}
+                                    {typeof req === 'object' && req.isRequired !== undefined && (
+                                      <span className={`req-mandatory-badge ${req.isRequired ? 'required' : 'optional'}`}>
+                                        {req.isRequired ? 'Required' : 'Optional'}
+                                      </span>
+                                    )}
+                                    {typeof req === 'object' && req.type && (
+                                      <span className={`req-type-badge ${req.type.toLowerCase()}`}>
+                                        {req.type}
+                                      </span>
+                                    )}
+                                  </div>
                                 </li>
                               ))}
                             </ul>
@@ -613,6 +696,50 @@ const EmployeeForm = ({
           background-color: #f7fafc;
         }
 
+        .requirement-card.compliant {
+          border-color: #10b981;
+          background-color: #f0fdf4;
+        }
+
+        .requirement-card.non-compliant {
+          border-color: #ef4444;
+          background-color: #fef2f2;
+        }
+
+        .compliance-badge {
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: 500;
+          margin-left: 8px;
+        }
+
+        .compliance-badge.compliant {
+          background-color: #d1fae5;
+          color: #10b981;
+        }
+
+        .compliance-badge.missing {
+          background-color: #fee2e2;
+          color: #ef4444;
+        }
+
+        .certificate-info {
+          background-color: #e0f2fe;
+          padding: 8px;
+          border-radius: 4px;
+          margin: 8px 0;
+          font-size: 0.85rem;
+        }
+
+        .certificate-info div {
+          margin-bottom: 4px;
+        }
+
+        .certificate-info div:last-child {
+          margin-bottom: 0;
+        }
+
         .requirement-name {
           font-weight: 600;
           color: #2d3748;
@@ -735,13 +862,54 @@ const EmployeeForm = ({
           padding: 8px 0;
           border-bottom: 1px solid #e2e8f0;
           display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .requirement-item.compliant {
+          background-color: #f0fdf4;
+          padding: 12px;
+          border-radius: 6px;
+          border: 1px solid #10b981;
+          margin-bottom: 8px;
+        }
+
+        .requirement-item.non-compliant {
+          background-color: #fef2f2;
+          padding: 12px;
+          border-radius: 6px;
+          border: 1px solid #ef4444;
+          margin-bottom: 8px;
         }
 
         .requirement-item:last-child {
           border-bottom: none;
+        }
+
+        .req-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+
+        .certificate-details {
+          font-size: 0.85rem;
+          color: #4a5568;
+          background-color: rgba(255, 255, 255, 0.8);
+          padding: 6px 8px;
+          border-radius: 4px;
+        }
+
+        .cert-dates {
+          font-weight: 500;
+        }
+
+        .req-badges {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          flex-wrap: wrap;
         }
 
         .req-name {
