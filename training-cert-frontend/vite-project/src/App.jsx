@@ -1343,15 +1343,15 @@ function App() {
           </div>
 
           {/* Position Requirements section */}
-          <div className="details-section">
+          {/* <div className="details-section">
             <h3>Position Requirements</h3>
             <EmployeeRequirements 
               employeeId={selectedEmployeeForEdit._id}
               token={token}
             />
-          </div>
+          </div> */}
           
-          <div className="details-section">
+          {/* <div className="details-section">
             <h3>Certificates</h3>
             <table>
               <thead>
@@ -1388,7 +1388,7 @@ function App() {
                   })}
               </tbody>
             </table>
-          </div>
+          </div> */}
         </div>
       )}
       
