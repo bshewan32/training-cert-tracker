@@ -16,7 +16,7 @@ function App() {
   const [selectedPositionForRequirements, setSelectedPositionForRequirements] = useState(null);
   const [activeExcelTool, setActiveExcelTool] = useState('exporter');
   const [view, setView] = useState('login')
-  const [token, setToken] = useState('')
+  const [token, setToken] = useState(localStorage.getItem('authToken') || '')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [certificates, setCertificates] = useState([])
@@ -38,6 +38,23 @@ function App() {
   const [expiryDate, setExpiryDate] = useState('');
   const [importFile, setImportFile] = useState(null);
   const [adminActiveTab, setAdminActiveTab] = useState('overview');
+
+  // Initialize authentication state from localStorage on app load
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    const storedIsAdmin = localStorage.getItem('isAdmin') === 'true';
+    
+    if (storedToken) {
+      setToken(storedToken);
+      setIsAdmin(storedIsAdmin);
+      // Set initial view based on user role
+      if (storedIsAdmin) {
+        setView('certificates');
+      } else {
+        setView('dashboard');
+      }
+    }
+  }, []);
 
   // Modified handleBulkUpload - This will be handled by the new component
   const handleBulkUploadSuccess = (result) => {
@@ -134,6 +151,8 @@ function App() {
       }
 
       setToken(result.token)
+      localStorage.setItem('authToken', result.token)
+      localStorage.setItem('isAdmin', result.isAdmin)
       setIsAdmin(result.isAdmin)
       setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} successful!`)
       
@@ -150,6 +169,8 @@ function App() {
 
   const handleLogout = () => {
     setToken('')
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('isAdmin')
     setIsAdmin(false)
     setView('login')
     setCertificates([])
