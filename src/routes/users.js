@@ -6,8 +6,10 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 const SECRET_KEY = process.env.JWT_SECRET;
-console.log('Users Route - Secret key loaded:', !!process.env.JWT_SECRET);
-console.log('Users Route - Secret key value:', SECRET_KEY); // Add this line
+
+if (!SECRET_KEY) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 // Rest of the code...
 
@@ -25,7 +27,7 @@ router.post('/register', async (req, res) => {
     const user = new User({ username, email, password });
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, SECRET_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user._id }, SECRET_KEY, { expiresIn: '24h' });
     res.status(201).json({ token, userId: user._id });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -42,11 +44,11 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user._id }, SECRET_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user._id }, SECRET_KEY, { expiresIn: '24h' });
     res.json({ 
       token, 
       userId: user._id,
-      isAdmin: user.isAdmin // Add this line
+      isAdmin: user.isAdmin
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
