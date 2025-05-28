@@ -2327,3 +2327,151 @@ const additionalStyles = `
 
 
   }
+
+.employee-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.reactivate-header-btn {
+  background-color: #48bb78;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.reactivate-header-btn:hover {
+  background-color: #38a169;
+}
+
+.archive-header-btn {
+  background-color: #f56565;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.archive-header-btn:hover {
+  background-color: #e53e3e;
+}
+
+.employee-status-alert {
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid;
+}
+
+.employee-status-alert.archived {
+  background-color: #fff5f5;
+  border-color: #fed7d7;
+  color: #c53030;
+}
+
+.alert-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.alert-icon {
+  font-size: 1.2rem;
+}
+
+.alert-text strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.archived-employee-note {
+  background-color: #f7fafc;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 15px;
+}
+
+.employee-management-header {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f7fafc;
+  border-radius: 6px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.archived-employee {
+  background-color: #faf5ff;
+  opacity: 0.85;
+}
+
+.archived-badge {
+  background-color: #fbbf24;
+  color: #92400e;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.employee-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.employee-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-button, .archive-button, .reactivate-button {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.edit-button {
+  background-color: #4299e1;
+  color: white;
+}
+
+.archive-button {
+  background-color: #f56565;
+  color: white;
+}
+
+.reactivate-button {
+  background-color: #48bb78;
+  color: white;
+}
