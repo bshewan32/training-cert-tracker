@@ -1,1156 +1,2329 @@
-.container {
-  max-width: 1000px;  /* Increased for table view */
+.container  {
+
+  max-width: 1000px;
+  /* Increased for table view */
   margin: 0 auto;
+
   padding: 20px;
+
+
 }
 
-.content {
+
+.content  {
+
   background: white;
+
   padding: 20px;
+
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  box-shadow: 0 2px 4px rgba(0,
+  0,
+  0,
+  0.1);
+
+
 }
 
-.form {
+
+.form  {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 15px;
-  max-width: 600px;  /* Added to keep form width reasonable */
-  margin: 0 auto;    /* Center the form */
+
+  max-width: 600px;
+  /* Added to keep form width reasonable */
+  margin: 0 auto;
+  /* Center the form */
+
 }
 
-.form-group {
+
+.form-group  {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 5px;
+
+
 }
 
-.form-group label {
+
+.form-group label  {
+
   font-weight: bold;
-  text-align: left;  /* Align labels to left */
-}
 
-.form-group input {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-button {
-  padding: 10px;
-  background: #0066cc;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #0052a3;
-}
-
-.error {
-  color: red;
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: #ffe0e0;
-  border-radius: 4px;
-}
-
-.message {
-  color: green;
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: #f0fff0;
-  border-radius: 4px;
-}
-
-.certificates-table {
-  margin-top: 30px;
-  overflow-x: auto;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-}
-
-th, td {
-  padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #ddd;
+  /* Align labels to left */
+
 }
 
-th {
-  background-color: #f5f5f5;
-  font-weight: bold;
+
+.form-group input  {
+
+  padding: 8px;
+
+  border: 1px solid #ccc;
+
+  border-radius: 4px;
+
+
 }
 
-.status-active {
-  background-color: #f0fff0;
+
+button  {
+
+  padding: 10px;
+
+  background: #0066cc;
+
+  color: white;
+
+  border: none;
+
+  border-radius: 4px;
+
+  cursor: pointer;
+
+
 }
 
-.status-expiring {
-  background-color: #fff3e0;
+
+button:hover  {
+
+  background: #0052a3;
+
+
 }
 
-.status-expired {
+
+.error  {
+
+  color: red;
+
+  margin-bottom: 15px;
+
+  padding: 10px;
+
   background-color: #ffe0e0;
+
+  border-radius: 4px;
+
+
 }
+
+
+.message  {
+
+  color: green;
+
+  margin-bottom: 15px;
+
+  padding: 10px;
+
+  background-color: #f0fff0;
+
+  border-radius: 4px;
+
+
+}
+
+
+.certificates-table  {
+
+  margin-top: 30px;
+
+  overflow-x: auto;
+
+  border-radius: 4px;
+
+  box-shadow: 0 1px 3px rgba(0,
+  0,
+  0,
+  0.1);
+
+
+}
+
+
+table  {
+
+  width: 100%;
+
+  border-collapse: collapse;
+
+  margin-top: 15px;
+
+
+}
+
+
+th,
+td  {
+
+  padding: 12px;
+
+  text-align: left;
+
+  border-bottom: 1px solid #ddd;
+
+
+}
+
+
+th  {
+
+  background-color: #f5f5f5;
+
+  font-weight: bold;
+
+
+}
+
+
+.status-active  {
+
+  background-color: #f0fff0;
+
+
+}
+
+
+.status-expiring  {
+
+  background-color: #fff3e0;
+
+
+}
+
+
+.status-expired  {
+
+  background-color: #ffe0e0;
+
+
+}
+
 
 /* Add hover effect on table rows */
-tr:hover {
+tr:hover  {
+
   background-color: #f8f8f8;
+
+
 }
+
 
 /* Add responsive table */
-@media screen and (max-width: 768px) {
-  .certificates-table {
+@media screen and (max-width: 768px)  {
+
+  .certificates-table  {
+
     overflow-x: auto;
+
+
   }
+
+
 }
 
-.admin-dashboard {
+
+.admin-dashboard  {
+
   padding: 20px;
+
+
 }
 
-.dashboard-stats {
+
+.dashboard-stats  {
+
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
+  grid-template-columns: repeat(auto-fit,
+  minmax(200px,
+  1fr));
+
   gap: 20px;
+
   margin-bottom: 30px;
+
+
 }
 
-.stat-card {
+
+.stat-card  {
+
   background: white;
+
   padding: 20px;
+
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  box-shadow: 0 2px 4px rgba(0,
+  0,
+  0,
+  0.1);
+
   text-align: center;
+
+
 }
 
-.stat-card.warning {
+
+.stat-card.warning  {
+
   background: #fff3e0;
+
+
 }
 
-.stat-card.danger {
+
+.stat-card.danger  {
+
   background: #ffe0e0;
+
+
 }
 
-.stat-number {
+
+.stat-number  {
+
   font-size: 2em;
+
   font-weight: bold;
+
   margin: 10px 0;
+
+
 }
 
-.status-badge {
+
+.status-badge  {
+
   padding: 4px 8px;
+
   border-radius: 4px;
+
   font-size: 0.9em;
+
+
 }
 
-.status-badge.active {
+
+.status-badge.active  {
+
   background: #f0fff0;
+
   color: #2e7d32;
+
+
 }
 
-.status-badge.expiring {
+
+.status-badge.expiring  {
+
   background: #fff3e0;
+
   color: #e65100;
+
+
 }
 
-.status-badge.expired {
+
+.status-badge.expired  {
+
   background: #ffe0e0;
+
   color: #c62828;
+
+
 }
 
-.admin-button, .logout-button {
+
+.admin-button,
+.logout-button  {
+
   margin: 10px;
+
+
 }
 
-.logout-button {
+
+.logout-button  {
+
   position: absolute;
+
   top: 10px;
+
   right: 10px;
+
+
 }
 
-.admin-button {
+
+.admin-button  {
+
   background: #4a5568;
+
+
 }
 
-.admin-button:hover {
+
+.admin-button:hover  {
+
   background: #2d3748;
+
+
 }
+
 
 /* Setup Dashboard Styles */
-@media screen and (max-width: 768px) {
-  .setup-dashboard {
+@media screen and (max-width: 768px)  {
+
+  .setup-dashboard  {
+
     padding: 10px;
+
+
   }
 
-  .setup-tabs {
+
+  .setup-tabs  {
+
     flex-direction: column;
+
     gap: 8px;
+
+
   }
 
-  .tab-button {
+
+  .tab-button  {
+
     width: 100%;
+
     padding: 12px;
+
     font-size: 16px;
+
+
   }
 
-  .setup-form {
+
+  .setup-form  {
+
     width: 100%;
+
+
   }
+
 
   .setup-form input,
-  .setup-form select {
+
+  .setup-form select  {
+
     width: 100%;
+
     padding: 12px;
+
     font-size: 16px;
+
+
   }
 
-  .setup-section {
+
+  .setup-section  {
+
     padding: 15px;
+
+
   }
 
-  .setup-list {
+
+  .setup-list  {
+
     overflow-x: auto;
+
+
   }
 
-  .list-item {
+
+  .list-item  {
+
     flex-direction: column;
+
     gap: 10px;
+
     padding: 15px;
+
+
   }
 
-  .list-item button {
+
+  .list-item button  {
+
     width: 100%;
+
+
   }
+
+
 }
-.delete-button {
+
+.delete-button  {
+
   background: #dc2626;
+
   color: white;
+
   padding: 4px 8px;
+
   border-radius: 4px;
+
   border: none;
+
   cursor: pointer;
+
+
 }
 
-.delete-button:hover {
+
+.delete-button:hover  {
+
   background: #b91c1c;
+
+
 }
 
-.back-button {
+
+.back-button  {
+
   margin-bottom: 20px;
+
   background: #4b5563;
+
   color: white;
+
+
 }
 
-.back-button:hover {
+
+.back-button:hover  {
+
   background: #374151;
+
+
 }
 
-textarea {
+
+textarea  {
+
   width: 100%;
+
   min-height: 100px;
+
   padding: 8px;
+
   border: 1px solid #ccc;
+
   border-radius: 4px;
+
   resize: vertical;
+
+
 }
 
-select {
+
+select  {
+
   width: 100%;
+
   padding: 8px;
+
   border: 1px solid #ccc;
+
   border-radius: 4px;
+
   background: white;
+
+
 }
+
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
-  .setup-tabs {
+@media (max-width: 768px)  {
+
+  .setup-tabs  {
+
     flex-direction: column;
+
+
   }
-  
-  .setup-form {
+
+
+  .setup-form  {
+
     max-width: 100%;
+
+
   }
+
+
 }
-.readonly-input {
+
+.readonly-input  {
+
   background-color: #f3f4f6;
+
   cursor: not-allowed;
+
+
 }
 
-.admin-buttons {
+
+.admin-buttons  {
+
   display: flex;
+
   gap: 10px;
+
   margin: 20px 0;
+
+
 }
 
-.filter-controls {
+
+.filter-controls  {
+
   margin-bottom: 20px;
+
   display: flex;
+
   gap: 20px;
+
+
 }
 
-.filter-group {
+
+.filter-group  {
+
   display: flex;
+
   align-items: center;
+
   gap: 10px;
+
+
 }
 
-.filter-group select {
+
+.filter-group select  {
+
   padding: 8px;
+
   border-radius: 4px;
+
   border: 1px solid #ccc;
+
   min-width: 200px;
+
+
 }
 
-.filter-group label {
+
+.filter-group label  {
+
   font-weight: bold;
+
+
 }
+
 
 /* Add to your App.css */
-@media screen and (max-width: 768px) {
-  .container {
+@media screen and (max-width: 768px)  {
+
+  .container  {
+
     width: 100%;
+
     padding: 10px;
+
+
   }
+
 
   .form-group select,
-  .form-group input {
+
+  .form-group input  {
+
     width: 100%;
-    font-size: 16px; /* Better for mobile */
+
+    font-size: 16px;
+    /* Better for mobile */
     padding: 10px;
+
+
   }
 
-  .filter-controls {
+
+  .filter-controls  {
+
     flex-direction: column;
+
+
   }
+
 
   /* Make table scrollable horizontally on mobile */
-  .certificates-table {
+  .certificates-table  {
+
     overflow-x: auto;
+
+
   }
 
-  table {
-    min-width: 600px; /* Ensure all columns are visible when scrolling */
+
+  table  {
+
+    min-width: 600px;
+    /* Ensure all columns are visible when scrolling */
+
   }
+
 
   /* Larger touch targets for mobile */
-  button {
+  button  {
+
     padding: 12px;
+
     min-width: 44px;
+
     min-height: 44px;
+
+
   }
+
+
 }
 
-.edit-controls {
+
+.edit-controls  {
+
   margin: 10px 0;
+
   text-align: left;
+
+
 }
 
-.edit-details-button {
+
+.edit-details-button  {
+
   background-color: #4a5568;
+
   color: white;
+
   padding: 8px 16px;
+
   border-radius: 4px;
+
   border: none;
+
   cursor: pointer;
+
+
 }
 
-.edit-details-button:hover {
+
+.edit-details-button:hover  {
+
   background-color: #2d3748;
+
+
 }
 
-.employee-details {
+
+.employee-details  {
+
   padding: 20px;
+
   max-width: 1000px;
+
   margin: 0 auto;
+
+
 }
 
-.details-section {
+
+.details-section  {
+
   background: white;
+
   padding: 20px;
+
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  box-shadow: 0 2px 4px rgba(0,
+  0,
+  0,
+  0.1);
+
   margin: 20px 0;
+
+
 }
 
-.details-section h3 {
+
+.details-section h3  {
+
   margin-bottom: 20px;
+
   color: #2d3748;
+
   border-bottom: 2px solid #edf2f7;
+
   padding-bottom: 10px;
+
+
 }
+
 
 /* Mobile responsive adjustments */
-@media screen and (max-width: 768px) {
-  .employee-details {
+@media screen and (max-width: 768px)  {
+
+  .employee-details  {
+
     padding: 10px;
+
+
   }
-  
-  .details-section {
+
+
+  .details-section  {
+
     padding: 15px;
+
     margin: 10px 0;
+
+
   }
 
-  .details-section table {
+
+  .details-section table  {
+
     display: block;
+
     overflow-x: auto;
+
+
   }
 
-  .employee-details .form-group {
+
+  .employee-details .form-group  {
+
     margin-bottom: 15px;
+
+
   }
+
 
   .employee-details input,
-  .employee-details select {
+
+  .employee-details select  {
+
     width: 100%;
+
     padding: 10px;
+
     font-size: 16px;
+
+
   }
+
+
 }
+
 
 /* Button styles */
-.back-button {
+.back-button  {
+
   background-color: #4a5568;
+
   color: white;
+
   padding: 8px 16px;
+
   border-radius: 4px;
+
   margin-bottom: 20px;
+
   border: none;
+
   cursor: pointer;
+
+
 }
 
-.back-button:hover {
+
+.back-button:hover  {
+
   background-color: #2d3748;
+
+
 }
+
 
 /* Table styles in details view */
-.details-section table {
+.details-section table  {
+
   width: 100%;
+
   border-collapse: collapse;
+
   margin-top: 10px;
+
+
 }
+
 
 .details-section th,
-.details-section td {
+
+.details-section td  {
+
   padding: 12px;
+
   text-align: left;
+
   border-bottom: 1px solid #e2e8f0;
+
+
 }
 
-.details-section th {
+
+.details-section th  {
+
   background-color: #f7fafc;
+
   font-weight: bold;
+
+
 }
+
 
 /* Action buttons in table */
-.details-section td button {
+.details-section td button  {
+
   padding: 6px 12px;
+
   border-radius: 4px;
+
   border: none;
+
   cursor: pointer;
+
   background-color: #e53e3e;
+
   color: white;
+
+
 }
 
-.details-section td button:hover {
+
+.details-section td button:hover  {
+
   background-color: #c53030;
+
+
 }
+
 
 /* Continue the CSS styles for App.css */
 
-  /* Additional responsive adjustments */
-  .uploader-container {
-    margin-top: 20px;
-  }
-  
-  /* Visual indicators for upload states */
-  .file-preview {
-    transition: all 0.3s ease;
-  }
-  
-  .file-upload-label.has-file {
-    background-color: #e6f7ff;
-    border-color: #1890ff;
-  }
-  
-  /* Drag and drop styling */
-  .file-drop-zone {
-    border: 2px dashed #cbd5e1;
-    border-radius: 8px;
-    padding: 20px;
-    text-align: center;
-    background-color: #f8fafc;
-    transition: all 0.3s ease;
-  }
-  
-  .file-drop-zone.active {
-    border-color: #0ea5e9;
-    background-color: #f0f9ff;
-  }
-  
-  .file-drop-zone p {
-    color: #64748b;
-    margin: 10px 0;
-  }
-  
-  /* Progress indicator for upload */
-  .upload-progress {
-    width: 100%;
-    height: 4px;
-    background-color: #e2e8f0;
-    border-radius: 2px;
-    margin-top: 10px;
-    overflow: hidden;
-  }
-  
-  .upload-progress-bar {
-    height: 100%;
-    background-color: #0ea5e9;
-    transition: width 0.3s ease;
-  }
-  
-  /* Validation results display */
-  .validation-results {
-    margin-top: 15px;
-    padding: 15px;
-    border-radius: 6px;
-    background-color: #fff;
-    border: 1px solid #e2e8f0;
-    max-height: 200px;
-    overflow-y: auto;
-  }
-  
-  .validation-results h5 {
-    margin-top: 0;
-    color: #0f172a;
-    margin-bottom: 10px;
-  }
-  
-  .validation-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .validation-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid #f1f5f9;
-  }
-  
-  .validation-item:last-child {
-    border-bottom: none;
-  }
-  
-  .validation-icon {
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-  
-  .validation-error {
-    color: #dc2626;
-  }
-  
-  .validation-warning {
-    color: #ea580c;
-  }
-  
-  .validation-success {
-    color: #16a34a;
-  }
-  
-  /* Import Results Summary */
-  .import-summary {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: #f0fdf4;
-    border: 1px solid #dcfce7;
-    border-radius: 6px;
-  }
-  
-  .import-summary h4 {
-    margin-top: 0;
-    color: #166534;
-    margin-bottom: 10px;
-  }
-  
-  .import-stat {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
-  
-  .import-stat-label {
-    color: #0f172a;
-    font-weight: 500;
-  }
-  
-  .import-stat-value {
-    font-weight: 600;
-    color: #166534;
-  }
-  
-  /* Excel header cell visual */
-  .excel-header-cell {
-    display: inline-block;
-    padding: 4px 8px;
-    background-color: #e2e8f0;
-    color: #1e293b;
-    border-radius: 4px;
-    font-family: monospace;
-    margin-right: 5px;
-    margin-bottom: 5px;
-  }
-  
-  .excel-header-required {
-    background-color: #fef3c7;
-    color: #92400e;
-  }
+/* Additional responsive adjustments */
+.uploader-container  {
 
-  /* Add these styles to your App.css file */
+  margin-top: 20px;
+
+
+}
+
+
+/* Visual indicators for upload states */
+.file-preview  {
+
+  transition: all 0.3s ease;
+
+
+}
+
+
+.file-upload-label.has-file  {
+
+  background-color: #e6f7ff;
+
+  border-color: #1890ff;
+
+
+}
+
+
+/* Drag and drop styling */
+.file-drop-zone  {
+
+  border: 2px dashed #cbd5e1;
+
+  border-radius: 8px;
+
+  padding: 20px;
+
+  text-align: center;
+
+  background-color: #f8fafc;
+
+  transition: all 0.3s ease;
+
+
+}
+
+
+.file-drop-zone.active  {
+
+  border-color: #0ea5e9;
+
+  background-color: #f0f9ff;
+
+
+}
+
+
+.file-drop-zone p  {
+
+  color: #64748b;
+
+  margin: 10px 0;
+
+
+}
+
+
+/* Progress indicator for upload */
+.upload-progress  {
+
+  width: 100%;
+
+  height: 4px;
+
+  background-color: #e2e8f0;
+
+  border-radius: 2px;
+
+  margin-top: 10px;
+
+  overflow: hidden;
+
+
+}
+
+
+.upload-progress-bar  {
+
+  height: 100%;
+
+  background-color: #0ea5e9;
+
+  transition: width 0.3s ease;
+
+
+}
+
+
+/* Validation results display */
+.validation-results  {
+
+  margin-top: 15px;
+
+  padding: 15px;
+
+  border-radius: 6px;
+
+  background-color: #fff;
+
+  border: 1px solid #e2e8f0;
+
+  max-height: 200px;
+
+  overflow-y: auto;
+
+
+}
+
+
+.validation-results h5  {
+
+  margin-top: 0;
+
+  color: #0f172a;
+
+  margin-bottom: 10px;
+
+
+}
+
+
+.validation-list  {
+
+  list-style: none;
+
+  padding: 0;
+
+  margin: 0;
+
+
+}
+
+
+.validation-item  {
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 8px;
+
+  padding: 8px 0;
+
+  border-bottom: 1px solid #f1f5f9;
+
+
+}
+
+
+.validation-item:last-child  {
+
+  border-bottom: none;
+
+
+}
+
+
+.validation-icon  {
+
+  flex-shrink: 0;
+
+  margin-top: 2px;
+
+
+}
+
+
+.validation-error  {
+
+  color: #dc2626;
+
+
+}
+
+
+.validation-warning  {
+
+  color: #ea580c;
+
+
+}
+
+
+.validation-success  {
+
+  color: #16a34a;
+
+
+}
+
+
+/* Import Results Summary */
+.import-summary  {
+
+  margin-top: 20px;
+
+  padding: 15px;
+
+  background-color: #f0fdf4;
+
+  border: 1px solid #dcfce7;
+
+  border-radius: 6px;
+
+
+}
+
+
+.import-summary h4  {
+
+  margin-top: 0;
+
+  color: #166534;
+
+  margin-bottom: 10px;
+
+
+}
+
+
+.import-stat  {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 8px;
+
+
+}
+
+
+.import-stat-label  {
+
+  color: #0f172a;
+
+  font-weight: 500;
+
+
+}
+
+
+.import-stat-value  {
+
+  font-weight: 600;
+
+  color: #166534;
+
+
+}
+
+
+/* Excel header cell visual */
+.excel-header-cell  {
+
+  display: inline-block;
+
+  padding: 4px 8px;
+
+  background-color: #e2e8f0;
+
+  color: #1e293b;
+
+  border-radius: 4px;
+
+  font-family: monospace;
+
+  margin-right: 5px;
+
+  margin-bottom: 5px;
+
+
+}
+
+
+.excel-header-required  {
+
+  background-color: #fef3c7;
+
+  color: #92400e;
+
+
+}
+
+
+/* Add these styles to your App.css file */
 
 /* Hidden Tools Section */
-.hidden-tools {
+.hidden-tools  {
+
   padding: 20px;
+
   background-color: white;
+
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+  box-shadow: 0 2px 10px rgba(0,
+  0,
+  0,
+  0.1);
+
+
 }
 
-.back-link {
+
+.back-link  {
+
   margin-top: 30px;
+
   text-align: center;
+
+
 }
+
 
 /* Excel Date Formatter Styles */
-.excel-date-formatter {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+.excel-date-formatter  {
+
+  font-family: -apple-system,
+  BlinkMacSystemFont,
+  'Segoe UI',
+  Roboto,
+  Oxygen,
+  Ubuntu,
+  Cantarell,
+  'Open Sans',
+  'Helvetica Neue',
+  sans-serif;
+
   max-width: 900px;
+
   margin: 0 auto;
+
   padding: 20px;
+
   background-color: white;
+
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+  box-shadow: 0 2px 10px rgba(0,
+  0,
+  0,
+  0.1);
+
+
 }
 
-.excel-date-formatter h2 {
+
+.excel-date-formatter h2  {
+
   color: #2d3748;
+
   margin-top: 0;
+
   padding-bottom: 10px;
+
   border-bottom: 1px solid #e2e8f0;
+
+
 }
 
-.form-container {
+
+.form-container  {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 20px;
+
   margin-bottom: 30px;
+
   padding: 20px;
+
   background-color: #f7fafc;
+
   border-radius: 8px;
+
+
 }
 
-.form-group {
+
+.form-group  {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 8px;
+
+
 }
 
-.excel-date-formatter label {
+
+.excel-date-formatter label  {
+
   font-weight: 600;
+
   color: #4a5568;
+
+
 }
 
-.file-input {
+
+.file-input  {
+
   padding: 10px;
+
   border: 1px solid #cbd5e0;
+
   border-radius: 4px;
+
   font-size: 0.9rem;
+
+
 }
 
-.select-input {
+
+.select-input  {
+
   padding: 10px;
+
   border: 1px solid #cbd5e0;
+
   border-radius: 4px;
+
   font-size: 0.9rem;
+
   background-color: white;
+
+
 }
 
-.process-button {
+
+.process-button  {
+
   background-color: #3182ce;
+
   color: white;
+
   border: none;
+
   border-radius: 4px;
+
   padding: 12px 16px;
+
   font-size: 1rem;
+
   font-weight: 600;
+
   cursor: pointer;
+
   transition: background-color 0.2s;
+
+
 }
 
-.process-button:hover:not(:disabled) {
+
+.process-button:hover:not(:disabled)  {
+
   background-color: #2c5282;
+
+
 }
 
-.process-button:disabled {
+
+.process-button:disabled  {
+
   background-color: #a0aec0;
+
   cursor: not-allowed;
+
+
 }
 
-.status-message {
+
+.status-message  {
+
   padding: 15px;
+
   border-radius: 4px;
+
   font-weight: 500;
+
+
 }
 
-.status-message.error {
+
+.status-message.error  {
+
   background-color: #fed7d7;
+
   color: #c53030;
+
+
 }
 
-.status-message.success {
+
+.status-message.success  {
+
   background-color: #c6f6d5;
+
   color: #2f855a;
+
+
 }
 
-.status-message.info {
+
+.status-message.info  {
+
   background-color: #e2e8f0;
+
   color: #4a5568;
+
+
 }
 
-.preview-container {
+
+.preview-container  {
+
   margin-bottom: 30px;
+
+
 }
 
-.preview-container h3 {
+
+.preview-container h3  {
+
   color: #2d3748;
+
   margin-bottom: 10px;
+
+
 }
 
-.table-container {
+
+.table-container  {
+
   overflow-x: auto;
+
   max-width: 100%;
+
+
 }
 
-.preview-table {
+
+.preview-table  {
+
   width: 100%;
+
   border-collapse: collapse;
+
   font-size: 0.9rem;
+
   border: 1px solid #e2e8f0;
+
+
 }
 
-.preview-table th {
+
+.preview-table th  {
+
   background-color: #edf2f7;
+
   padding: 12px;
+
   text-align: left;
+
   border-bottom: 2px solid #cbd5e0;
+
   white-space: nowrap;
+
+
 }
 
-.preview-table td {
+
+.preview-table td  {
+
   padding: 10px 12px;
+
   border-bottom: 1px solid #e2e8f0;
+
   max-width: 200px;
+
   overflow: hidden;
+
   text-overflow: ellipsis;
+
   white-space: nowrap;
+
+
 }
 
-.preview-table tr:nth-child(even) {
+
+.preview-table tr:nth-child(even)  {
+
   background-color: #f7fafc;
+
+
 }
 
-.selected-column {
+
+.selected-column  {
+
   background-color: #ebf8ff !important;
+
   border-left: 2px solid #3182ce;
+
   border-right: 2px solid #3182ce;
+
+
 }
 
-@media (max-width: 768px) {
-  .excel-date-formatter {
+
+@media (max-width: 768px)  {
+
+  .excel-date-formatter  {
+
     padding: 15px;
+
+
   }
-  
-  .form-container, .preview-container {
+
+
+  .form-container,
+  .preview-container  {
+
     padding: 15px;
+
+
   }
+
+
 }
+
 
 /* Add these styles to your App.css file */
 
 /* Excel Tools Section */
-.excel-tools {
+.excel-tools  {
+
   padding: 20px;
+
   background-color: white;
+
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+  box-shadow: 0 2px 10px rgba(0,
+  0,
+  0,
+  0.1);
+
+
 }
 
-.excel-tools h2 {
+
+.excel-tools h2  {
+
   color: #2d3748;
+
   margin-top: 0;
+
   margin-bottom: 20px;
+
   padding-bottom: 10px;
+
   border-bottom: 1px solid #e2e8f0;
+
+
 }
 
-.tool-tabs {
+
+.tool-tabs  {
+
   display: flex;
+
   gap: 10px;
+
   margin-bottom: 20px;
+
   border-bottom: 1px solid #e2e8f0;
+
   padding-bottom: 10px;
+
+
 }
 
-.tool-tab {
+
+.tool-tab  {
+
   padding: 10px 16px;
+
   background-color: #f7fafc;
+
   border: 1px solid #e2e8f0;
+
   border-radius: 4px;
+
   color: #4a5568;
+
   font-weight: 500;
+
   cursor: pointer;
+
   transition: all 0.2s;
+
+
 }
 
-.tool-tab:hover {
+
+.tool-tab:hover  {
+
   background-color: #edf2f7;
+
+
 }
 
-.tool-tab.active {
+
+.tool-tab.active  {
+
   background-color: #3182ce;
+
   color: white;
+
   border-color: #3182ce;
+
+
 }
 
-.tool-content {
+
+.tool-content  {
+
   margin-top: 20px;
+
+
 }
+
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
-  .excel-tools {
+@media (max-width: 768px)  {
+
+  .excel-tools  {
+
     padding: 15px;
+
+
   }
-  
-  .tool-tabs {
+
+
+  .tool-tabs  {
+
     flex-wrap: wrap;
+
+
   }
-  
-  .tool-tab {
+
+
+  .tool-tab  {
+
     flex: 1;
+
     text-align: center;
+
     padding: 8px 12px;
+
+
   }
+
+
 }
-.button-group {
+
+.button-group  {
+
   display: flex;
+
   gap: 10px;
+
+
 }
 
-.manage-button {
+
+.manage-button  {
+
   background-color: #4a5568;
+
   color: white;
+
   padding: 4px 8px;
+
   border-radius: 4px;
+
   border: none;
+
   cursor: pointer;
+
   font-size: 0.85rem;
+
+
 }
 
-.manage-button:hover {
+
+.manage-button:hover  {
+
   background-color: #2d3748;
+
+
 }
 
-.requirements-section {
+
+.requirements-section  {
+
   margin-top: 20px;
+
   border-top: 1px solid #e2e8f0;
+
   padding-top: 20px;
+
+
 }
 
-.close-button {
+
+.close-button  {
+
   background-color: #718096;
+
   color: white;
+
   padding: 8px 12px;
+
   border-radius: 4px;
+
   border: none;
+
   cursor: pointer;
+
   display: block;
+
   margin: 15px auto 0;
+
+
 }
 
-.close-button:hover {
+
+.close-button:hover  {
+
   background-color: #4a5568;
+
+
 }
 
-.certificates-header {
+
+.certificates-header  {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
+
   margin-bottom: 24px;
+
   padding-bottom: 16px;
+
   border-bottom: 2px solid #e2e8f0;
+
+
 }
 
-.certificates-header h2 {
+
+.certificates-header h2  {
+
   margin: 0;
+
   color: #1e293b;
+
   font-size: 1.5rem;
+
   font-weight: 600;
+
+
 }
 
-.certificates-nav {
+
+.certificates-nav  {
+
   display: flex;
+
   gap: 12px;
+
+
 }
 
-.nav-button {
+
+.nav-button  {
+
   background-color: #3b82f6;
+
   color: white;
+
   border: none;
+
   border-radius: 6px;
+
   padding: 10px 16px;
+
   font-weight: 500;
+
   cursor: pointer;
+
   transition: background-color 0.2s;
+
+
 }
 
-.nav-button:hover {
+
+.nav-button:hover  {
+
   background-color: #2563eb;
+
+
 }
 
-.admin-button {
+
+.admin-button  {
+
   background-color: #dc2626 !important;
+
+
 }
 
-.admin-button:hover {
+
+.admin-button:hover  {
+
   background-color: #b91c1c !important;
+
+
 }
 
-@media (max-width: 768px) {
-  .certificates-header {
+
+@media (max-width: 768px)  {
+
+  .certificates-header  {
+
     flex-direction: column;
+
     gap: 16px;
+
     align-items: stretch;
+
+
   }
-  
-  .certificates-nav {
+
+
+  .certificates-nav  {
+
     justify-content: center;
+
+
   }
+
+
 }
 
-.expiry-note {
+
+.expiry-note  {
+
   display: block;
+
   margin-top: 4px;
+
   color: #6b7280;
+
   font-size: 0.875rem;
+
   font-style: italic;
+
+
 }
 
-.readonly-input {
+
+.readonly-input  {
+
   background-color: #f9fafb;
+
   color: #6b7280;
+
   cursor: not-allowed;
+
+
 }
-.cert-type-info {
+
+.cert-type-info  {
+
   background-color: #eff6ff;
+
   border: 1px solid #bfdbfe;
+
   border-radius: 6px;
+
   padding: 12px;
+
   margin-bottom: 20px;
+
+
 }
 
-.cert-type-info p {
+
+.cert-type-info p  {
+
   margin: 0;
+
   color: #1e40af;
+
+
 }
 
-.validity-help {
+
+.validity-help  {
+
   display: block;
+
   margin-top: 4px;
+
   color: #6b7280;
+
   font-size: 0.875rem;
+
   font-style: italic;
+
+
 }
 
-.cert-type-item {
+
+.cert-type-item  {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
+
   padding: 12px;
+
   background-color: #f9fafb;
+
   border: 1px solid #e5e7eb;
+
   border-radius: 6px;
+
   margin-bottom: 8px;
+
+
 }
 
-.cert-type-details {
+
+.cert-type-details  {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 4px;
+
+
 }
 
-.cert-name {
+
+.cert-name  {
+
   font-weight: 600;
+
   color: #1f2937;
+
+
 }
 
-.cert-validity {
+
+.cert-validity  {
+
   font-size: 0.875rem;
+
   color: #059669;
+
   font-weight: 500;
+
+
 }
 
-.cert-description {
+
+.cert-description  {
+
   font-size: 0.875rem;
+
   color: #6b7280;
+
   font-style: italic;
+
+
 }
+
 
 const additionalStyles = `
 /* Employee Management Styles */
-.employee-management-header {
+.employee-management-header  {
+
   margin-bottom: 20px;
+
   padding: 15px;
+
   background-color: #f7fafc;
+
   border-radius: 6px;
+
   border: 1px solid #e2e8f0;
+
+
 }
 
-.checkbox-label {
+
+.checkbox-label  {
+
   display: flex;
+
   align-items: center;
+
   gap: 8px;
+
   font-weight: 500;
+
   color: #4a5568;
+
   cursor: pointer;
+
+
 }
 
-.checkbox-label input[type="checkbox"] {
+
+.checkbox-label input[type="checkbox"]  {
+
   width: 16px;
+
   height: 16px;
+
+
 }
 
-.list-item {
+
+.list-item  {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
+
   padding: 12px;
+
   margin-bottom: 8px;
+
   background-color: white;
+
   border-radius: 6px;
+
   border: 1px solid #e2e8f0;
+
+
 }
 
-.list-item.archived-employee {
+
+.list-item.archived-employee  {
+
   background-color: #faf5ff;
+
   border-color: #d6d3d1;
+
   opacity: 0.85;
+
+
 }
 
-.employee-info {
+
+.employee-info  {
+
   display: flex;
+
   align-items: center;
+
   gap: 10px;
+
   flex: 1;
+
+
 }
 
-.archived-badge {
+
+.archived-badge  {
+
   background-color: #fbbf24;
+
   color: #92400e;
+
   padding: 2px 6px;
+
   border-radius: 4px;
+
   font-size: 0.7rem;
+
   font-weight: 600;
+
+
 }
 
-.employee-actions {
+
+.employee-actions  {
+
   display: flex;
+
   gap: 8px;
+
+
 }
 
-.edit-button {
+
+.edit-button  {
+
   background-color: #4299e1;
+
   color: white;
+
   border: none;
+
   border-radius: 4px;
+
   padding: 6px 10px;
+
   font-size: 0.8rem;
+
   cursor: pointer;
+
+
 }
 
-.edit-button:hover {
+
+.edit-button:hover  {
+
   background-color: #3182ce;
+
+
 }
 
-.archive-button {
+
+.archive-button  {
+
   background-color: #f56565;
+
   color: white;
+
   border: none;
+
   border-radius: 4px;
+
   padding: 6px 10px;
+
   font-size: 0.8rem;
+
   cursor: pointer;
+
+
 }
 
-.archive-button:hover {
+
+.archive-button:hover  {
+
   background-color: #e53e3e;
+
+
 }
 
-.reactivate-button {
+
+.reactivate-button  {
+
   background-color: #48bb78;
+
   color: white;
+
   border: none;
+
   border-radius: 4px;
+
   padding: 6px 10px;
+
   font-size: 0.8rem;
+
   cursor: pointer;
+
+
 }
 
-.reactivate-button:hover {
+
+.reactivate-button:hover  {
+
   background-color: #38a169;
+
+
 }
 
-.delete-button {
+
+.delete-button  {
+
   background-color: #718096;
+
   color: white;
+
   border: none;
+
   border-radius: 4px;
+
   padding: 6px 10px;
+
   font-size: 0.8rem;
+
   cursor: pointer;
+
+
 }
 
-.delete-button:hover {
+
+.delete-button:hover  {
+
   background-color: #4a5568;
+
+
 }
 
-@media (max-width: 768px) {
-  .employee-actions {
+
+@media (max-width: 768px)  {
+
+  .employee-actions  {
+
     flex-direction: column;
+
     gap: 4px;
+
+
   }
-  
-  .list-item {
+
+
+  .list-item  {
+
     flex-direction: column;
+
     gap: 10px;
+
     align-items: flex-start;
+
+
   }
-  
-  .employee-actions {
+
+
+  .employee-actions  {
+
     width: 100%;
+
     flex-direction: row;
+
     justify-content: flex-end;
+
+
   }
