@@ -11,7 +11,7 @@ router.post('/upload', authenticateToken, async (req, res) => {
     const certificate = new Certificate({
       staffMember: req.body.staffMember,
       position: req.body.position,
-      CertType: req.body.certificateType,  // Changed to match existing data structure
+      certType: req.body.certificateType,  // Changed to match existing data structure
       issueDate: req.body.issueDate,
       expirationDate: req.body.expirationDate,
       documentPath: req.body.documentPath || 'pending'
