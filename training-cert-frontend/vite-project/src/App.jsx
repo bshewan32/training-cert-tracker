@@ -38,6 +38,7 @@ function App() {
   const [expiryDate, setExpiryDate] = useState('');
   const [importFile, setImportFile] = useState(null);
   const [adminActiveTab, setAdminActiveTab] = useState('overview');
+  const [showArchivedEmployees, setShowArchivedEmployees] = useState(false);
 
   // Initialize authentication state from localStorage on app load
   useEffect(() => {
@@ -330,26 +331,45 @@ function App() {
     }
   };
 
-  const fetchSetupData = async () => {
-    try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (!response.ok) throw new Error('Failed to fetch setup data')
-      const data = await response.json()
-      console.log('Setup data received:', data); // Add this
-      console.log('Employees:', data.employees); // Add this
-      console.log('Positions:', data.positions); // Add this
-      setEmployees(data.employees)
-      setPositions(data.positions)
-      setCertificateTypes(data.certificateTypes)
-    } catch (err) {
-      console.error('Setup data fetch error:', err); // Add this
-      setError(err.message)
-    }
+    const fetchSetupData = async (includeInactive = false) => {
+  try {
+    const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup?includeInactive=${includeInactive}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if (!response.ok) throw new Error('Failed to fetch setup data')
+    const data = await response.json()
+    console.log('Setup data received:', data);
+    setEmployees(data.employees)
+    setPositions(data.positions)
+    setCertificateTypes(data.certificateTypes)
+  } catch (err) {
+    console.error('Setup data fetch error:', err);
+    setError(err.message)
   }
+}
+  
+  // const fetchSetupData = async () => {
+  //   try {
+  //     const response = await fetch('https://training-cert-tracker.onrender.com/api/setup', {
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`
+  //       }
+  //     })
+  //     if (!response.ok) throw new Error('Failed to fetch setup data')
+  //     const data = await response.json()
+  //     console.log('Setup data received:', data); // Add this
+  //     console.log('Employees:', data.employees); // Add this
+  //     console.log('Positions:', data.positions); // Add this
+  //     setEmployees(data.employees)
+  //     setPositions(data.positions)
+  //     setCertificateTypes(data.certificateTypes)
+  //   } catch (err) {
+  //     console.error('Setup data fetch error:', err); // Add this
+  //     setError(err.message)
+  //   }
+  // }
 
   const handleDelete = async (type, id) => {
     try {
@@ -861,9 +881,132 @@ function App() {
                 />
               </div>
             )}
+        
+                    {activeTab === 'employees' && (
+          <div className="setup-section">
+            <h3>Manage Employees</h3>
             
+            {/* Add toggle for showing archived employees */}
+            <div className="employee-management-header">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={showArchivedEmployees}
+                  onChange={(e) => {
+                    setShowArchivedEmployees(e.target.checked);
+                    fetchSetupData(e.target.checked); // Refresh data with archived employees
+                  }}
+                />
+                Show archived employees
+              </label>
+            </div>
+            
+            <EmployeeForm 
+              positions={positions}
+              token={token}
+              showArchiveControls={true} // Enable archive controls
+              onSubmit={async (employeeData) => {
+                try {
+                  const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/employee', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(employeeData)
+                  });
+                  
+                  if (!response.ok) throw new Error('Failed to add employee');
+                  
+                  setMessage('Employee added successfully');
+                  await fetchSetupData(showArchivedEmployees); // Maintain current view setting
+                } catch (err) {
+                  setError(err.message);
+                }
+              }}
+              onCancel={() => {}}
+            />
+            
+            <div className="setup-list">
+              <h4>Current Employees</h4>
+              {employees.map(emp => (
+                <div key={emp._id} className={`list-item ${!emp.active ? 'archived-employee' : ''}`}>
+                  <span className="employee-info">
+                    {emp.name} - {emp.primaryPosition?.title || (emp.positions && emp.positions.length > 0 ? emp.positions[0].title : 'No position')}
+                    {!emp.active && <span className="archived-badge">Archived</span>}
+                  </span>
+                  <div className="employee-actions">
+                    <button
+                      onClick={() => {
+                        setSelectedEmployeeForEdit(emp);
+                        setView('employeeDetails');
+                      }}
+                      className="edit-button"
+                    >
+                      Edit
+                    </button>
+                    
+                    {emp.active ? (
+                      <button
+                        onClick={async () => {
+                          if (confirm(`Archive ${emp.name}? They will be excluded from compliance calculations.`)) {
+                            try {
+                              const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${emp._id}/archive`, {
+                                method: 'PUT',
+                                headers: {
+                                  'Authorization': `Bearer ${token}`
+                                }
+                              });
+                              if (!response.ok) throw new Error('Failed to archive employee');
+                              setMessage(`${emp.name} has been archived`);
+                              await fetchSetupData(showArchivedEmployees);
+                            } catch (err) {
+                              setError(err.message);
+                            }
+                          }
+                        }}
+                        className="archive-button"
+                      >
+                        Archive
+                      </button>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${emp._id}/reactivate`, {
+                              method: 'PUT',
+                              headers: {
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+                            if (!response.ok) throw new Error('Failed to reactivate employee');
+                            setMessage(`${emp.name} has been reactivated`);
+                            await fetchSetupData(showArchivedEmployees);
+                          } catch (err) {
+                            setError(err.message);
+                          }
+                        }}
+                        className="reactivate-button"
+                      >
+                        Reactivate
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={() => handleDelete('employee', emp._id)}
+                      className="delete-button"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-            {/* Employees Tab */}
+
+{/*             {/* Employees Tab */}
             {activeTab === 'employees' && (
               <div className="setup-section">
                 <h3>Manage Employees</h3>
@@ -905,7 +1048,7 @@ function App() {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Positions Tab */}
             {activeTab === 'positions' && (
@@ -1047,8 +1190,43 @@ function App() {
               )}
             </div>
           </div>
-          <form onSubmit={handleCertificateSubmit} className="form">
-            <div className="form-group">
+                          <form onSubmit={handleCertificateSubmit} className="form">
+                            <div className="form-group">
+                  <label>Staff Member:</label>
+                  <select
+                    name="staffMember"
+                    required
+                    onChange={(e) => {
+                      const selectedEmployeeId = e.target.value;
+                      const employee = employees.find(emp => emp._id === selectedEmployeeId);
+                      setSelectedEmployee(employee);
+                      
+                      // Auto-populate primary position or first position
+                      if (employee) {
+                        if (employee.primaryPosition) {
+                          setSelectedPosition(employee.primaryPosition._id || employee.primaryPosition);
+                        } else if (employee.positions && employee.positions.length > 0) {
+                          setSelectedPosition(employee.positions[0]._id);
+                        } else {
+                          setSelectedPosition('');
+                        }
+                      } else {
+                        setSelectedPosition('');
+                      }
+                    }}
+                  >
+                    <option value="">Select Staff Member</option>
+                    {employees
+                      .filter(emp => emp.active) // Only show active employees in certificate form
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map(emp => (
+                        <option key={emp._id} value={emp._id}>
+                          {emp.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+{/*             <div className="form-group">
               <label>Staff Member:</label>
               <select
                 name="staffMember"
@@ -1081,7 +1259,7 @@ function App() {
                     </option>
                   ))}
               </select>
-            </div>
+            </div> */}
             
             <div className="form-group">
               <label>Position:</label>
@@ -1295,9 +1473,57 @@ function App() {
           </div>
         </>
       )}
-      
-      {/* Employee Details View - UPDATED to use EmployeeForm component */}
-      {view === 'employeeDetails' && selectedEmployeeForEdit && (
+
+          {view === 'employeeDetails' && selectedEmployeeForEdit && (
+              <div className="employee-details">
+                <h2>Employee Details: {selectedEmployeeForEdit.name}</h2>
+                <button
+                  onClick={() => setView('certificates')}
+                  className="back-button"
+                >
+                  Back to Certificates
+                </button>
+            
+                <div className="details-section">
+                  <h3>Personal Information</h3>
+                  <EmployeeForm
+                    employee={selectedEmployeeForEdit}
+                    positions={positions}
+                    token={token}
+                    showArchiveControls={true} // Enable archive controls in employee details
+                    onSubmit={async (updatedEmployee) => {
+                      try {
+                        const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}`, {
+                          method: 'PUT',
+                          headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify(updatedEmployee)
+                        });
+                    
+                        if (!response.ok) throw new Error('Failed to update employee');
+                        
+                        setMessage('Employee updated successfully');
+                        
+                        // Refresh data
+                        await fetchSetupData();
+                        
+                        // Update the selected employee with the new data
+                        const updatedData = await response.json();
+                        setSelectedEmployeeForEdit(updatedData);
+                      } catch (err) {
+                        setError(err.message);
+                      }
+                    }}
+                    onCancel={() => setView('certificates')}
+                  />
+                </div>
+              </div>
+            )}
+                  
+{/*       Employee Details View - UPDATED to use EmployeeForm component */}
+{/*       {view === 'employeeDetails' && selectedEmployeeForEdit && (
         <div className="employee-details">
           <h2>Employee Details: {selectedEmployeeForEdit.name}</h2>
           <button
@@ -1340,7 +1566,7 @@ function App() {
               }}
               onCancel={() => setView('certificates')}
             />
-          </div>
+          </div> */}
 
           {/* Position Requirements section */}
           {/* <div className="details-section">
