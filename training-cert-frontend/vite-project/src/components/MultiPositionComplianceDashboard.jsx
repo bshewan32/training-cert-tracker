@@ -1033,7 +1033,382 @@ const MultiPositionComplianceDashboard = ({ token }) => {
         }
         
         .position-stats-table tr:hover {
-          background-color: #f
+          background-color: #f7fafc;
+        }
+        
+        .compliance-bar-container {
+          position: relative;
+          width: 100%;
+          height: 20px;
+          background-color: #e2e8f0;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+        
+        .compliance-bar {
+          height: 100%;
+          border-radius: 10px;
+        }
+        
+        .compliance-text {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-weight: 600;
+          color: #2d3748;
+        }
+        
+        .compliant {
+          color: #48bb78;
+          font-weight: 600;
+        }
+        
+        .expiring {
+          color: #f6ad55;
+          font-weight: 600;
+        }
+        
+        .expired {
+          color: #f56565;
+          font-weight: 600;
+        }
+        
+        /* Employee Compliance Cards */
+        .compliance-cards {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+          gap: 20px;
+          margin-top: 20px;
+        }
+        
+        .compliance-card {
+          background-color: #f8fafc;
+          border-radius: 8px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
+        }
+        
+        .compliance-card.inactive-employee {
+          background-color: #faf5ff;
+          border: 1px solid #d6d3d1;
+          opacity: 0.85;
+        }
+        
+        .card-header {
+          background-color: #edf2f7;
+          padding: 15px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+        
+        .inactive-employee .card-header {
+          background-color: #f3f4f6;
+        }
+        
+        .header-main {
+          flex: 1;
+        }
+        
+        .employee-name {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #2d3748;
+          margin-bottom: 5px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .inactive-badge {
+          background-color: #fbbf24;
+          color: #92400e;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: 600;
+        }
+        
+        .position-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .position-title {
+          color: #4a5568;
+        }
+        
+        .primary-badge {
+          background-color: #4299e1;
+          color: white;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: 600;
+        }
+        
+        .employee-actions {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 8px;
+        }
+        
+        .department-badge {
+          background-color: #e2e8f0;
+          color: #4a5568;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 0.8rem;
+        }
+        
+        .archive-btn {
+          background-color: #f56565;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 4px 8px;
+          font-size: 0.8rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        
+        .archive-btn:hover {
+          background-color: #e53e3e;
+        }
+        
+        .compliance-summary {
+          padding: 15px;
+          display: flex;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .compliance-rate {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          border-right: 1px solid #e2e8f0;
+          padding-right: 15px;
+        }
+        
+        .rate-indicator {
+          font-size: 1.8rem;
+          font-weight: 700;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 5px;
+        }
+        
+        .rate-indicator.indicator-success {
+          background-color: #c6f6d5;
+          color: #276749;
+        }
+        
+        .rate-indicator.indicator-good {
+          background-color: #d6f1dd;
+          color: #2b825f;
+        }
+        
+        .rate-indicator.indicator-warning {
+          background-color: #feebc8;
+          color: #9c4221;
+        }
+        
+        .rate-indicator.indicator-danger {
+          background-color: #fed7d7;
+          color: #c53030;
+        }
+        
+        .rate-label {
+          font-size: 0.8rem;
+          color: #4a5568;
+        }
+        
+        .requirement-counts {
+          flex: 2;
+          display: flex;
+          align-items: center;
+          justify-content: space-around;
+        }
+        
+        .count-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .count-value {
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: #2d3748;
+        }
+        
+        .count-value.total {
+          color: #4a5568;
+        }
+        
+        .count-value.compliant {
+          color: #48bb78;
+        }
+        
+        .count-value.expiring {
+          color: #f6ad55;
+        }
+        
+        .count-value.expired {
+          color: #f56565;
+        }
+        
+        .count-label {
+          font-size: 0.7rem;
+          color: #718096;
+        }
+        
+        .requirements-list {
+          padding: 15px;
+        }
+        
+        .requirement-item {
+          padding: 10px;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .requirement-item:last-child {
+          border-bottom: none;
+        }
+        
+        .req-main {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 5px;
+        }
+        
+        .req-title {
+          font-weight: 500;
+          color: #2d3748;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+        
+        .optional-badge {
+          background-color: #e2e8f0;
+          color: #718096;
+          padding: 2px 5px;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: normal;
+        }
+        
+        .req-status {
+          font-size: 0.8rem;
+          font-weight: 500;
+          padding: 3px 8px;
+          border-radius: 4px;
+        }
+        
+        .status-badge-success {
+          background-color: #c6f6d5;
+          color: #276749;
+        }
+        
+        .status-badge-warning {
+          background-color: #feebc8;
+          color: #9c4221;
+        }
+        
+        .status-badge-danger {
+          background-color: #fed7d7;
+          color: #c53030;
+        }
+        
+        .status-badge-error {
+          background-color: #e2e8f0;
+          color: #4a5568;
+        }
+        
+        .certificate-info {
+          font-size: 0.85rem;
+          color: #718096;
+          padding-left: 5px;
+        }
+        
+        .cert-dates {
+          display: flex;
+          gap: 15px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+          .dashboard-controls {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          
+          .overall-stats {
+            flex-direction: column;
+          }
+          
+          .compliance-indicator {
+            margin-right: 0;
+            margin-bottom: 20px;
+          }
+          
+          .stat-summary {
+            flex-wrap: wrap;
+          }
+          
+          .stat-item {
+            flex: 1 0 40%;
+            border-left: none;
+            padding-left: 0;
+            margin-bottom: 10px;
+          }
+          
+          .filter-controls {
+            flex-direction: column;
+            gap: 10px;
+          }
+          
+          .filter-group {
+            width: 100%;
+          }
+          
+          .filter-group select {
+            width: 100%;
+          }
+          
+          .position-stats-table th:nth-child(2),
+          .position-stats-table td:nth-child(2),
+          .position-stats-table th:nth-child(3),
+          .position-stats-table td:nth-child(3) {
+            display: none;
+          }
+          
+          .compliance-cards {
+            grid-template-columns: 1fr;
+          }
+          
+          .archived-employees-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default MultiPositionComplianceDashboard;
 
 // import { useState, useEffect } from 'react';
 
