@@ -4,19 +4,20 @@ const Certificate = require('../models/Certificate');
 const { authenticateToken } = require('../controllers/middleware/auth');
 const upload = require('../controllers/middleware/upload');
 
+// POST new certificate
 router.post('/upload', authenticateToken, async (req, res) => {
   try {
-    console.log('Received data:', req.body); // Debug log
-    
+    console.log('Received data:', req.body);
+
     const certificate = new Certificate({
       staffMember: req.body.staffMember,
       position: req.body.position,
-      certType: req.body.certificateType,  // Changed to match existing data structure
+      certType: req.body.certificateType,
       issueDate: req.body.issueDate,
       expirationDate: req.body.expirationDate,
       documentPath: req.body.documentPath || 'pending'
     });
-    
+
     const saved = await certificate.save();
     res.status(201).json(saved);
   } catch (error) {
@@ -25,14 +26,14 @@ router.post('/upload', authenticateToken, async (req, res) => {
   }
 });
 
-// Get all certificates
+// GET all certificates
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const certificates = await Certificate.aggregate([
       {
         $lookup: {
           from: "certificatetypes",
-          localField: "CertType",          // Changed from "certificateType" to "CertType"
+          localField: "CertType",
           foreignField: "name",
           as: "certificateTypeDetails"
         }
@@ -40,13 +41,13 @@ router.get('/', authenticateToken, async (req, res) => {
       {
         $unwind: {
           path: "$certificateTypeDetails",
-          preserveNullAndEmptyArrays: true  // Keep certificates even if no matching type
+          preserveNullAndEmptyArrays: true
         }
       },
       {
         $addFields: {
           certificateName: {
-            $ifNull: ["$certificateTypeDetails.name", "$CertType"]  // Changed fallback to "$CertType"
+            $ifNull: ["$certificateTypeDetails.name", "$CertType"]
           },
           validityPeriod: "$certificateTypeDetails.validityPeriod",
           status: {
@@ -59,14 +60,14 @@ router.get('/', authenticateToken, async (req, res) => {
         }
       }
     ]);
-    
+
     res.json(certificates);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Get certificates by status
+// GET certificates by status
 router.get('/status/:status', authenticateToken, async (req, res) => {
   try {
     const certificates = await Certificate.aggregate([
@@ -100,12 +101,26 @@ router.get('/status/:status', authenticateToken, async (req, res) => {
         }
       },
       {
-        $match: { status: req.params.status }  // Filter by status after calculating it
+        $match: { status: req.params.status }
       }
     ]);
     res.json(certificates);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// ✅ DELETE certificate by ID
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const deleted = await Certificate.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Certificate not found' });
+    }
+    res.json({ message: 'Certificate deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting certificate:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
