@@ -167,7 +167,7 @@ const EmployeeForm = ({
           const employeeName = employeeData.name;
           const matchingCerts = allCertificates.filter(cert => 
             cert.staffMember === employeeName && 
-            (cert.certificateType === req.certificateType || cert.certificateName === req.certificateType)
+            (cert.certType === req.certificateType || cert.certificateType === req.certificateType || cert.certificateName === req.certificateType)
           );
           
           // Find the most recent valid certificate
