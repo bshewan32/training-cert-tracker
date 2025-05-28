@@ -45,19 +45,23 @@ router.get('/', authenticateToken, async (req, res) => {
         }
       },
       {
-        $addFields: {
-          certificateName: {
-            $ifNull: ["$certificateTypeDetails.name", "$certType"]
-          },
-          validityPeriod: "$certificateTypeDetails.validityPeriod",
-          status: {
-            $cond: {
-              if: { $lt: ["$expirationDate", new Date()] },
-              then: "EXPIRED",
-              else: "ACTIVE"
-            }
+              $addFields: {
+        certificateName: {
+          $ifNull: [
+            "$certificateTypeDetails.name",
+            { $ifNull: ["$certType", "$CertType"] } // Support both old and new field names
+          ]
+        },
+        validityPeriod: "$certificateTypeDetails.validityPeriod",
+        status: {
+          $cond: {
+            if: { $lt: ["$expirationDate", new Date()] },
+            then: "EXPIRED",
+            else: "ACTIVE"
           }
         }
+      }
+
       }
     ]);
 
