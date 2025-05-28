@@ -11,7 +11,7 @@ const CertificateSchema = new mongoose.Schema({
     ref: 'Position',
     required: true 
   },
-  certificateType: { 
+  certType: { 
     type: String, 
     required: true 
   },
