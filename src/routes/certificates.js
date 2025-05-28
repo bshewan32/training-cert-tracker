@@ -33,7 +33,7 @@ router.get('/', authenticateToken, async (req, res) => {
       {
         $lookup: {
           from: "certificatetypes",
-          localField: "CertType",
+          localField: "certType",
           foreignField: "name",
           as: "certificateTypeDetails"
         }
@@ -47,7 +47,7 @@ router.get('/', authenticateToken, async (req, res) => {
       {
         $addFields: {
           certificateName: {
-            $ifNull: ["$certificateTypeDetails.name", "$CertType"]
+            $ifNull: ["$certificateTypeDetails.name", "$certType"]
           },
           validityPeriod: "$certificateTypeDetails.validityPeriod",
           status: {
@@ -74,7 +74,7 @@ router.get('/status/:status', authenticateToken, async (req, res) => {
       {
         $lookup: {
           from: "certificatetypes",
-          localField: "CertType",
+          localField: "certType",
           foreignField: "name",
           as: "certificateTypeDetails"
         }
@@ -88,7 +88,7 @@ router.get('/status/:status', authenticateToken, async (req, res) => {
       {
         $addFields: {
           certificateName: {
-            $ifNull: ["$certificateTypeDetails.name", "$CertType"]
+            $ifNull: ["$certificateTypeDetails.name", "$certType"]
           },
           validityPeriod: "$certificateTypeDetails.validityPeriod",
           status: {
