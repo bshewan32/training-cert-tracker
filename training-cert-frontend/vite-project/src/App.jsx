@@ -1615,8 +1615,6 @@ function App() {
               </tbody>
             </table>
           </div> */}
-        </div>
-      )}
       
       {/* Excel Tools view */}
       {view === 'excelTools' && (
