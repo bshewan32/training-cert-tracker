@@ -5,14 +5,16 @@ const EmployeeForm = ({
   positions = [], 
   token, 
   onSubmit, 
-  onCancel 
+  onCancel,
+  showArchiveControls = false // New prop to control archive functionality visibility
 }) => {
   // Initialize state with existing employee data or defaults
   const [employeeData, setEmployeeData] = useState({
     name: employee?.name || '',
     email: employee?.email || '',
     positions: employee?.positions || [],
-    primaryPosition: employee?.primaryPosition || ''
+    primaryPosition: employee?.primaryPosition || '',
+    active: employee?.active !== undefined ? employee.active : true
   });
   
   // State for selected positions (for multi-select)
@@ -83,10 +85,10 @@ const EmployeeForm = ({
   
   // Handle input changes for name and email
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setEmployeeData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
   
@@ -101,6 +103,70 @@ const EmployeeForm = ({
     };
     
     onSubmit(submissionData);
+  };
+
+  // Archive employee
+  const handleArchive = async () => {
+    if (!employee || !employee._id) return;
+    
+    if (!confirm(`Are you sure you want to archive ${employee.name}? They will be excluded from compliance calculations.`)) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${employee._id}/archive`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to archive employee');
+      }
+      
+      // Update local state
+      setEmployeeData(prev => ({ ...prev, active: false }));
+      
+      // Optionally call onSubmit to refresh parent data
+      if (onSubmit) {
+        const result = await response.json();
+        onSubmit(result.employee);
+      }
+    } catch (error) {
+      console.error('Error archiving employee:', error);
+      alert('Failed to archive employee: ' + error.message);
+    }
+  };
+
+  // Reactivate employee
+  const handleReactivate = async () => {
+    if (!employee || !employee._id) return;
+    
+    try {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${employee._id}/reactivate`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to reactivate employee');
+      }
+      
+      // Update local state
+      setEmployeeData(prev => ({ ...prev, active: true }));
+      
+      // Optionally call onSubmit to refresh parent data
+      if (onSubmit) {
+        const result = await response.json();
+        onSubmit(result.employee);
+      }
+    } catch (error) {
+      console.error('Error reactivating employee:', error);
+      alert('Failed to reactivate employee: ' + error.message);
+    }
   };
 
   // Fetch detailed position data including requirements
@@ -131,22 +197,15 @@ const EmployeeForm = ({
       
       if (requirementsResponse.ok) {
         allRequirements = await requirementsResponse.json();
-        console.log('All requirements fetched:', allRequirements);
-      } else {
-        console.error('Failed to fetch requirements:', requirementsResponse.status);
       }
       
       if (certificatesResponse.ok) {
         allCertificates = await certificatesResponse.json();
-        console.log('All certificates fetched:', allCertificates);
         
         // Filter certificates for this employee
         const employeeName = employeeData.name;
         const empCerts = allCertificates.filter(cert => cert.staffMember === employeeName);
         setEmployeeCertificates(empCerts);
-        console.log(`Certificates for ${employeeName}:`, empCerts);
-      } else {
-        console.error('Failed to fetch certificates:', certificatesResponse.status);
       }
       
       // Create detailed positions by combining selected positions with their requirements and certificate status
@@ -158,8 +217,6 @@ const EmployeeForm = ({
             (typeof req.position === 'string' && req.position === position._id)
           )
         );
-        
-        console.log(`Requirements for position ${position.title}:`, positionRequirements);
         
         // Transform requirements to expected format and check certificate status
         const transformedRequirements = positionRequirements.map(req => {
@@ -212,7 +269,6 @@ const EmployeeForm = ({
         };
       });
       
-      console.log('Detailed positions created:', detailedPositionsData);
       setDetailedPositions(detailedPositionsData);
       
     } catch (error) {
@@ -273,6 +329,45 @@ const EmployeeForm = ({
   return (
     <div className="employee-form">
       <div className="form-content">
+        {/* Employee Status Indicator */}
+        {employee && (
+          <div className={`employee-status-indicator ${employeeData.active ? 'active' : 'inactive'}`}>
+            <div className="status-info">
+              <span className="status-label">Status:</span>
+              <span className={`status-value ${employeeData.active ? 'active' : 'inactive'}`}>
+                {employeeData.active ? 'Active' : 'Archived'}
+              </span>
+              {!employeeData.active && (
+                <span className="status-note">
+                  (Excluded from compliance calculations)
+                </span>
+              )}
+            </div>
+            
+            {showArchiveControls && (
+              <div className="status-actions">
+                {employeeData.active ? (
+                  <button
+                    type="button"
+                    className="archive-btn"
+                    onClick={handleArchive}
+                  >
+                    Archive Employee
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="reactivate-btn"
+                    onClick={handleReactivate}
+                  >
+                    Reactivate Employee
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        
         <div className="form-group">
           <label htmlFor="name">Employee Name:</label>
           <input
@@ -296,6 +391,21 @@ const EmployeeForm = ({
             required
           />
         </div>
+        
+        {/* Active Status Checkbox for New Employees or Manual Override */}
+        {(!employee || showArchiveControls) && (
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="active"
+                checked={employeeData.active}
+                onChange={handleInputChange}
+              />
+              Employee is active (included in compliance calculations)
+            </label>
+          </div>
+        )}
         
         <div className="form-group">
           <label>Positions:</label>
@@ -387,13 +497,6 @@ const EmployeeForm = ({
                 ) : detailedPositions.length === 0 ? (
                   <div className="no-data-message">
                     <p>No position requirements found.</p>
-                    <p>This could mean:</p>
-                    <ul>
-                      <li>The selected positions don't have any requirements configured</li>
-                      <li>The requirements data is still loading</li>
-                      <li>There may be an issue with the API connection</li>
-                    </ul>
-                    <p><small>Check the browser console for detailed error messages.</small></p>
                   </div>
                 ) : (
                   <>
@@ -411,11 +514,6 @@ const EmployeeForm = ({
                                   {item.requirement.status}
                                 </span>
                               </div>
-                              {item.requirement.description && (
-                                <div className="requirement-description">
-                                  {item.requirement.description}
-                                </div>
-                              )}
                               {item.requirement.certificateInfo && (
                                 <div className="certificate-info">
                                   <div><strong>Issue:</strong> {new Date(item.requirement.certificateInfo.issueDate).toLocaleDateString()}</div>
@@ -423,94 +521,13 @@ const EmployeeForm = ({
                                   <div><strong>Status:</strong> {item.requirement.certificateInfo.status}</div>
                                 </div>
                               )}
-                              {item.requirement.validityPeriod && (
-                                <div className="requirement-validity">
-                                  <strong>Validity:</strong> {item.requirement.validityPeriod} months
-                                </div>
-                              )}
                               <div className="requirement-positions">
                                 <strong>Required for:</strong> {item.positions.join(', ')}
                               </div>
-                              {item.requirement.isRequired !== undefined && (
-                                <div className="requirement-mandatory">
-                                  <span className={`mandatory-badge ${item.requirement.isRequired ? 'required' : 'optional'}`}>
-                                    {item.requirement.isRequired ? 'Required' : 'Optional'}
-                                  </span>
-                                </div>
-                              )}
-                              {item.requirement.type && (
-                                <div className="requirement-type">
-                                  <span className={`type-badge ${item.requirement.type.toLowerCase()}`}>
-                                    {item.requirement.type}
-                                  </span>
-                                </div>
-                              )}
                             </div>
                           ))}
                         </div>
                       )}
-                    </div>
-
-                    <div className="requirements-by-position">
-                      <h4>Requirements by Position</h4>
-                      {detailedPositions.map(position => (
-                        <div key={position._id} className="position-requirements">
-                          <div className="position-header">
-                            <h5>{position.title}</h5>
-                            {employeeData.primaryPosition === position._id && (
-                              <span className="primary-badge">Primary</span>
-                            )}
-                          </div>
-                          
-                          {position.requirements && position.requirements.length > 0 ? (
-                            <ul className="requirements-list">
-                              {position.requirements.map((req, reqIndex) => (
-                                <li key={reqIndex} className={`requirement-item ${req.isCompliant ? 'compliant' : 'non-compliant'}`}>
-                                  <div className="req-header">
-                                    <span className="req-name">
-                                      {typeof req === 'object' ? (req.name || req.title) : req}
-                                    </span>
-                                    <span className={`compliance-badge ${req.isCompliant ? 'compliant' : 'missing'}`}>
-                                      {req.status}
-                                    </span>
-                                  </div>
-                                  
-                                  {typeof req === 'object' && req.certificateInfo && (
-                                    <div className="certificate-details">
-                                      <span className="cert-dates">
-                                        Issued: {new Date(req.certificateInfo.issueDate).toLocaleDateString()} | 
-                                        Expires: {new Date(req.certificateInfo.expirationDate).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                  )}
-                                  
-                                  {typeof req === 'object' && req.description && (
-                                    <span className="req-description"> - {req.description}</span>
-                                  )}
-                                  
-                                  <div className="req-badges">
-                                    {typeof req === 'object' && req.validityPeriod && (
-                                      <span className="req-validity">Valid for {req.validityPeriod} months</span>
-                                    )}
-                                    {typeof req === 'object' && req.isRequired !== undefined && (
-                                      <span className={`req-mandatory-badge ${req.isRequired ? 'required' : 'optional'}`}>
-                                        {req.isRequired ? 'Required' : 'Optional'}
-                                      </span>
-                                    )}
-                                    {typeof req === 'object' && req.type && (
-                                      <span className={`req-type-badge ${req.type.toLowerCase()}`}>
-                                        {req.type}
-                                      </span>
-                                    )}
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="no-requirements">No specific requirements listed</p>
-                          )}
-                        </div>
-                      ))}
                     </div>
                   </>
                 )}
@@ -538,6 +555,94 @@ const EmployeeForm = ({
           margin: 0 auto;
         }
         
+        .employee-status-indicator {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 15px;
+          border-radius: 6px;
+          margin-bottom: 20px;
+          border: 1px solid;
+        }
+        
+        .employee-status-indicator.active {
+          background-color: #f0fff4;
+          border-color: #9ae6b4;
+        }
+        
+        .employee-status-indicator.inactive {
+          background-color: #fff5f5;
+          border-color: #fed7d7;
+        }
+        
+        .status-info {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .status-label {
+          font-weight: 600;
+          color: #4a5568;
+        }
+        
+        .status-value {
+          font-weight: 700;
+          padding: 4px 8px;
+          border-radius: 4px;
+        }
+        
+        .status-value.active {
+          background-color: #c6f6d5;
+          color: #276749;
+        }
+        
+        .status-value.inactive {
+          background-color: #fed7d7;
+          color: #c53030;
+        }
+        
+        .status-note {
+          font-size: 0.9rem;
+          color: #718096;
+          font-style: italic;
+        }
+        
+        .status-actions {
+          display: flex;
+          gap: 10px;
+        }
+        
+        .archive-btn {
+          background-color: #f56565;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 8px 12px;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        
+        .archive-btn:hover {
+          background-color: #e53e3e;
+        }
+        
+        .reactivate-btn {
+          background-color: #48bb78;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 8px 12px;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        
+        .reactivate-btn:hover {
+          background-color: #38a169;
+        }
+        
         .form-group {
           margin-bottom: 20px;
         }
@@ -547,6 +652,18 @@ const EmployeeForm = ({
           margin-bottom: 5px;
           font-weight: 500;
           color: #4a5568;
+        }
+        
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+          width: 16px;
+          height: 16px;
         }
         
         input[type="text"],
@@ -660,16 +777,6 @@ const EmployeeForm = ({
           color: #4a5568;
         }
 
-        .no-data-message ul {
-          text-align: left;
-          display: inline-block;
-          margin-top: 10px;
-        }
-
-        .no-data-message li {
-          margin-bottom: 5px;
-        }
-
         .requirements-container {
           background-color: white;
           border: 1px solid #e2e8f0;
@@ -746,180 +853,10 @@ const EmployeeForm = ({
           margin-bottom: 8px;
         }
 
-        .requirement-description {
-          color: #4a5568;
-          font-size: 0.9rem;
-          margin-bottom: 8px;
-        }
-
         .requirement-positions {
           color: #2b6cb0;
           font-size: 0.85rem;
-          margin-bottom: 8px;
-        }
-
-        .requirement-validity {
-          color: #805ad5;
-          font-size: 0.85rem;
-          margin-bottom: 8px;
-        }
-
-        .requirement-mandatory {
-          margin-bottom: 8px;
-        }
-
-        .mandatory-badge, .req-mandatory-badge {
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 500;
-          text-transform: uppercase;
-        }
-
-        .mandatory-badge.required, .req-mandatory-badge.required {
-          background-color: #fed7d7;
-          color: #c53030;
-        }
-
-        .mandatory-badge.optional, .req-mandatory-badge.optional {
-          background-color: #e6fffa;
-          color: #319795;
-        }
-
-        .req-validity {
-          color: #805ad5;
-          font-size: 0.85rem;
-          font-style: italic;
-        }
-
-        .requirement-type {
           margin-top: 8px;
-        }
-
-        .type-badge, .req-type-badge {
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 500;
-          text-transform: uppercase;
-        }
-
-        .type-badge.certification, .req-type-badge.certification {
-          background-color: #fed7d7;
-          color: #c53030;
-        }
-
-        .type-badge.skill, .req-type-badge.skill {
-          background-color: #bee3f8;
-          color: #2b6cb0;
-        }
-
-        .type-badge.education, .req-type-badge.education {
-          background-color: #c6f6d5;
-          color: #2f855a;
-        }
-
-        .type-badge.experience, .req-type-badge.experience {
-          background-color: #fbb6ce;
-          color: #b83280;
-        }
-
-        .requirements-by-position {
-          border-top: 1px solid #e2e8f0;
-          padding-top: 20px;
-        }
-
-        .position-requirements {
-          margin-bottom: 20px;
-          padding: 15px;
-          background-color: #f7fafc;
-          border-radius: 6px;
-        }
-
-        .position-header {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 10px;
-        }
-
-        .primary-badge {
-          background-color: #4299e1;
-          color: white;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-
-        .requirements-list {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-        }
-
-        .requirement-item {
-          padding: 8px 0;
-          border-bottom: 1px solid #e2e8f0;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .requirement-item.compliant {
-          background-color: #f0fdf4;
-          padding: 12px;
-          border-radius: 6px;
-          border: 1px solid #10b981;
-          margin-bottom: 8px;
-        }
-
-        .requirement-item.non-compliant {
-          background-color: #fef2f2;
-          padding: 12px;
-          border-radius: 6px;
-          border: 1px solid #ef4444;
-          margin-bottom: 8px;
-        }
-
-        .requirement-item:last-child {
-          border-bottom: none;
-        }
-
-        .req-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-
-        .certificate-details {
-          font-size: 0.85rem;
-          color: #4a5568;
-          background-color: rgba(255, 255, 255, 0.8);
-          padding: 6px 8px;
-          border-radius: 4px;
-        }
-
-        .cert-dates {
-          font-weight: 500;
-        }
-
-        .req-badges {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-
-        .req-name {
-          font-weight: 500;
-          color: #2d3748;
-        }
-
-        .req-description {
-          color: #4a5568;
-          font-size: 0.9rem;
         }
 
         .no-requirements {
@@ -962,6 +899,16 @@ const EmployeeForm = ({
         }
         
         @media (max-width: 768px) {
+          .employee-status-indicator {
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
+          }
+          
+          .status-info {
+            flex-wrap: wrap;
+          }
+          
           .positions-container {
             grid-template-columns: 1fr;
           }
@@ -1008,6 +955,14 @@ export default EmployeeForm;
 //   const [selectedPositions, setSelectedPositions] = useState([]);
 //   // State for available positions (excluding already selected ones)
 //   const [availablePositions, setAvailablePositions] = useState([]);
+//   // State to control requirements visibility
+//   const [showRequirements, setShowRequirements] = useState(false);
+//   // State for detailed position data with requirements
+//   const [detailedPositions, setDetailedPositions] = useState([]);
+//   // Loading state for requirements
+//   const [loadingRequirements, setLoadingRequirements] = useState(false);
+//   // State for employee certificates
+//   const [employeeCertificates, setEmployeeCertificates] = useState([]);
   
 //   // Initialize selected positions from employee data
 //   useEffect(() => {
@@ -1082,6 +1037,173 @@ export default EmployeeForm;
 //     };
     
 //     onSubmit(submissionData);
+//   };
+
+//   // Fetch detailed position data including requirements
+//   const fetchPositionDetails = async (positionIds) => {
+//     if (!positionIds.length || !token) return;
+    
+//     setLoadingRequirements(true);
+//     try {
+//       // Fetch both requirements and employee certificates
+//       const [requirementsResponse, certificatesResponse] = await Promise.all([
+//         fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
+//           headers: {
+//             'Authorization': `Bearer ${token}`,
+//             'Content-Type': 'application/json'
+//           }
+//         }),
+//         // Fetch all certificates to find ones for this employee
+//         fetch('https://training-cert-tracker.onrender.com/api/certificates', {
+//           headers: {
+//             'Authorization': `Bearer ${token}`,
+//             'Content-Type': 'application/json'
+//           }
+//         })
+//       ]);
+      
+//       let allRequirements = [];
+//       let allCertificates = [];
+      
+//       if (requirementsResponse.ok) {
+//         allRequirements = await requirementsResponse.json();
+//         console.log('All requirements fetched:', allRequirements);
+//       } else {
+//         console.error('Failed to fetch requirements:', requirementsResponse.status);
+//       }
+      
+//       if (certificatesResponse.ok) {
+//         allCertificates = await certificatesResponse.json();
+//         console.log('All certificates fetched:', allCertificates);
+        
+//         // Filter certificates for this employee
+//         const employeeName = employeeData.name;
+//         const empCerts = allCertificates.filter(cert => cert.staffMember === employeeName);
+//         setEmployeeCertificates(empCerts);
+//         console.log(`Certificates for ${employeeName}:`, empCerts);
+//       } else {
+//         console.error('Failed to fetch certificates:', certificatesResponse.status);
+//       }
+      
+//       // Create detailed positions by combining selected positions with their requirements and certificate status
+//       const detailedPositionsData = selectedPositions.map(position => {
+//         // Find requirements for this position
+//         const positionRequirements = allRequirements.filter(req => 
+//           req.position && (
+//             (typeof req.position === 'object' && req.position._id === position._id) ||
+//             (typeof req.position === 'string' && req.position === position._id)
+//           )
+//         );
+        
+//         console.log(`Requirements for position ${position.title}:`, positionRequirements);
+        
+//         // Transform requirements to expected format and check certificate status
+//         const transformedRequirements = positionRequirements.map(req => {
+//           // Find matching certificates for this requirement
+//           const employeeName = employeeData.name;
+//           const matchingCerts = allCertificates.filter(cert => 
+//             cert.staffMember === employeeName && 
+//             (cert.certType === req.certificateType || cert.certificateType === req.certificateType || cert.certificateName === req.certificateType)
+//           );
+          
+//           // Find the most recent valid certificate
+//           let isCompliant = false;
+//           let certificateInfo = null;
+          
+//           if (matchingCerts.length > 0) {
+//             // Sort by expiration date descending to get the most recent
+//             matchingCerts.sort((a, b) => new Date(b.expirationDate) - new Date(a.expirationDate));
+//             const latestCert = matchingCerts[0];
+            
+//             // Check if certificate is still valid
+//             const expirationDate = new Date(latestCert.expirationDate);
+//             const now = new Date();
+//             isCompliant = expirationDate > now;
+            
+//             certificateInfo = {
+//               issueDate: latestCert.issueDate,
+//               expirationDate: latestCert.expirationDate,
+//               status: latestCert.status || (isCompliant ? 'ACTIVE' : 'EXPIRED')
+//             };
+//           }
+          
+//           return {
+//             _id: req._id,
+//             name: req.certificateType,
+//             title: req.certificateType,
+//             description: req.notes || `${req.certificateType} certification required`,
+//             type: 'certification',
+//             validityPeriod: req.validityPeriod,
+//             isRequired: req.isRequired,
+//             // Add compliance status
+//             isCompliant,
+//             certificateInfo,
+//             status: isCompliant ? 'Compliant' : 'Missing'
+//           };
+//         });
+        
+//         return {
+//           ...position,
+//           requirements: transformedRequirements
+//         };
+//       });
+      
+//       console.log('Detailed positions created:', detailedPositionsData);
+//       setDetailedPositions(detailedPositionsData);
+      
+//     } catch (error) {
+//       console.error('Error fetching position details:', error);
+//       const fallbackPositions = selectedPositions.map(position => ({
+//         ...position,
+//         requirements: []
+//       }));
+//       setDetailedPositions(fallbackPositions);
+//     } finally {
+//       setLoadingRequirements(false);
+//     }
+//   };
+
+//   // Handle show requirements toggle
+//   const handleShowRequirements = async () => {
+//     if (!showRequirements && selectedPositions.length > 0) {
+//       // Fetch detailed position data when showing requirements
+//       const positionIds = selectedPositions.map(pos => pos._id);
+//       await fetchPositionDetails(positionIds);
+//     }
+//     setShowRequirements(!showRequirements);
+//   };
+
+//   // Update detailed positions when selected positions change
+//   useEffect(() => {
+//     if (showRequirements && selectedPositions.length > 0) {
+//       const positionIds = selectedPositions.map(pos => pos._id);
+//       fetchPositionDetails(positionIds);
+//     } else if (selectedPositions.length === 0) {
+//       setDetailedPositions([]);
+//     }
+//   }, [selectedPositions, showRequirements]);
+
+//   // Get all unique requirements across all selected positions
+//   const getAllRequirements = () => {
+//     const allRequirements = new Map();
+    
+//     detailedPositions.forEach(position => {
+//       if (position.requirements && Array.isArray(position.requirements)) {
+//         position.requirements.forEach(req => {
+//           const key = typeof req === 'object' ? (req._id || req.name || req.title) : req;
+//           if (key) {
+//             allRequirements.set(key, {
+//               requirement: typeof req === 'object' ? req : { name: req },
+//               positions: allRequirements.has(key) 
+//                 ? [...allRequirements.get(key).positions, position.title]
+//                 : [position.title]
+//             });
+//           }
+//         });
+//       }
+//     });
+    
+//     return Array.from(allRequirements.values());
 //   };
   
 //   return (
@@ -1176,6 +1298,162 @@ export default EmployeeForm;
 //             </div>
 //           </div>
 //         </div>
+
+//         {/* Position Requirements Section */}
+//         {selectedPositions.length > 0 && (
+//           <div className="form-group">
+//             <div className="requirements-header">
+//               <label>Position Requirements:</label>
+//               <button
+//                 type="button"
+//                 className="toggle-requirements-btn"
+//                 onClick={handleShowRequirements}
+//                 disabled={loadingRequirements}
+//               >
+//                 {loadingRequirements ? 'Loading...' : showRequirements ? 'Hide Requirements' : 'Show Requirements'}
+//               </button>
+//             </div>
+            
+//             {showRequirements && (
+//               <div className="requirements-container">
+//                 {loadingRequirements ? (
+//                   <div className="loading-message">
+//                     <p>Loading position requirements...</p>
+//                   </div>
+//                 ) : detailedPositions.length === 0 ? (
+//                   <div className="no-data-message">
+//                     <p>No position requirements found.</p>
+//                     <p>This could mean:</p>
+//                     <ul>
+//                       <li>The selected positions don't have any requirements configured</li>
+//                       <li>The requirements data is still loading</li>
+//                       <li>There may be an issue with the API connection</li>
+//                     </ul>
+//                     <p><small>Check the browser console for detailed error messages.</small></p>
+//                   </div>
+//                 ) : (
+//                   <>
+//                     <div className="requirements-summary">
+//                       <h4>All Requirements Summary</h4>
+//                       {getAllRequirements().length === 0 ? (
+//                         <p className="no-requirements">No requirements found across all positions.</p>
+//                       ) : (
+//                         <div className="requirements-grid">
+//                           {getAllRequirements().map((item, index) => (
+//                             <div key={index} className={`requirement-card ${item.requirement.isCompliant ? 'compliant' : 'non-compliant'}`}>
+//                               <div className="requirement-name">
+//                                 {item.requirement.name || item.requirement.title || 'Requirement'}
+//                                 <span className={`compliance-badge ${item.requirement.isCompliant ? 'compliant' : 'missing'}`}>
+//                                   {item.requirement.status}
+//                                 </span>
+//                               </div>
+//                               {item.requirement.description && (
+//                                 <div className="requirement-description">
+//                                   {item.requirement.description}
+//                                 </div>
+//                               )}
+//                               {item.requirement.certificateInfo && (
+//                                 <div className="certificate-info">
+//                                   <div><strong>Issue:</strong> {new Date(item.requirement.certificateInfo.issueDate).toLocaleDateString()}</div>
+//                                   <div><strong>Expires:</strong> {new Date(item.requirement.certificateInfo.expirationDate).toLocaleDateString()}</div>
+//                                   <div><strong>Status:</strong> {item.requirement.certificateInfo.status}</div>
+//                                 </div>
+//                               )}
+//                               {item.requirement.validityPeriod && (
+//                                 <div className="requirement-validity">
+//                                   <strong>Validity:</strong> {item.requirement.validityPeriod} months
+//                                 </div>
+//                               )}
+//                               <div className="requirement-positions">
+//                                 <strong>Required for:</strong> {item.positions.join(', ')}
+//                               </div>
+//                               {item.requirement.isRequired !== undefined && (
+//                                 <div className="requirement-mandatory">
+//                                   <span className={`mandatory-badge ${item.requirement.isRequired ? 'required' : 'optional'}`}>
+//                                     {item.requirement.isRequired ? 'Required' : 'Optional'}
+//                                   </span>
+//                                 </div>
+//                               )}
+//                               {item.requirement.type && (
+//                                 <div className="requirement-type">
+//                                   <span className={`type-badge ${item.requirement.type.toLowerCase()}`}>
+//                                     {item.requirement.type}
+//                                   </span>
+//                                 </div>
+//                               )}
+//                             </div>
+//                           ))}
+//                         </div>
+//                       )}
+//                     </div>
+
+//                     <div className="requirements-by-position">
+//                       <h4>Requirements by Position</h4>
+//                       {detailedPositions.map(position => (
+//                         <div key={position._id} className="position-requirements">
+//                           <div className="position-header">
+//                             <h5>{position.title}</h5>
+//                             {employeeData.primaryPosition === position._id && (
+//                               <span className="primary-badge">Primary</span>
+//                             )}
+//                           </div>
+                          
+//                           {position.requirements && position.requirements.length > 0 ? (
+//                             <ul className="requirements-list">
+//                               {position.requirements.map((req, reqIndex) => (
+//                                 <li key={reqIndex} className={`requirement-item ${req.isCompliant ? 'compliant' : 'non-compliant'}`}>
+//                                   <div className="req-header">
+//                                     <span className="req-name">
+//                                       {typeof req === 'object' ? (req.name || req.title) : req}
+//                                     </span>
+//                                     <span className={`compliance-badge ${req.isCompliant ? 'compliant' : 'missing'}`}>
+//                                       {req.status}
+//                                     </span>
+//                                   </div>
+                                  
+//                                   {typeof req === 'object' && req.certificateInfo && (
+//                                     <div className="certificate-details">
+//                                       <span className="cert-dates">
+//                                         Issued: {new Date(req.certificateInfo.issueDate).toLocaleDateString()} | 
+//                                         Expires: {new Date(req.certificateInfo.expirationDate).toLocaleDateString()}
+//                                       </span>
+//                                     </div>
+//                                   )}
+                                  
+//                                   {typeof req === 'object' && req.description && (
+//                                     <span className="req-description"> - {req.description}</span>
+//                                   )}
+                                  
+//                                   <div className="req-badges">
+//                                     {typeof req === 'object' && req.validityPeriod && (
+//                                       <span className="req-validity">Valid for {req.validityPeriod} months</span>
+//                                     )}
+//                                     {typeof req === 'object' && req.isRequired !== undefined && (
+//                                       <span className={`req-mandatory-badge ${req.isRequired ? 'required' : 'optional'}`}>
+//                                         {req.isRequired ? 'Required' : 'Optional'}
+//                                       </span>
+//                                     )}
+//                                     {typeof req === 'object' && req.type && (
+//                                       <span className={`req-type-badge ${req.type.toLowerCase()}`}>
+//                                         {req.type}
+//                                       </span>
+//                                     )}
+//                                   </div>
+//                                 </li>
+//                               ))}
+//                             </ul>
+//                           ) : (
+//                             <p className="no-requirements">No specific requirements listed</p>
+//                           )}
+//                         </div>
+//                       ))}
+//                     </div>
+//                   </>
+//                 )}
+//               </div>
+//             )}
+//           </div>
+//         )}
         
 //         <div className="form-actions">
 //           <button type="button" className="submit-btn" onClick={handleSubmit}>
@@ -1192,7 +1470,7 @@ export default EmployeeForm;
 //           background-color: #f8fafc;
 //           padding: 20px;
 //           border-radius: 8px;
-//           max-width: 800px;
+//           max-width: 1000px;
 //           margin: 0 auto;
 //         }
         
@@ -1237,6 +1515,12 @@ export default EmployeeForm;
 //           color: #2d3748;
 //           font-size: 1rem;
 //         }
+
+//         h5 {
+//           margin: 0;
+//           color: #2d3748;
+//           font-size: 0.95rem;
+//         }
         
 //         .no-positions {
 //           color: #a0aec0;
@@ -1278,6 +1562,306 @@ export default EmployeeForm;
 //         .remove-btn:hover {
 //           background-color: #e53e3e;
 //         }
+
+//         /* Requirements Section Styles */
+//         .requirements-header {
+//           display: flex;
+//           justify-content: space-between;
+//           align-items: center;
+//           margin-bottom: 10px;
+//         }
+
+//         .toggle-requirements-btn {
+//           background-color: #805ad5;
+//           color: white;
+//           border: none;
+//           border-radius: 4px;
+//           padding: 6px 12px;
+//           font-size: 0.85rem;
+//           cursor: pointer;
+//         }
+
+//         .toggle-requirements-btn:hover {
+//           background-color: #6b46c1;
+//         }
+
+//         .toggle-requirements-btn:disabled {
+//           background-color: #a0aec0;
+//           cursor: not-allowed;
+//         }
+
+//         .loading-message, .no-data-message {
+//           text-align: center;
+//           padding: 20px;
+//           color: #4a5568;
+//         }
+
+//         .no-data-message ul {
+//           text-align: left;
+//           display: inline-block;
+//           margin-top: 10px;
+//         }
+
+//         .no-data-message li {
+//           margin-bottom: 5px;
+//         }
+
+//         .requirements-container {
+//           background-color: white;
+//           border: 1px solid #e2e8f0;
+//           border-radius: 6px;
+//           padding: 20px;
+//           margin-top: 10px;
+//         }
+
+//         .requirements-summary {
+//           margin-bottom: 30px;
+//         }
+
+//         .requirements-grid {
+//           display: grid;
+//           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+//           gap: 15px;
+//           margin-top: 15px;
+//         }
+
+//         .requirement-card {
+//           border: 1px solid #e2e8f0;
+//           border-radius: 6px;
+//           padding: 15px;
+//           background-color: #f7fafc;
+//         }
+
+//         .requirement-card.compliant {
+//           border-color: #10b981;
+//           background-color: #f0fdf4;
+//         }
+
+//         .requirement-card.non-compliant {
+//           border-color: #ef4444;
+//           background-color: #fef2f2;
+//         }
+
+//         .compliance-badge {
+//           padding: 2px 8px;
+//           border-radius: 12px;
+//           font-size: 0.75rem;
+//           font-weight: 500;
+//           margin-left: 8px;
+//         }
+
+//         .compliance-badge.compliant {
+//           background-color: #d1fae5;
+//           color: #10b981;
+//         }
+
+//         .compliance-badge.missing {
+//           background-color: #fee2e2;
+//           color: #ef4444;
+//         }
+
+//         .certificate-info {
+//           background-color: #e0f2fe;
+//           padding: 8px;
+//           border-radius: 4px;
+//           margin: 8px 0;
+//           font-size: 0.85rem;
+//         }
+
+//         .certificate-info div {
+//           margin-bottom: 4px;
+//         }
+
+//         .certificate-info div:last-child {
+//           margin-bottom: 0;
+//         }
+
+//         .requirement-name {
+//           font-weight: 600;
+//           color: #2d3748;
+//           margin-bottom: 8px;
+//         }
+
+//         .requirement-description {
+//           color: #4a5568;
+//           font-size: 0.9rem;
+//           margin-bottom: 8px;
+//         }
+
+//         .requirement-positions {
+//           color: #2b6cb0;
+//           font-size: 0.85rem;
+//           margin-bottom: 8px;
+//         }
+
+//         .requirement-validity {
+//           color: #805ad5;
+//           font-size: 0.85rem;
+//           margin-bottom: 8px;
+//         }
+
+//         .requirement-mandatory {
+//           margin-bottom: 8px;
+//         }
+
+//         .mandatory-badge, .req-mandatory-badge {
+//           padding: 2px 8px;
+//           border-radius: 12px;
+//           font-size: 0.75rem;
+//           font-weight: 500;
+//           text-transform: uppercase;
+//         }
+
+//         .mandatory-badge.required, .req-mandatory-badge.required {
+//           background-color: #fed7d7;
+//           color: #c53030;
+//         }
+
+//         .mandatory-badge.optional, .req-mandatory-badge.optional {
+//           background-color: #e6fffa;
+//           color: #319795;
+//         }
+
+//         .req-validity {
+//           color: #805ad5;
+//           font-size: 0.85rem;
+//           font-style: italic;
+//         }
+
+//         .requirement-type {
+//           margin-top: 8px;
+//         }
+
+//         .type-badge, .req-type-badge {
+//           padding: 2px 8px;
+//           border-radius: 12px;
+//           font-size: 0.75rem;
+//           font-weight: 500;
+//           text-transform: uppercase;
+//         }
+
+//         .type-badge.certification, .req-type-badge.certification {
+//           background-color: #fed7d7;
+//           color: #c53030;
+//         }
+
+//         .type-badge.skill, .req-type-badge.skill {
+//           background-color: #bee3f8;
+//           color: #2b6cb0;
+//         }
+
+//         .type-badge.education, .req-type-badge.education {
+//           background-color: #c6f6d5;
+//           color: #2f855a;
+//         }
+
+//         .type-badge.experience, .req-type-badge.experience {
+//           background-color: #fbb6ce;
+//           color: #b83280;
+//         }
+
+//         .requirements-by-position {
+//           border-top: 1px solid #e2e8f0;
+//           padding-top: 20px;
+//         }
+
+//         .position-requirements {
+//           margin-bottom: 20px;
+//           padding: 15px;
+//           background-color: #f7fafc;
+//           border-radius: 6px;
+//         }
+
+//         .position-header {
+//           display: flex;
+//           align-items: center;
+//           gap: 10px;
+//           margin-bottom: 10px;
+//         }
+
+//         .primary-badge {
+//           background-color: #4299e1;
+//           color: white;
+//           padding: 2px 8px;
+//           border-radius: 12px;
+//           font-size: 0.75rem;
+//           font-weight: 500;
+//         }
+
+//         .requirements-list {
+//           list-style: none;
+//           padding: 0;
+//           margin: 0;
+//         }
+
+//         .requirement-item {
+//           padding: 8px 0;
+//           border-bottom: 1px solid #e2e8f0;
+//           display: flex;
+//           flex-direction: column;
+//           gap: 8px;
+//         }
+
+//         .requirement-item.compliant {
+//           background-color: #f0fdf4;
+//           padding: 12px;
+//           border-radius: 6px;
+//           border: 1px solid #10b981;
+//           margin-bottom: 8px;
+//         }
+
+//         .requirement-item.non-compliant {
+//           background-color: #fef2f2;
+//           padding: 12px;
+//           border-radius: 6px;
+//           border: 1px solid #ef4444;
+//           margin-bottom: 8px;
+//         }
+
+//         .requirement-item:last-child {
+//           border-bottom: none;
+//         }
+
+//         .req-header {
+//           display: flex;
+//           justify-content: space-between;
+//           align-items: center;
+//           flex-wrap: wrap;
+//         }
+
+//         .certificate-details {
+//           font-size: 0.85rem;
+//           color: #4a5568;
+//           background-color: rgba(255, 255, 255, 0.8);
+//           padding: 6px 8px;
+//           border-radius: 4px;
+//         }
+
+//         .cert-dates {
+//           font-weight: 500;
+//         }
+
+//         .req-badges {
+//           display: flex;
+//           gap: 8px;
+//           align-items: center;
+//           flex-wrap: wrap;
+//         }
+
+//         .req-name {
+//           font-weight: 500;
+//           color: #2d3748;
+//         }
+
+//         .req-description {
+//           color: #4a5568;
+//           font-size: 0.9rem;
+//         }
+
+//         .no-requirements {
+//           color: #a0aec0;
+//           font-style: italic;
+//         }
         
 //         .form-actions {
 //           display: flex;
@@ -1313,13 +1897,23 @@ export default EmployeeForm;
 //           background-color: #cbd5e0;
 //         }
         
-//         @media (max-width: 640px) {
+//         @media (max-width: 768px) {
 //           .positions-container {
 //             grid-template-columns: 1fr;
 //           }
           
 //           .add-position {
 //             order: -1;
+//           }
+
+//           .requirements-grid {
+//             grid-template-columns: 1fr;
+//           }
+
+//           .requirements-header {
+//             flex-direction: column;
+//             align-items: flex-start;
+//             gap: 10px;
 //           }
 //         }
 //       `}</style>
@@ -1328,3 +1922,4 @@ export default EmployeeForm;
 // };
 
 // export default EmployeeForm;
+
