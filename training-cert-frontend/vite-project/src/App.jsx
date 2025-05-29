@@ -123,7 +123,12 @@ const CertificatesWithDashboard = ({
 
   const calculateDashboardStats = () => {
   console.log('Calculating dashboard stats with certificates:', certificates.length);
-  
+
+    if (certificates.length > 0) {
+    console.log('Sample certificate data:', certificates[0]);
+    console.log('Certificate statuses found:', [...new Set(certificates.map(cert => cert.status))]);
+    console.log('Certificate fields:', Object.keys(certificates[0]));
+  }
   const today = new Date();
   const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
   
