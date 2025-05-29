@@ -24,7 +24,13 @@ const CertificatesWithDashboard = ({
   onViewAdmin,
   onCertificateAdded,
   onCertificateDeleted
-}) => {
+}) => {console.log('CertificatesWithDashboard received:', {
+    employees: employees.length,
+    positions: positions.length, 
+    certificateTypes: certificateTypes.length,
+    certificates: certificates.length,
+    certificatesData: certificates
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -60,8 +66,9 @@ const CertificatesWithDashboard = ({
 
   // Calculate dashboard stats when data changes
   useEffect(() => {
-    calculateDashboardStats();
-  }, [certificates, employees, positions]);
+  console.log('useEffect triggered - calculating dashboard stats');
+  calculateDashboardStats();
+}, [certificates, employees, positions]);
 
   // Update employee positions when employee changes
   useEffect(() => {
@@ -115,17 +122,20 @@ const CertificatesWithDashboard = ({
   }, [formData.certificateType, formData.issueDate, certificateTypes]);
 
   const calculateDashboardStats = () => {
-    const today = new Date();
-    const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
-
-    // Basic certificate stats
-    const totalCertificates = certificates.length;
-    const activeCertificates = certificates.filter(cert => cert.status === 'Active').length;
-    const expiringSoon = certificates.filter(cert => {
-      const expiryDate = new Date(cert.expirationDate);
-      return expiryDate > today && expiryDate <= thirtyDaysFromNow;
-    }).length;
-    const expired = certificates.filter(cert => cert.status === 'Expired').length;
+  console.log('Calculating dashboard stats with certificates:', certificates.length);
+  
+  const today = new Date();
+  const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+  
+  // Basic certificate stats
+  const totalCertificates = certificates.length;
+  const activeCertificates = certificates.filter(cert => cert.status === 'Active').length;
+  
+  console.log('Stats calculated:', {
+    totalCertificates,
+    activeCertificates,
+    certificateStatuses: certificates.map(c => c.status)
+  });
 
     // Employee stats (only active employees)
     const activeEmployees = employees.filter(emp => emp.active !== false);
@@ -783,19 +793,21 @@ function App() {
   };
 
   const fetchCertificates = async () => {
-    try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch certificates');
-      const data = await response.json();
-      setCertificates(data);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  try {
+    const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    if (!response.ok) throw new Error('Failed to fetch certificates')
+    const data = await response.json()
+    console.log('Certificates fetched:', data.length, data); // Add this debug line
+    setCertificates(data)
+  } catch (err) {
+    console.error('Error fetching certificates:', err); // Add this debug line
+    setError(err.message)
+  }
+}
 
   const fetchDashboardStats = async () => {
     try {
