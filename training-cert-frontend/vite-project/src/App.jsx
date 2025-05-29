@@ -219,42 +219,42 @@ const CertificatesWithDashboard = ({
     setSuccess('');
   };
   
-  // Submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate form
-    if (!formData.staffMember || !formData.position || !formData.certificateType || !formData.issueDate) {
-      setError('Please fill in all required fields');
-      return;
+ // Submit form
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  // Validate form
+  if (!formData.staffMember || !formData.position || !formData.certificateType || !formData.issueDate) {
+    setError('Please fill in all required fields');
+    return;
+  }
+  
+  setLoading(true);
+  setError('');
+  setSuccess('');
+  
+  try {
+    // Get employee name from ID
+    const employee = employees.find(emp => emp._id === formData.staffMember);
+    if (!employee) {
+      throw new Error('Employee not found');
     }
     
-    setLoading(true);
-    setError('');
-    setSuccess('');
+    // Get certificate type name from ID
+    const certType = certificateTypes.find(cert => cert._id === formData.certificateType);
+    if (!certType) {
+      throw new Error('Certificate type not found');
+    }
     
-    try {
-      // Get employee name from ID
-      const employee = employees.find(emp => emp._id === formData.staffMember);
-      if (!employee) {
-        throw new Error('Employee not found');
-      }
-      
-      // Get certificate type name from ID
-      const certType = certificateTypes.find(cert => cert._id === formData.certificateType);
-      if (!certType) {
-        throw new Error('Certificate type not found');
-      }
-      
-      // Prepare data for API
-      const certificateData = {
-        staffMember: employee.name,
-        position: formData.position,
-        certificateType: certType.name,
-        issueDate: formData.issueDate,
-        expirationDate: formData.expirationDate
-      };
-      
+    // Prepare data for API
+    const certificateData = {
+      staffMember: employee.name,
+      position: formData.position,
+      certificateType: certType.name,
+      issueDate: formData.issueDate,
+      expirationDate: formData.expirationDate
+    };
+    
       // Submit to API
       const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
         method: 'POST',
@@ -280,33 +280,35 @@ const CertificatesWithDashboard = ({
         onCertificateAdded(result);
       }
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Error adding certificate');
+    } finally {
+      setLoading(false);
     }
-  }
-
-  const handleCertTypeSubmit = async (e) => {
-    e.preventDefault()
-    const formData = new FormData(e.target)
-    const data = Object.fromEntries(formData.entries())
-
-    try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/certificatetype', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      if (!response.ok) throw new Error('Failed to add certificatetype')
-      fetchSetupData()
-      e.target.reset()
-      setMessage('certificatetype added successfully')
-    } catch (err) {
-      setError(err.message)
-    }
-  }
+  };
   
+    const handleCertTypeSubmit = async (e) => {
+      e.preventDefault()
+      const formData = new FormData(e.target)
+      const data = Object.fromEntries(formData.entries())
+  
+      try {
+        const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/certificatetype', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        })
+        if (!response.ok) throw new Error('Failed to add certificatetype')
+        fetchSetupData()
+        e.target.reset()
+        setMessage('certificatetype added successfully')
+      } catch (err) {
+        setError(err.message)
+      }
+    }
+    
   const handleCertificateDelete = async (certId) => {
     if (window.confirm('Are you sure you want to delete this certificate?')) {
       try {
@@ -2198,11 +2200,12 @@ function App() {
       fetchSetupData()
       e.target.reset()
       setMessage('position added successfully')
-    } catch (err) {
-      setError(err.message)
+        } catch (err) {
+      setError(err.message || 'Error adding certificate');
+    } finally {
+      setLoading(false);
     }
-    // Similar to handleEmployeeSubmit but for positions
-  }
+    
 
   const handleCertTypeSubmit = async (e) => {
     e.preventDefault()
