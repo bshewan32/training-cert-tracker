@@ -652,8 +652,11 @@ const CertificatesWithDashboard = ({
                   const daysUntilExpiration = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
 
                   let statusClass = 'status-active';
-                  if (daysUntilExpiration <= 0) statusClass = 'status-expired';
-                  else if (daysUntilExpiration <= 30) statusClass = 'status-expiring';
+                  if (cert.status === 'EXPIRED' || daysUntilExpiration <= 0) {
+                    statusClass = 'status-expired';
+                  } else if (cert.status === 'ACTIVE' && daysUntilExpiration <= 30) {
+                    statusClass = 'status-expiring';
+  }
 
                   // Check if employee is archived
                   const employee = employees.find(emp => emp.name === cert.staffMember);
@@ -1133,7 +1136,7 @@ function App() {
           </form>
         )}
 
-        {/* Main Certificates View - Enhanced with Dashboard */}
+        
         {/* Main Certificates View - Enhanced with Dashboard */}
     {view === 'certificates' && (
       <>
