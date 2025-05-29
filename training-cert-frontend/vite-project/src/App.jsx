@@ -2183,24 +2183,24 @@ function App() {
 
     // Similar handlers for positions and certificate types
   const handlePositionSubmit = async (e) => {
-    e.preventDefault()
-    const formData = new FormData(e.target)
-    const data = Object.fromEntries(formData.entries())
+  e.preventDefault()
+  const formData = new FormData(e.target)
+  const data = Object.fromEntries(formData.entries())
 
-    try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/position', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      if (!response.ok) throw new Error('Failed to add position')
-      fetchSetupData()
-      e.target.reset()
-      setMessage('position added successfully')
-        } catch (err) {
+  try {
+    const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/position', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to add position')
+    fetchSetupData()
+    e.target.reset()
+    setMessage('position added successfully')
+        } catch (err) {  // <-- This is the issue - missing opening brace
       setError(err.message || 'Error adding certificate');
     } finally {
       setLoading(false);
