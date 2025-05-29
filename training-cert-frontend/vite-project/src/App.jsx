@@ -130,30 +130,39 @@ const CertificatesWithDashboard = ({
   // Basic certificate stats
   const totalCertificates = certificates.length;
   const activeCertificates = certificates.filter(cert => cert.status === 'Active').length;
+  const expiringSoon = certificates.filter(cert => {  // Make sure this is declared!
+    const expiryDate = new Date(cert.expirationDate);
+    return expiryDate > today && expiryDate <= thirtyDaysFromNow;
+  }).length;
+  const expired = certificates.filter(cert => cert.status === 'Expired').length;
+  
+  // Employee stats (only active employees)
+  const activeEmployees = employees.filter(emp => emp.active !== false);
+  const totalEmployees = activeEmployees.length;
+  
+  // Compliance rate calculation (simplified)
+  const complianceRate = totalCertificates > 0 
+    ? Math.round((activeCertificates / totalCertificates) * 100) 
+    : 0;
   
   console.log('Stats calculated:', {
     totalCertificates,
     activeCertificates,
-    certificateStatuses: certificates.map(c => c.status)
+    expiringSoon,
+    expired,
+    totalEmployees,
+    complianceRate
   });
-
-    // Employee stats (only active employees)
-    const activeEmployees = employees.filter(emp => emp.active !== false);
-    const totalEmployees = activeEmployees.length;
-
-    // Compliance rate calculation (simplified)
-    const complianceRate = totalCertificates > 0
-      ? Math.round((activeCertificates / totalCertificates) * 100)
-      : 0;
-
-    setDashboardStats({
-      totalCertificates,
-      activeCertificates,
-      expiringSoon,
-      expired,
-      totalEmployees,
-      complianceRate
-    });
+  
+  setDashboardStats({
+    totalCertificates,
+    activeCertificates,
+    expiringSoon,
+    expired,
+    totalEmployees,
+    complianceRate
+  }); 
+  
 
     // Calculate compliance by position
     const positionStats = [];
@@ -825,18 +834,20 @@ function App() {
   };
 
   useEffect(() => {
-    if (token) {
-      if (view === 'certificates' || view === 'admin') {
-        fetchCertificates();
-      }
-      if (view === 'admin') {
-        fetchDashboardStats();
-      }
-      if (view === 'certificates' || view === 'setup') {
-        fetchSetupData(true); // Always load archived employees for access
-      }
+  if (token) {
+    if (view === 'certificates' || view === 'admin') {
+      fetchCertificates();
+      fetchSetupData(true); // Make sure this loads when going to certificates view
     }
-  }, [token, view]);
+    if (view === 'admin') {
+      fetchDashboardStats();
+    }
+    if (view === 'setup') {
+      fetchSetupData(showArchivedEmployees);
+    }
+  }
+}, [token, view]);
+  
 
   // Set view to formatter if on hidden-tools/date-formatter path
   useEffect(() => {
@@ -1118,7 +1129,11 @@ function App() {
         )}
 
         {/* Main Certificates View - Enhanced with Dashboard */}
-        {view === 'certificates' && (
+        {/* Main Certificates View - Enhanced with Dashboard */}
+    {view === 'certificates' && (
+      <>
+        {/* Only render if we have data loaded */}
+        {employees.length > 0 && positions.length > 0 && certificateTypes.length > 0 ? (
           <CertificatesWithDashboard
             token={token}
             employees={employees}
@@ -1134,7 +1149,13 @@ function App() {
             }}
             onCertificateDeleted={handleCertificateDelete}
           />
+        ) : (
+          <div className="loading-container">
+            <div className="loading-message">Loading dashboard data...</div>
+          </div>
         )}
+      </>
+    )}
 
         {/* Employee Details View */}
         {view === 'employeeDetails' && selectedEmployeeForEdit && (
