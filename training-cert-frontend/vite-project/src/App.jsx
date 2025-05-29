@@ -134,12 +134,12 @@ const CertificatesWithDashboard = ({
   
   // Basic certificate stats
   const totalCertificates = certificates.length;
-  const activeCertificates = certificates.filter(cert => cert.status === 'Active').length;
+  const activeCertificates = certificates.filter(cert => cert.status === 'ACTIVE').length;
   const expiringSoon = certificates.filter(cert => {  // Make sure this is declared!
     const expiryDate = new Date(cert.expirationDate);
-    return expiryDate > today && expiryDate <= thirtyDaysFromNow;
+    return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow;
   }).length;
-  const expired = certificates.filter(cert => cert.status === 'Expired').length;
+  const expired = certificates.filter(cert => cert.status === 'EXPIRED').length;
   
   // Employee stats (only active employees)
   const activeEmployees = employees.filter(emp => emp.active !== false);
@@ -173,7 +173,7 @@ const CertificatesWithDashboard = ({
     const positionStats = [];
     positions.forEach(position => {
       const positionCerts = certificates.filter(cert => cert.position === position._id);
-      const activeCerts = positionCerts.filter(cert => cert.status === 'Active');
+      const activeCerts = positionCerts.filter(cert => cert.status === 'ACTIVE');
       const employeesInPosition = activeEmployees.filter(emp =>
         emp.positions && emp.positions.some(pos =>
           (typeof pos === 'object' ? pos._id : pos) === position._id
@@ -200,21 +200,21 @@ const CertificatesWithDashboard = ({
 
     // Urgent actions (expiring certificates)
     const urgent = certificates
-      .filter(cert => {
-        const expiryDate = new Date(cert.expirationDate);
-        return expiryDate > today && expiryDate <= thirtyDaysFromNow;
-      })
-      .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate))
-      .slice(0, 5)
-      .map(cert => ({
-        employee: cert.staffMember,
-        certificate: cert.certificateType || cert.certificateName,
-        expiryDate: cert.expirationDate,
-        daysLeft: Math.ceil((new Date(cert.expirationDate) - today) / (1000 * 60 * 60 * 24))
-      }));
-
-    setUrgentActions(urgent);
-  };
+    .filter(cert => {
+      const expiryDate = new Date(cert.expirationDate);
+      return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow; // Changed here too
+    })
+    .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate))
+    .slice(0, 5)
+    .map(cert => ({
+      employee: cert.staffMember,
+      certificate: cert.certificateType || cert.certificateName || cert.CertType, // Added CertType as fallback
+      expiryDate: cert.expirationDate,
+      daysLeft: Math.ceil((new Date(cert.expirationDate) - today) / (1000 * 60 * 60 * 24))
+    }));
+  
+  setUrgentActions(urgent);
+};
 
   // Handle form input changes
   const handleInputChange = (e) => {
