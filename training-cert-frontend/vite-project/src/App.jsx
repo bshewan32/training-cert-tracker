@@ -1341,47 +1341,84 @@ function App() {
           </div>
         )}
 
-        {/* Admin Dashboard View - Simplified */}
+        {/* Admin Dashboard View - Cleaned Up */}
         {view === 'admin' && (
           <div className="admin-dashboard">
-            <h2>Admin Dashboard</h2>
-
-            <div className="admin-navigation">
+            <div className="admin-header">
+              <h2>Administration</h2>
               <button
                 onClick={() => setView('certificates')}
-                className="nav-button"
+                className="back-button"
               >
                 Back to Main Dashboard
               </button>
-              <button
-                onClick={() => setView('setup')}
-                className="nav-button"
-              >
-                System Setup
-              </button>
-              <button
-                onClick={() => setView('excelTools')}
-                className="nav-button"
-              >
-                Excel Tools
-              </button>
             </div>
 
-            {/* Full Compliance Dashboard */}
-            <MultiPositionComplianceDashboard token={token} />
+            <div className="admin-quick-actions">
+              <div className="admin-card">
+                <div className="admin-card-icon">⚙️</div>
+                <div className="admin-card-content">
+                  <h3>System Setup</h3>
+                  <p>Manage positions, certificate types, and bulk import data</p>
+                  <button
+                    onClick={() => setView('setup')}
+                    className="admin-action-btn"
+                  >
+                    Open Setup
+                  </button>
+                </div>
+              </div>
+
+              <div className="admin-card">
+                <div className="admin-card-icon">📊</div>
+                <div className="admin-card-content">
+                  <h3>Excel Tools</h3>
+                  <p>Export certificate data and format Excel files</p>
+                  <button
+                    onClick={() => setView('excelTools')}
+                    className="admin-action-btn"
+                  >
+                    Open Tools
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Stats Summary */}
+            <div className="admin-stats-summary">
+              <h3>System Overview</h3>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <span className="stat-label">Total Certificates</span>
+                  <span className="stat-value">{certificates.length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Active Employees</span>
+                  <span className="stat-value">{employees.filter(emp => emp.active !== false).length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Certificate Types</span>
+                  <span className="stat-value">{certificateTypes.length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Positions</span>
+                  <span className="stat-value">{positions.length}</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Setup View */}
+        {/* Setup View - Streamlined without Employee Management */}
         {view === 'setup' && (
           <div className="setup-dashboard">
-            <h2>System Setup</h2>
             <div className="setup-header">
+              <h2>System Setup</h2>
               <button
                 onClick={() => setView('admin')}
                 className="back-button"
               >
-                Back to Admin Dashboard
+                Back to Administration
               </button>
             </div>
 
@@ -1391,12 +1428,6 @@ function App() {
                 onClick={() => setActiveTab('bulkImport')}
               >
                 Bulk Import
-              </button>
-              <button
-                className={`tab-button ${activeTab === 'employees' ? 'active' : ''}`}
-                onClick={() => setActiveTab('employees')}
-              >
-                Employees
               </button>
               <button
                 className={`tab-button ${activeTab === 'positions' ? 'active' : ''}`}
@@ -1416,6 +1447,10 @@ function App() {
               {/* Bulk Import Tab */}
               {activeTab === 'bulkImport' && (
                 <div className="setup-section">
+                  <div className="setup-section-header">
+                    <h3>Bulk Data Import</h3>
+                    <p>Upload Excel files to import multiple employees, positions, and certificates at once.</p>
+                  </div>
                   <ExcelTemplateUploader
                     token={token}
                     onSuccess={handleBulkUploadSuccess}
@@ -1424,182 +1459,82 @@ function App() {
                 </div>
               )}
 
-              {activeTab === 'employees' && (
-                <div className="setup-section">
-                  <h3>Manage Employees</h3>
-
-                  <div className="employee-management-header">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={showArchivedEmployees}
-                        onChange={async (e) => {
-                          const includeArchived = e.target.checked;
-                          setShowArchivedEmployees(includeArchived);
-                          await fetchSetupData(includeArchived);
-                        }}
-                      />
-                      Show archived employees
-                    </label>
-                  </div>
-
-                  <EmployeeForm
-                    positions={positions}
-                    token={token}
-                    showArchiveControls={true}
-                    onSubmit={async (employeeData) => {
-                      try {
-                        const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/employee', {
-                          method: 'POST',
-                          headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                          },
-                          body: JSON.stringify(employeeData)
-                        });
-
-                        if (!response.ok) throw new Error('Failed to add employee');
-
-                        setMessage('Employee added successfully');
-                        await fetchSetupData(showArchivedEmployees);
-                      } catch (err) {
-                        setError(err.message);
-                      }
-                    }}
-                    onCancel={() => {}}
-                  />
-
-                  <div className="setup-list">
-                    {employees.map(emp => (
-                      <div key={emp._id} className={`list-item ${!emp.active ? 'archived-employee' : ''}`}>
-                        <span className="employee-info">
-                          {emp.name} - {emp.primaryPosition?.title || (emp.positions && emp.positions.length > 0 ? emp.positions[0].title : 'No position')}
-                          {!emp.active && <span className="archived-badge">Archived</span>}
-                        </span>
-                        <div className="employee-actions">
-                          <button
-                            onClick={() => {
-                              setSelectedEmployeeForEdit(emp);
-                              setView('employeeDetails');
-                            }}
-                            className="edit-button"
-                          >
-                            Edit
-                          </button>
-
-                          {emp.active ? (
-                            <button
-                              onClick={async () => {
-                                if (confirm(`Archive ${emp.name}? They will be excluded from compliance calculations.`)) {
-                                  try {
-                                    const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${emp._id}/archive`, {
-                                      method: 'PUT',
-                                      headers: {
-                                        'Authorization': `Bearer ${token}`
-                                      }
-                                    });
-                                    if (!response.ok) throw new Error('Failed to archive employee');
-                                    setMessage(`${emp.name} has been archived`);
-                                    await fetchSetupData(showArchivedEmployees);
-                                  } catch (err) {
-                                    setError(err.message);
-                                  }
-                                }
-                              }}
-                              className="archive-button"
-                            >
-                              Archive
-                            </button>
-                          ) : (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${emp._id}/reactivate`, {
-                                    method: 'PUT',
-                                    headers: {
-                                      'Authorization': `Bearer ${token}`
-                                    }
-                                  });
-                                  if (!response.ok) throw new Error('Failed to reactivate employee');
-                                  setMessage(`${emp.name} has been reactivated`);
-                                  await fetchSetupData(showArchivedEmployees);
-                                } catch (err) {
-                                  setError(err.message);
-                                }
-                              }}
-                              className="reactivate-button"
-                            >
-                              Reactivate
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => handleDelete('employee', emp._id)}
-                            className="delete-button"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Positions Tab */}
               {activeTab === 'positions' && (
                 <div className="setup-section">
-                  <h3>Manage Positions</h3>
+                  <div className="setup-section-header">
+                    <h3>Manage Positions</h3>
+                    <p>Create and manage job positions, departments, and their certificate requirements.</p>
+                  </div>
+                  
                   <form onSubmit={handlePositionSubmit} className="setup-form">
-                    <div className="form-group">
-                      <label>Position Title:</label>
-                      <input type="text" name="title" required />
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Position Title:</label>
+                        <input type="text" name="title" required placeholder="e.g. Site Manager, Electrician" />
+                      </div>
+                      <div className="form-group">
+                        <label>Department:</label>
+                        <input type="text" name="department" placeholder="e.g. Construction, Maintenance" />
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <label>Department:</label>
-                      <input type="text" name="department" />
-                    </div>
-                    <button type="submit">Add Position</button>
+                    <button type="submit" className="add-button">Add Position</button>
                   </form>
+                  
                   <div className="setup-list">
-                    {positions.map(pos => (
-                      <div key={pos._id} className="list-item">
-                        <span>{pos.title} - {pos.department}</span>
-                        <div className="button-group">
+                    <h4>Existing Positions ({positions.length})</h4>
+                    {positions.length === 0 ? (
+                      <div className="empty-state">
+                        <p>No positions created yet. Add your first position above.</p>
+                      </div>
+                    ) : (
+                      positions.map(pos => (
+                        <div key={pos._id} className="list-item">
+                          <div className="item-info">
+                            <span className="item-title">{pos.title}</span>
+                            <span className="item-subtitle">{pos.department || 'No Department'}</span>
+                          </div>
+                          <div className="button-group">
+                            <button
+                              onClick={() => setSelectedPositionForRequirements(pos)}
+                              className="manage-button"
+                            >
+                              Certificate Requirements
+                            </button>
+                            <button
+                              onClick={() => handleDelete('position', pos._id)}
+                              className="delete-button"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  {/* Position Requirements Modal */}
+                  {selectedPositionForRequirements && (
+                    <div className="requirements-modal">
+                      <div className="requirements-content">
+                        <div className="requirements-header">
+                          <h4>Certificate Requirements for {selectedPositionForRequirements.title}</h4>
                           <button
-                            onClick={() => setSelectedPositionForRequirements(pos)}
-                            className="manage-button"
+                            onClick={() => setSelectedPositionForRequirements(null)}
+                            className="close-button"
                           >
-                            Manage Requirements
-                          </button>
-                          <button
-                            onClick={() => handleDelete('position', pos._id)}
-                            className="delete-button"
-                          >
-                            Remove
+                            ✕
                           </button>
                         </div>
+                        <PositionRequirements 
+                          position={selectedPositionForRequirements}
+                          token={token}
+                          certificateTypes={certificateTypes}
+                          onUpdate={() => {
+                            fetchSetupData();
+                          }}
+                        />
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Add the Position Requirements component here */}
-                  {selectedPositionForRequirements && (
-                    <div className="requirements-section">
-                      <PositionRequirements
-                        position={selectedPositionForRequirements}
-                        token={token}
-                        certificateTypes={certificateTypes}
-                        onUpdate={() => {
-                          fetchSetupData();
-                        }}
-                      />
-                      <button
-                        onClick={() => setSelectedPositionForRequirements(null)}
-                        className="close-button"
-                      >
-                        Close Requirements
-                      </button>
                     </div>
                   )}
                 </div>
@@ -1608,52 +1543,77 @@ function App() {
               {/* Certificate Types Tab */}
               {activeTab === 'certificateTypes' && (
                 <div className="setup-section">
-                  <h3>Manage Certificate Types</h3>
-                  <div className="cert-type-info">
-                    <p><strong>Note:</strong> The validity period you set here will be used automatically when issuing certificates of this type.</p>
+                  <div className="setup-section-header">
+                    <h3>Manage Certificate Types</h3>
+                    <p>Define the types of certificates your organization tracks and their validity periods.</p>
                   </div>
-                  <form onSubmit={handleCertTypeSubmit} className="setup-form">
-                    <div className="form-group">
-                      <label>Certificate Name:</label>
-                      <input type="text" name="name" required />
+                  
+                  <div className="cert-type-info">
+                    <div className="info-icon">💡</div>
+                    <div>
+                      <strong>Tip:</strong> The validity period you set here will automatically calculate expiration dates when issuing certificates.
                     </div>
-                    <div className="form-group">
-                      <label>Validity Period (months):</label>
-                      <input
-                        type="number"
-                        name="validityPeriod"
-                        min="1"
-                        max="120"
-                        required
-                        placeholder="e.g., 12 for 1 year, 36 for 3 years"
-                      />
-                      <small className="validity-help">
-                        Common periods: First Aid (36 months), CPR (12 months), Safety Training (24 months)
-                      </small>
+                  </div>
+                  
+                  <form onSubmit={handleCertTypeSubmit} className="setup-form">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Certificate Name:</label>
+                        <input type="text" name="name" required placeholder="e.g. First Aid, White Card, Forklift License" />
+                      </div>
+                      <div className="form-group">
+                        <label>Validity Period (months):</label>
+                        <input 
+                          type="number" 
+                          name="validityPeriod" 
+                          min="1" 
+                          max="120"
+                          required 
+                          placeholder="12"
+                        />
+                        <small className="validity-help">
+                          Common: First Aid (36), CPR (12), Safety Training (24)
+                        </small>
+                      </div>
                     </div>
                     <div className="form-group">
                       <label>Description (Optional):</label>
-                      <textarea name="description" placeholder="Brief description of this certificate type"></textarea>
+                      <textarea 
+                        name="description" 
+                        placeholder="Brief description of this certificate type and when it's required"
+                        rows="2"
+                      ></textarea>
                     </div>
-                    <button type="submit">Add Certificate Type</button>
+                    <button type="submit" className="add-button">Add Certificate Type</button>
                   </form>
+                  
                   <div className="setup-list">
-                    <h4>Existing Certificate Types</h4>
-                    {certificateTypes.map(cert => (
-                      <div key={cert._id} className="list-item cert-type-item">
-                        <div className="cert-type-details">
-                          <span className="cert-name">{cert.name}</span>
-                          <span className="cert-validity">Valid for {cert.validityPeriod} months</span>
-                          {cert.description && <span className="cert-description">{cert.description}</span>}
-                        </div>
-                        <button
-                          onClick={() => handleDelete('certificateType', cert._id)}
-                          className="delete-button"
-                        >
-                          Remove
-                        </button>
+                    <h4>Existing Certificate Types ({certificateTypes.length})</h4>
+                    {certificateTypes.length === 0 ? (
+                      <div className="empty-state">
+                        <p>No certificate types created yet. Add your first certificate type above.</p>
                       </div>
-                    ))}
+                    ) : (
+                      certificateTypes.map(cert => (
+                        <div key={cert._id} className="list-item cert-type-item">
+                          <div className="cert-type-details">
+                            <div className="item-info">
+                              <span className="item-title">{cert.name}</span>
+                              <span className="item-subtitle">
+                                Valid for {cert.validityPeriod} months
+                                {cert.description && ` • ${cert.description}`}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDelete('certificateType', cert._id)}
+                            className="delete-button"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
