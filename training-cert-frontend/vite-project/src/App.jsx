@@ -739,6 +739,15 @@ function App() {
   const [adminActiveTab, setAdminActiveTab] = useState('overview');
   const [showArchivedEmployees, setShowArchivedEmployees] = useState(false);
 
+  // Debug: Log when employees data changes
+  useEffect(() => {
+    console.log('Employees data changed:', employees.length, employees.map(e => ({ 
+      id: e._id, 
+      name: e.name, 
+      positions: e.positions 
+    })));
+  }, [employees]);
+
   // Initialize authentication state from localStorage on app load
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken');
@@ -1164,7 +1173,7 @@ function App() {
         {/* Only render if we have data loaded */}
         {employees.length > 0 && positions.length > 0 && certificateTypes.length > 0 ? (
           <CertificatesWithDashboard
-            key={`cert-dashboard-${employees.length}-${JSON.stringify(employees.map(e => e.positions))}`}
+            key={`employees-${employees.length}-positions-${employees.reduce((acc, emp) => acc + (emp.positions?.length || 0), 0)}`}
             token={token}
             employees={employees}
             positions={positions}
@@ -1194,7 +1203,11 @@ function App() {
               <h2>Employee Details: {selectedEmployeeForEdit.name}</h2>
               <div className="header-actions">
                 <button
-                  onClick={() => setView('certificates')}
+                  onClick={() => {
+                    // Force a fresh data load when returning to certificates
+                    fetchSetupData(true);
+                    setView('certificates');
+                  }}
                   className="back-button"
                 >
                   Back to Dashboard
@@ -1302,7 +1315,11 @@ function App() {
                     setError(err.message);
                   }
                 }}
-                onCancel={() => setView('certificates')}
+                onCancel={() => {
+                  // Force a fresh data load when returning to certificates
+                  fetchSetupData(true);
+                  setView('certificates');
+                }}
               />
             </div>
 
