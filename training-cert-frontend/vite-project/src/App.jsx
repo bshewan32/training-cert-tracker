@@ -1077,6 +1077,8 @@ function App() {
 
   const handleViewEmployee = async (employeeName) => {
     try {
+      await fetchSetupData(true);
+      await fetchCertificates();
       let employee = employees.find(emp => emp.name === employeeName);
 
       if (!employee) {
@@ -1288,6 +1290,7 @@ function App() {
                     const result = await response.json();
                     setMessage('Employee updated successfully');
                     await fetchSetupData(true);
+                    await fetchCertificates(); 
                     setSelectedEmployeeForEdit(result);
                   } catch (err) {
                     setError(err.message);

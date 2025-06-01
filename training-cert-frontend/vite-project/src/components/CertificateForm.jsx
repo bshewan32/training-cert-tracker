@@ -615,61 +615,76 @@ const CertificatesWithDashboard = ({
       <div className="certificates-table-section">
         <div className="table-header">
           <h3>Certificate Records</h3>
-          
-          <div className="filter-controls">
-            <div className="filter-group">
-              <label>Filter by Employee:</label>
-              <select
-                value={selectedFilterEmployee}
-                onChange={(e) => setSelectedFilterEmployee(e.target.value)}
-              >
-                <option value="">All Employees</option>
-                {[...new Set(certificates.map(cert => cert.staffMember))]
-                  .sort()
-                  .map(name => {
-                    const employee = employees.find(emp => emp.name === name);
-                    const isArchived = employee && !employee.active;
-                    return (
-                      <option key={name} value={name}>
-                        {name} {isArchived ? '(Archived)' : ''}
+
+          <div className="header-actions">
+            <button
+              onClick={async () => {
+                if (onRefreshData) {
+                  await onRefreshData();
+                  setMessage && setMessage('Data refreshed successfully');
+                }
+              }}
+              className="refresh-btn"
+              title="Refresh all data"
+            >
+              🔄 Refresh
+            </button>
+
+            <div className="filter-controls">
+              <div className="filter-group">
+                <label>Filter by Employee:</label>
+                <select
+                  value={selectedFilterEmployee}
+                  onChange={(e) => setSelectedFilterEmployee(e.target.value)}
+                >
+                  <option value="">All Employees</option>
+                  {[...new Set(certificates.map(cert => cert.staffMember))]
+                    .sort()
+                    .map(name => {
+                      const employee = employees.find(emp => emp.name === name);
+                      const isArchived = employee && !employee.active;
+                      return (
+                        <option key={name} value={name}>
+                          {name} {isArchived ? '(Archived)' : ''}
+                        </option>
+                      );
+                    })}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Filter by Type:</label>
+                <select
+                  value={selectedFilterCertType}
+                  onChange={(e) => setSelectedFilterCertType(e.target.value)}
+                >
+                  <option value="">All Types</option>
+                  {certificateTypes
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(type => (
+                      <option key={type._id} value={type.name}>
+                        {type.name}
                       </option>
-                    );
-                  })}
-              </select>
-            </div>
+                    ))}
+                </select>
+              </div>
 
-            <div className="filter-group">
-              <label>Filter by Type:</label>
-              <select
-                value={selectedFilterCertType}
-                onChange={(e) => setSelectedFilterCertType(e.target.value)}
-              >
-                <option value="">All Types</option>
-                {certificateTypes
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(type => (
-                    <option key={type._id} value={type.name}>
-                      {type.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label>Filter by Position:</label>
-              <select
-                value={selectedFilterPosition}
-                onChange={(e) => setSelectedFilterPosition(e.target.value)}
-              >
-                <option value="">All Positions</option>
-                {positions
-                  .sort((a, b) => a.title.localeCompare(b.title))
-                  .map(pos => (
-                    <option key={pos._id} value={pos._id}>
-                      {pos.title}
-                    </option>
-                  ))}
-              </select>
+              <div className="filter-group">
+                <label>Filter by Position:</label>
+                <select
+                  value={selectedFilterPosition}
+                  onChange={(e) => setSelectedFilterPosition(e.target.value)}
+                >
+                  <option value="">All Positions</option>
+                  {positions
+                    .sort((a, b) => a.title.localeCompare(b.title))
+                    .map(pos => (
+                      <option key={pos._id} value={pos._id}>
+                        {pos.title}
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -1346,6 +1361,42 @@ const CertificatesWithDashboard = ({
             width: 100%;
           }
         }
+                    
+          .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+          }
+
+          .refresh-btn {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+          }
+
+          .refresh-btn:hover {
+            background-color: #059669;
+          }
+
+          @media (max-width: 768px) {
+            .header-actions {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 10px;
+            }
+            
+            .refresh-btn {
+              width: 100%;
+              text-align: center;
+            }
+          }
       `}</style>
     </div>
   );
