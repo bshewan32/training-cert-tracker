@@ -738,15 +738,16 @@ function App() {
   const [importFile, setImportFile] = useState(null);
   const [adminActiveTab, setAdminActiveTab] = useState('overview');
   const [showArchivedEmployees, setShowArchivedEmployees] = useState(false);
+  const [certificateDashboardKey, setCertificateDashboardKey] = useState(0);
 
   // Debug: Log when employees data changes
   useEffect(() => {
-    console.log('Employees data changed:', employees.length, employees.map(e => ({ 
-      id: e._id, 
-      name: e.name, 
-      positions: e.positions 
-    })));
-  }, [employees]);
+    console.log('Employees data changed:', employees.length);
+    if (selectedEmployeeForEdit) {
+      const updatedEmployee = employees.find(emp => emp._id === selectedEmployeeForEdit._id);
+      console.log('Updated employee in main state:', updatedEmployee);
+    }
+  }, [employees, selectedEmployeeForEdit]);
 
   // Initialize authentication state from localStorage on app load
   useEffect(() => {
@@ -1173,7 +1174,7 @@ function App() {
         {/* Only render if we have data loaded */}
         {employees.length > 0 && positions.length > 0 && certificateTypes.length > 0 ? (
           <CertificatesWithDashboard
-            key={`employees-${employees.length}-positions-${employees.reduce((acc, emp) => acc + (emp.positions?.length || 0), 0)}`}
+            key={`dashboard-${certificateDashboardKey}`}
             token={token}
             employees={employees}
             positions={positions}
@@ -1205,8 +1206,10 @@ function App() {
                 <button
                   onClick={() => {
                     // Force a fresh data load when returning to certificates
-                    fetchSetupData(true);
-                    setView('certificates');
+                    fetchSetupData(true).then(() => {
+                      setCertificateDashboardKey(prev => prev + 1);
+                      setView('certificates');
+                    });
                   }}
                   className="back-button"
                 >
@@ -1302,6 +1305,7 @@ function App() {
                     if (!response.ok) throw new Error('Failed to update employee');
 
                     const result = await response.json();
+                    console.log('Employee update API response:', result);
                     setMessage('Employee updated successfully');
                     
                     // Refresh all data to ensure UI components get updated employee positions
@@ -1310,15 +1314,26 @@ function App() {
                       fetchCertificates()
                     ]);
                     
+                    // Wait a bit for state to update, then check
+                    setTimeout(() => {
+                      console.log('After fetchSetupData timeout, employees state:', employees.length);
+                      const updatedEmp = employees.find(emp => emp._id === selectedEmployeeForEdit._id);
+                      console.log('Updated employee after refresh:', updatedEmp);
+                    }, 500);
+                    
                     setSelectedEmployeeForEdit(result);
+                    // Force dashboard to remount with fresh data
+                    setCertificateDashboardKey(prev => prev + 1);
                   } catch (err) {
                     setError(err.message);
                   }
                 }}
                 onCancel={() => {
                   // Force a fresh data load when returning to certificates
-                  fetchSetupData(true);
-                  setView('certificates');
+                  fetchSetupData(true).then(() => {
+                    setCertificateDashboardKey(prev => prev + 1);
+                    setView('certificates');
+                  });
                 }}
               />
             </div>
