@@ -327,10 +327,12 @@ const CertificatesWithDashboard = ({
     }
   };
   
-  // Get position title from ID
+  // Get position title from ID or fallback to matching by title string
   const getPositionTitle = (positionId) => {
-    const position = positions.find(pos => pos._id === positionId);
-    return position ? position.title : 'Unknown Position';
+    const position = positions.find(pos =>
+      pos._id === positionId || pos.title === positionId
+    );
+    return position ? position.title : positionId || 'Unknown Position';
   };
   
   // Format date for display
