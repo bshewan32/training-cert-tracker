@@ -1164,6 +1164,7 @@ function App() {
         {/* Only render if we have data loaded */}
         {employees.length > 0 && positions.length > 0 && certificateTypes.length > 0 ? (
           <CertificatesWithDashboard
+            key={`cert-dashboard-${employees.length}-${JSON.stringify(employees.map(e => e.positions))}`}
             token={token}
             employees={employees}
             positions={positions}
@@ -1289,8 +1290,13 @@ function App() {
 
                     const result = await response.json();
                     setMessage('Employee updated successfully');
-                    await fetchSetupData(true);
-                    await fetchCertificates(); 
+                    
+                    // Refresh all data to ensure UI components get updated employee positions
+                    await Promise.all([
+                      fetchSetupData(true),
+                      fetchCertificates()
+                    ]);
+                    
                     setSelectedEmployeeForEdit(result);
                   } catch (err) {
                     setError(err.message);
