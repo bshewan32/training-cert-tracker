@@ -60,6 +60,7 @@ const CertificatesWithDashboard = ({
   // Filters
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
   const [selectedFilterCertType, setSelectedFilterCertType] = useState('');
+  const [selectedFilterPosition, setSelectedFilterPosition] = useState('');
 
   // Selected employee's positions
   const [employeePositions, setEmployeePositions] = useState([]);
@@ -613,6 +614,23 @@ const CertificatesWithDashboard = ({
                   ))}
               </select>
             </div>
+
+            <div className="filter-group">
+              <label>Filter by Position:</label>
+              <select
+                value={selectedFilterPosition}
+                onChange={(e) => setSelectedFilterPosition(e.target.value)}
+              >
+                <option value="">All Positions</option>
+                {positions
+                  .sort((a, b) => a.title.localeCompare(b.title))
+                  .map(pos => (
+                    <option key={pos._id} value={pos._id}>
+                      {pos.title}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -643,7 +661,8 @@ const CertificatesWithDashboard = ({
               {certificates
                 .filter(cert =>
                   (!selectedFilterEmployee || cert.staffMember === selectedFilterEmployee) &&
-                  (!selectedFilterCertType || (cert.certificateName || cert.certificateType) === selectedFilterCertType)
+                  (!selectedFilterCertType || (cert.certificateName || cert.certificateType) === selectedFilterCertType) &&
+                  (!selectedFilterPosition || cert.position === selectedFilterPosition)
                 )
                 .sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate))
                 .map((cert) => {
