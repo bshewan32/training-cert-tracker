@@ -317,6 +317,9 @@ const CertificatesWithDashboard = ({
   // Get position title from ID
   const getPositionTitle = (positionId) => {
     const position = positions.find(pos => pos._id === positionId);
+    if (!position) {
+      console.log('Position not found for ID:', positionId, 'Available positions:', positions.map(p => ({ id: p._id, title: p.title })));
+    }
     return position ? position.title : 'Unknown Position';
   };
 
@@ -689,6 +692,15 @@ const CertificatesWithDashboard = ({
                       </td>
                       <td>
                         {(() => {
+                          // Debug certificate data
+                          console.log('Certificate data:', {
+                            id: cert._id,
+                            staffMember: cert.staffMember,
+                            position: cert.position,
+                            positionType: typeof cert.position,
+                            allCertFields: Object.keys(cert)
+                          });
+                          
                           // Find the employee who owns this certificate
                           const employee = employees.find(emp => emp.name === cert.staffMember);
                           
@@ -705,9 +717,11 @@ const CertificatesWithDashboard = ({
                                   <div className="current-positions">
                                     <strong>Current:</strong> {currentPositions.join(', ')}
                                   </div>
-                                  <div className="cert-position">
-                                    <small>Cert issued for: {getPositionTitle(cert.position)}</small>
-                                  </div>
+                                  {cert.position && (
+                                    <div className="cert-position">
+                                      <small>Cert issued for: {getPositionTitle(cert.position)}</small>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             }
