@@ -106,7 +106,7 @@ const ExcelExporter = ({ token }) => {
       }
       
       // Filter by certificate type
-      if (selectedCertType && cert.certificateType !== selectedCertType) {
+      if (selectedCertType && cert.certType !== selectedCertType) {
         return false;
       }
       
@@ -167,7 +167,7 @@ const ExcelExporter = ({ token }) => {
       if (columnsToExport.email) exportObj['Email'] = employee.email || '';
       if (columnsToExport.position) exportObj['Position'] = cert.position;
       if (columnsToExport.department) exportObj['Department'] = position.department || '';
-      if (columnsToExport.certificateType) exportObj['Certificate Type'] = cert.certificateType;
+      if (columnsToExport.certificateType) exportObj['Certificate Type'] = cert.certType;
       if (columnsToExport.issueDate) exportObj['Issue Date'] = formatDate(cert.issueDate);
       if (columnsToExport.expirationDate) exportObj['Expiration Date'] = formatDate(cert.expirationDate);
       if (columnsToExport.status) {
