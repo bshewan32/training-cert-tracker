@@ -687,7 +687,36 @@ const CertificatesWithDashboard = ({
                         {cert.staffMember}
                         {isArchived && <span className="archived-badge">Archived</span>}
                       </td>
-                      <td>{getPositionTitle(cert.position)}</td>
+                      <td>
+                        {(() => {
+                          // Find the employee who owns this certificate
+                          const employee = employees.find(emp => emp.name === cert.staffMember);
+                          
+                          // If employee exists and has current positions, show those
+                          if (employee && employee.positions && employee.positions.length > 0) {
+                            const currentPositions = employee.positions.map(posId => {
+                              const posObj = positions.find(p => p._id === (typeof posId === 'object' ? posId._id : posId));
+                              return posObj ? posObj.title : null;
+                            }).filter(Boolean);
+                            
+                            if (currentPositions.length > 0) {
+                              return (
+                                <div>
+                                  <div className="current-positions">
+                                    <strong>Current:</strong> {currentPositions.join(', ')}
+                                  </div>
+                                  <div className="cert-position">
+                                    <small>Cert issued for: {getPositionTitle(cert.position)}</small>
+                                  </div>
+                                </div>
+                              );
+                            }
+                          }
+                          
+                          // Fallback to certificate position
+                          return getPositionTitle(cert.position);
+                        })()}
+                      </td>
                       <td>{cert.certificateName || cert.certificateType}</td>
                       <td>{formatDate(cert.issueDate)}</td>
                       <td>{formatDate(cert.expirationDate)}</td>
