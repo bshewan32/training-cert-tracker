@@ -1350,23 +1350,23 @@ function App() {
                     const result = await response.json();
                     console.log('Employee update API response:', result);
                     setMessage('Employee updated successfully');
-                    
-                    // Refresh all data to ensure UI components get updated employee positions
+
+                    // Refresh all data to ensure UI components get updated employee positions and certificates,
+                    // then force dashboard to remount with fresh data
                     await Promise.all([
                       fetchSetupData(true),
                       fetchCertificates()
                     ]);
-                    
+                    setCertificateDashboardKey(prev => prev + 1); // <- Add this line here
+
                     // Wait a bit for state to update, then check
                     setTimeout(() => {
                       console.log('After fetchSetupData timeout, employees state:', employees.length);
                       const updatedEmp = employees.find(emp => emp._id === selectedEmployeeForEdit._id);
                       console.log('Updated employee after refresh:', updatedEmp);
                     }, 500);
-                    
+
                     setSelectedEmployeeForEdit(result);
-                    // Force dashboard to remount with fresh data
-                    setCertificateDashboardKey(prev => prev + 1);
                   } catch (err) {
                     setError(err.message);
                   }
@@ -1374,7 +1374,7 @@ function App() {
                 onCancel={() => {
                   // Force a fresh data load when returning to certificates
                   fetchSetupData(true).then(() => {
-                    setCertificateDashboardKey(prev => prev + 1);
+                    setCertificateDashboardKey(prev => prev + 1); // <- Add this line
                     setView('certificates');
                   });
                 }}
