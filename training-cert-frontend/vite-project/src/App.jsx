@@ -314,13 +314,13 @@ const CertificatesWithDashboard = ({
     }
   };
 
-  // Get position title from ID
+  // Get position title from ID or object
   const getPositionTitle = (positionId) => {
-    const position = positions.find(pos => pos._id === positionId);
-    if (!position) {
-      console.log('Position not found for ID:', positionId, 'Available positions:', positions.map(p => ({ id: p._id, title: p.title })));
-    }
-    return position ? position.title : 'Unknown Position';
+    const actualId = typeof positionId === 'object' ? positionId._id : positionId;
+    const position = positions.find(pos =>
+      pos._id === actualId || pos.title === actualId
+    );
+    return position ? position.title : actualId || 'Unknown Position';
   };
 
   // Format date for display
@@ -823,6 +823,8 @@ function App() {
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
 
+    console.log('Login attempt:', { type, data: { ...data, password: '[REDACTED]' } });
+
     try {
       const response = await fetch(`https://training-cert-tracker.onrender.com/api/users/${type}`, {
         method: 'POST',
@@ -832,7 +834,9 @@ function App() {
         body: JSON.stringify(data),
       });
 
+      console.log('Login response status:', response.status);
       const result = await response.json();
+      console.log('Login response data:', result);
 
       if (!response.ok) {
         throw new Error(result.message || 'Authentication failed');
@@ -847,6 +851,7 @@ function App() {
       // Always go to certificates view for simplicity
       setView('certificates');
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.message);
     }
   };
@@ -914,19 +919,20 @@ function App() {
   };
 
   useEffect(() => {
-  if (token) {
-    if (view === 'certificates' || view === 'admin') {
-      fetchCertificates();
-      fetchSetupData(true); // Make sure this loads when going to certificates view
-    }
-    if (view === 'admin') {
-      fetchDashboardStats();
-    }
-    if (view === 'setup') {
+    if (token && (view === 'certificates' || view === 'admin')) {
+      (async () => {
+        await Promise.all([
+          fetchSetupData(true),
+          fetchCertificates()
+        ]);
+      })();
+    } else if (token && view === 'setup') {
       fetchSetupData(showArchivedEmployees);
     }
-  }
-}, [token, view]);
+    if (token && view === 'admin') {
+      fetchDashboardStats();
+    }
+  }, [token, view]);
   
 
   // Set view to formatter if on hidden-tools/date-formatter path
