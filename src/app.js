@@ -41,6 +41,8 @@ class TrainingCertApp {
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true
     }));
+
+    this.app.options('*', cors()); // Enable preflight across-the-board
     
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
