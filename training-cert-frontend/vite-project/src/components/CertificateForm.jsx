@@ -122,24 +122,67 @@ const CertificatesWithDashboard = ({
     }
   }, [formData.certificateType, formData.issueDate, certificateTypes]);
   
-  const calculateDashboardStats = () => {
-    try {
-      const today = new Date();
-      const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+  // const calculateDashboardStats = () => {
+  //   try {
+  //     const today = new Date();
+  //     const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
       
-      // Basic certificate stats
-      const totalCertificates = certificates.length;
-      const activeCertificates = certificates.filter(cert => cert.status === 'Active').length;
+  //     // Basic certificate stats
+  //     const totalCertificates = certificates.length;
+  //     const activeCertificates = certificates.filter(cert => cert.status === 'Active').length;
       
-      const expiringSoon = certificates.filter(cert => {
-        try {
+  //     const expiringSoon = certificates.filter(cert => {
+  //       try {
+  //         const expiryDate = new Date(cert.expirationDate);
+  //         if (isNaN(expiryDate.getTime())) return false;
+  //         return expiryDate > today && expiryDate <= thirtyDaysFromNow;
+  //       } catch {
+  //         return false;
+  //       }
+  //     }).length;
+
+      const calculateDashboardStats = () => {
+      try {
+        const today = new Date();
+        const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+    
+        const totalCertificates = certificates.length;
+    
+        let activeCertificates = 0;
+        let expired = 0;
+        let expiringSoon = 0;
+    
+        certificates.forEach(cert => {
           const expiryDate = new Date(cert.expirationDate);
-          if (isNaN(expiryDate.getTime())) return false;
-          return expiryDate > today && expiryDate <= thirtyDaysFromNow;
-        } catch {
-          return false;
-        }
-      }).length;
+          if (isNaN(expiryDate.getTime())) return;
+    
+          if (expiryDate < today) {
+            expired++;
+          } else {
+            activeCertificates++;
+            if (expiryDate <= thirtyDaysFromNow) {
+              expiringSoon++;
+            }
+          }
+        });
+    
+        return {
+          totalCertificates,
+          activeCertificates,
+          expired,
+          expiringSoon,
+        };
+      } catch (error) {
+        console.error('Error calculating dashboard stats:', error);
+        return {
+          totalCertificates: 0,
+          activeCertificates: 0,
+          expired: 0,
+          expiringSoon: 0,
+        };
+      }
+    };
+
       
       const expired = certificates.filter(cert => cert.status === 'Expired').length;
       
