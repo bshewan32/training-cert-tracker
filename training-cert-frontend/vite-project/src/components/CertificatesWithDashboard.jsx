@@ -45,6 +45,8 @@ const CertificatesWithDashboard = ({
   }, [token]);
 
   const fetchPositionRequirements = async () => {
+    if (!token) return;
+    
     try {
       const response = await fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
         headers: {
@@ -55,14 +57,26 @@ const CertificatesWithDashboard = ({
       
       if (response.ok) {
         const requirements = await response.json();
-        setPositionRequirements(requirements);
+        console.log('Position requirements fetched:', requirements);
+        setPositionRequirements(requirements || []);
+      } else {
+        console.warn('Failed to fetch position requirements:', response.status);
+        setPositionRequirements([]);
       }
     } catch (error) {
       console.error('Error fetching position requirements:', error);
+      setPositionRequirements([]);
     }
   };
 
   const calculateDashboardStats = () => {
+    console.log('Starting dashboard calculation with:', {
+      certificatesCount: certificates.length,
+      employeesCount: employees.length,
+      positionsCount: positions.length,
+      requirementsCount: positionRequirements.length
+    });
+
     const today = new Date();
     const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -85,32 +99,50 @@ const CertificatesWithDashboard = ({
     let requiredCertCount = 0;
     let activeRequiredCertCount = 0;
 
+    console.log('Active employees:', activeEmployees.length);
+    console.log('Position requirements:', positionRequirements);
+
     activeEmployees.forEach(emp => {
-      emp.positions.forEach(posId => {
-        const positionId = typeof posId === 'object' ? posId._id : posId;
-        const position = positions.find(p => p._id === positionId);
-        
-        if (position) {
-          // Find requirements for this position
-          const requirements = positionRequirements.filter(req => {
-            const reqPositionId = typeof req.position === 'object' ? req.position._id : req.position;
-            return reqPositionId === positionId && req.isRequired && req.active;
-          });
-          
-          requirements.forEach(requirement => {
-            requiredCertCount++;
-            const hasActive = certificates.some(cert => {
-              const isActive = cert.status === 'ACTIVE' || cert.status === 'Active';
-              const certTypeMatch = cert.certType === requirement.certificateType || 
-                                   cert.CertType === requirement.certificateType || 
-                                   cert.certificateName === requirement.certificateType || 
-                                   cert.certificateType === requirement.certificateType;
-              return cert.staffMember === emp.name && certTypeMatch && isActive;
-            });
-            if (hasActive) activeRequiredCertCount++;
-          });
-        }
-      });
+      if (emp.positions && Array.isArray(emp.positions)) {
+        emp.positions.forEach(posId => {
+          if (posId) { // Check if posId exists
+            const positionId = typeof posId === 'object' ? posId._id : posId;
+            if (positionId) { // Check if positionId exists
+              const position = positions.find(p => p._id === positionId);
+              
+              if (position) {
+                // Find requirements for this position
+                const requirements = positionRequirements.filter(req => {
+                  if (!req || !req.position) return false;
+                  const reqPositionId = typeof req.position === 'object' ? req.position._id : req.position;
+                  return reqPositionId === positionId && req.isRequired && req.active;
+                });
+                
+                console.log(`Employee ${emp.name}, Position ${position.title}, Requirements:`, requirements.length);
+                
+                requirements.forEach(requirement => {
+                  requiredCertCount++;
+                  const hasActive = certificates.some(cert => {
+                    const isActive = cert.status === 'ACTIVE' || cert.status === 'Active';
+                    const certTypeMatch = cert.certType === requirement.certificateType || 
+                                         cert.CertType === requirement.certificateType || 
+                                         cert.certificateName === requirement.certificateType || 
+                                         cert.certificateType === requirement.certificateType;
+                    return cert.staffMember === emp.name && certTypeMatch && isActive;
+                  });
+                  if (hasActive) activeRequiredCertCount++;
+                });
+              }
+            }
+          }
+        });
+      }
+    });
+
+    console.log('Compliance calculation:', {
+      requiredCertCount,
+      activeRequiredCertCount,
+      complianceRate: requiredCertCount > 0 ? Math.round((activeRequiredCertCount / requiredCertCount) * 100) : 0
     });
 
     const complianceRate = requiredCertCount > 0
@@ -133,13 +165,16 @@ const CertificatesWithDashboard = ({
         cert.status === 'ACTIVE' || cert.status === 'Active'
       );
       const employeesInPosition = activeEmployees.filter(emp =>
-        emp.positions && emp.positions.some(pos =>
-          (typeof pos === 'object' ? pos._id : pos) === position._id
-        )
+        emp.positions && Array.isArray(emp.positions) && emp.positions.some(pos => {
+          if (!pos) return false;
+          const empPosId = typeof pos === 'object' ? pos._id : pos;
+          return empPosId === position._id;
+        })
       );
       
       // Get requirements for this position
       const requirements = positionRequirements.filter(req => {
+        if (!req || !req.position) return false;
         const reqPositionId = typeof req.position === 'object' ? req.position._id : req.position;
         return reqPositionId === position._id && req.isRequired && req.active;
       });
@@ -232,7 +267,7 @@ const CertificatesWithDashboard = ({
     const certificateData = {
       staffMember: employee.name,
       position: selectedPosition,
-      certType: certType.name,
+      certificateType: certType.name, // This will be mapped to certType in the backend
       issueDate: issueDate,
       expirationDate: expiryDate
     };
