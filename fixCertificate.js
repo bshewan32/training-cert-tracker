@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const uri = 'mongodb+srv://billshewan:qeoCuQjQWwzHlszl@cluster0.xeorh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const uri = 'mongokey';
 
 const Certificate = require('./src/models/Certificate'); // adjust path
 const Position = require('./src/models/Position');       // adjust path
