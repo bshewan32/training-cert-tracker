@@ -12,154 +12,252 @@ import EmployeeForm from './components/EmployeeForm';
 import EmployeePositionsDashboard from './components/EmployeePositionsDashboard';
 import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard';
 
-// Enhanced certificates component
-const CertificatesWithDashboard = ({
-  token,
-  employees = [],
-  positions = [],
-  certificateTypes = [],
-  certificates = [],
-  isAdmin = false,
-  onViewEmployee,
-  onViewAdmin,
-  onCertificateAdded,
-  onCertificateDeleted
-}) => {console.log('CertificatesWithDashboard received:', {
-    employees: employees.length,
-    positions: positions.length, 
-    certificateTypes: certificateTypes.length,
-    certificates: certificates.length,
-    certificatesData: certificates
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+// // Enhanced certificates component
+// const CertificatesWithDashboard = ({
+//   token,
+//   employees = [],
+//   positions = [],
+//   certificateTypes = [],
+//   certificates = [],
+//   isAdmin = false,
+//   onViewEmployee,
+//   onViewAdmin,
+//   onCertificateAdded,
+//   onCertificateDeleted
+// }) => {console.log('CertificatesWithDashboard received:', {
+//     employees: employees.length,
+//     positions: positions.length, 
+//     certificateTypes: certificateTypes.length,
+//     certificates: certificates.length,
+//     certificatesData: certificates
+//   });
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState('');
+//   const [success, setSuccess] = useState('');
 
-  // Dashboard stats
-  const [dashboardStats, setDashboardStats] = useState({
-    totalCertificates: 0,
-    activeCertificates: 0,
-    expiringSoon: 0,
-    expired: 0,
-    totalEmployees: 0,
-    complianceRate: 0
-  });
+//   // Dashboard stats
+//   const [dashboardStats, setDashboardStats] = useState({
+//     totalCertificates: 0,
+//     activeCertificates: 0,
+//     expiringSoon: 0,
+//     expired: 0,
+//     totalEmployees: 0,
+//     complianceRate: 0
+//   });
 
-  const [complianceByPosition, setComplianceByPosition] = useState([]);
-  const [urgentActions, setUrgentActions] = useState([]);
+//   const [complianceByPosition, setComplianceByPosition] = useState([]);
+//   const [urgentActions, setUrgentActions] = useState([]);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    staffMember: '',
-    position: '',
-    certificateType: '',
-    issueDate: new Date().toISOString().split('T')[0],
-    expirationDate: ''
-  });
+//   // Form state
+//   const [formData, setFormData] = useState({
+//     staffMember: '',
+//     position: '',
+//     certificateType: '',
+//     issueDate: new Date().toISOString().split('T')[0],
+//     expirationDate: ''
+//   });
 
-  // Filters
-  const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
-  const [selectedFilterCertType, setSelectedFilterCertType] = useState('');
-  const [selectedFilterPosition, setSelectedFilterPosition] = useState('');
+//   // Filters
+//   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
+//   const [selectedFilterCertType, setSelectedFilterCertType] = useState('');
+//   const [selectedFilterPosition, setSelectedFilterPosition] = useState('');
 
-  // Selected employee's positions
-  const [employeePositions, setEmployeePositions] = useState([]);
+//   // Selected employee's positions
+//   const [employeePositions, setEmployeePositions] = useState([]);
 
-  // Calculate dashboard stats when data changes
-  useEffect(() => {
-  console.log('useEffect triggered - calculating dashboard stats');
-  calculateDashboardStats();
-}, [certificates, employees, positions]);
+//   // Calculate dashboard stats when data changes
+//   useEffect(() => {
+//   console.log('useEffect triggered - calculating dashboard stats');
+//   calculateDashboardStats();
+// }, [certificates, employees, positions]);
 
-  // Update employee positions when employee changes
-  useEffect(() => {
-    if (formData.staffMember) {
-      const selectedEmployee = employees.find(emp => emp._id === formData.staffMember);
-      if (selectedEmployee && selectedEmployee.positions) {
-        const positionObjects = selectedEmployee.positions.map(posId => {
-          const posObj = positions.find(p => p._id === (typeof posId === 'object' ? posId._id : posId));
-          return posObj || null;
-        }).filter(Boolean);
+//   // Update employee positions when employee changes
+//   useEffect(() => {
+//     if (formData.staffMember) {
+//       const selectedEmployee = employees.find(emp => emp._id === formData.staffMember);
+//       if (selectedEmployee && selectedEmployee.positions) {
+//         const positionObjects = selectedEmployee.positions.map(posId => {
+//           const posObj = positions.find(p => p._id === (typeof posId === 'object' ? posId._id : posId));
+//           return posObj || null;
+//         }).filter(Boolean);
 
-        setEmployeePositions(positionObjects);
+//         setEmployeePositions(positionObjects);
 
-        // Set default position to primary position if available
-        if (selectedEmployee.primaryPosition && !formData.position) {
-          const primaryPosId = typeof selectedEmployee.primaryPosition === 'object'
-            ? selectedEmployee.primaryPosition._id
-            : selectedEmployee.primaryPosition;
+//         // Set default position to primary position if available
+//         if (selectedEmployee.primaryPosition && !formData.position) {
+//           const primaryPosId = typeof selectedEmployee.primaryPosition === 'object'
+//             ? selectedEmployee.primaryPosition._id
+//             : selectedEmployee.primaryPosition;
 
-          setFormData(prev => ({
-            ...prev,
-            position: primaryPosId
-          }));
-        }
-      } else {
-        setEmployeePositions([]);
-      }
-    } else {
-      setEmployeePositions([]);
-    }
-  }, [formData.staffMember, employees, positions]);
+//           setFormData(prev => ({
+//             ...prev,
+//             position: primaryPosId
+//           }));
+//         }
+//       } else {
+//         setEmployeePositions([]);
+//       }
+//     } else {
+//       setEmployeePositions([]);
+//     }
+//   }, [formData.staffMember, employees, positions]);
 
-  // Calculate expiration date when certificate type or issue date changes
-  useEffect(() => {
-    if (formData.certificateType && formData.issueDate) {
-      const selectedCertType = certificateTypes.find(
-        cert => cert._id === formData.certificateType
-      );
+//   // Calculate expiration date when certificate type or issue date changes
+//   useEffect(() => {
+//     if (formData.certificateType && formData.issueDate) {
+//       const selectedCertType = certificateTypes.find(
+//         cert => cert._id === formData.certificateType
+//       );
 
-      if (selectedCertType) {
-        const issueDate = new Date(formData.issueDate);
-        const expiryDate = new Date(issueDate);
-        expiryDate.setMonth(expiryDate.getMonth() + selectedCertType.validityPeriod);
+//       if (selectedCertType) {
+//         const issueDate = new Date(formData.issueDate);
+//         const expiryDate = new Date(issueDate);
+//         expiryDate.setMonth(expiryDate.getMonth() + selectedCertType.validityPeriod);
 
-        setFormData(prev => ({
-          ...prev,
-          expirationDate: expiryDate.toISOString().split('T')[0]
-        }));
-      }
-    }
-  }, [formData.certificateType, formData.issueDate, certificateTypes]);
+//         setFormData(prev => ({
+//           ...prev,
+//           expirationDate: expiryDate.toISOString().split('T')[0]
+//         }));
+//       }
+//     }
+//   }, [formData.certificateType, formData.issueDate, certificateTypes]);
 
-  const calculateDashboardStats = () => {
-  console.log('Calculating dashboard stats with certificates:', certificates.length);
+//   const calculateDashboardStats = () => {
+//   console.log('Calculating dashboard stats with certificates:', certificates.length);
 
-    if (certificates.length > 0) {
-    console.log('Sample certificate data:', certificates[0]);
-    console.log('Certificate statuses found:', [...new Set(certificates.map(cert => cert.status))]);
-    console.log('Certificate fields:', Object.keys(certificates[0]));
-  }
-  const today = new Date();
-  const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+//     if (certificates.length > 0) {
+//     console.log('Sample certificate data:', certificates[0]);
+//     console.log('Certificate statuses found:', [...new Set(certificates.map(cert => cert.status))]);
+//     console.log('Certificate fields:', Object.keys(certificates[0]));
+//   }
+//   const today = new Date();
+//   const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
   
-  // Basic certificate stats
+//   // Basic certificate stats
+//   const totalCertificates = certificates.length;
+//   const activeCertificates = certificates.filter(cert => cert.status === 'ACTIVE').length;
+//   const expiringSoon = certificates.filter(cert => {  // Make sure this is declared!
+//     const expiryDate = new Date(cert.expirationDate);
+//     return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow;
+//   }).length;
+//   const expired = certificates.filter(cert => cert.status === 'EXPIRED').length;
+  
+//   // Employee stats (only active employees)
+//   const activeEmployees = employees.filter(emp => emp.active !== false);
+//   const totalEmployees = activeEmployees.length;
+  
+//   // Compliance rate calculation (simplified)
+//   const complianceRate = totalCertificates > 0 
+//     ? Math.round((activeCertificates / totalCertificates) * 100) 
+//     : 0;
+  
+//   console.log('Stats calculated:', {
+//     totalCertificates,
+//     activeCertificates,
+//     expiringSoon,
+//     expired,
+//     totalEmployees,
+//     complianceRate
+//   });
+  
+//   setDashboardStats({
+//     totalCertificates,
+//     activeCertificates,
+//     expiringSoon,
+//     expired,
+//     totalEmployees,
+//     complianceRate
+//   }); 
+  
+
+//     // Calculate compliance by position
+//     const positionStats = [];
+//     positions.forEach(position => {
+//       const positionCerts = certificates.filter(cert => cert.position === position._id);
+//       const activeCerts = positionCerts.filter(cert => cert.status === 'ACTIVE');
+//       const employeesInPosition = activeEmployees.filter(emp =>
+//         emp.positions && emp.positions.some(pos =>
+//           (typeof pos === 'object' ? pos._id : pos) === position._id
+//         )
+//       );
+
+//       if (employeesInPosition.length > 0) {
+//         positionStats.push({
+//           position: position.title,
+//           department: position.department || 'No Department',
+//           employees: employeesInPosition.length,
+//           totalCerts: positionCerts.length,
+//           activeCerts: activeCerts.length,
+//           complianceRate: positionCerts.length > 0
+//             ? Math.round((activeCerts.length / positionCerts.length) * 100)
+//             : 0
+//         });
+//       }
+//     });
+
+//     // Sort by compliance rate (lowest first)
+//     positionStats.sort((a, b) => a.complianceRate - b.complianceRate);
+//     setComplianceByPosition(positionStats.slice(0, 5)); // Top 5 positions needing attention
+
+//     // Urgent actions (expiring certificates)
+//     const urgent = certificates
+//     .filter(cert => {
+//       const expiryDate = new Date(cert.expirationDate);
+//       return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow; // Changed here too
+//     })
+//     .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate))
+//     .slice(0, 5)
+//     .map(cert => ({
+//       employee: cert.staffMember,
+//       certificate: cert.certificateType || cert.certificateName || cert.CertType, // Added CertType as fallback
+//       expiryDate: cert.expirationDate,
+//       daysLeft: Math.ceil((new Date(cert.expirationDate) - today) / (1000 * 60 * 60 * 24))
+//     }));
+  
+//   setUrgentActions(urgent);
+// };
+
+const calculateDashboardStats = () => {
+  const today = new Date();
+  const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+
   const totalCertificates = certificates.length;
   const activeCertificates = certificates.filter(cert => cert.status === 'ACTIVE').length;
-  const expiringSoon = certificates.filter(cert => {  // Make sure this is declared!
+  const expiringSoon = certificates.filter(cert => {
     const expiryDate = new Date(cert.expirationDate);
     return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow;
   }).length;
   const expired = certificates.filter(cert => cert.status === 'EXPIRED').length;
-  
-  // Employee stats (only active employees)
+
   const activeEmployees = employees.filter(emp => emp.active !== false);
   const totalEmployees = activeEmployees.length;
-  
-  // Compliance rate calculation (simplified)
-  const complianceRate = totalCertificates > 0 
-    ? Math.round((activeCertificates / totalCertificates) * 100) 
-    : 0;
-  
-  console.log('Stats calculated:', {
-    totalCertificates,
-    activeCertificates,
-    expiringSoon,
-    expired,
-    totalEmployees,
-    complianceRate
+
+  // --- TRUE COMPLIANCE CALCULATION ---
+
+  // 1. Per-employee compliance (for overall)
+  let compliantEmployeesCount = 0;
+  activeEmployees.forEach(emp => {
+    let isCompliant = true;
+    (emp.positions || []).forEach(posId => {
+      const posObj = positions.find(p => p._id === (typeof posId === 'object' ? posId._id : posId));
+      if (!posObj) return;
+      const requiredCertTypes = posObj.requiredCertificates || [];
+      requiredCertTypes.forEach(certTypeId => {
+        // Does employee have at least one ACTIVE cert for this position/cert type?
+        const hasActive = certificates.some(cert =>
+          cert.staffMember === emp.name &&
+          cert.position === posObj._id &&
+          (cert.certificateType === certTypeId || cert.certificateName === certTypeId) && // fallback if needed
+          cert.status === 'ACTIVE'
+        );
+        if (!hasActive) isCompliant = false;
+      });
+    });
+    if (isCompliant) compliantEmployeesCount++;
   });
-  
+
+  const complianceRate = totalEmployees > 0 ? Math.round((compliantEmployeesCount / totalEmployees) * 100) : 0;
+
   setDashboardStats({
     totalCertificates,
     activeCertificates,
@@ -167,53 +265,54 @@ const CertificatesWithDashboard = ({
     expired,
     totalEmployees,
     complianceRate
-  }); 
-  
+  });
 
-    // Calculate compliance by position
-    const positionStats = [];
-    positions.forEach(position => {
-      const positionCerts = certificates.filter(cert => cert.position === position._id);
-      const activeCerts = positionCerts.filter(cert => cert.status === 'ACTIVE');
-      const employeesInPosition = activeEmployees.filter(emp =>
-        emp.positions && emp.positions.some(pos =>
-          (typeof pos === 'object' ? pos._id : pos) === position._id
-        )
-      );
-
-      if (employeesInPosition.length > 0) {
-        positionStats.push({
-          position: position.title,
-          department: position.department || 'No Department',
-          employees: employeesInPosition.length,
-          totalCerts: positionCerts.length,
-          activeCerts: activeCerts.length,
-          complianceRate: positionCerts.length > 0
-            ? Math.round((activeCerts.length / positionCerts.length) * 100)
-            : 0
-        });
-      }
+  // 2. Per-position compliance
+  const positionStats = positions.map(position => {
+    const employeesInPosition = activeEmployees.filter(emp =>
+      (emp.positions || []).some(pos => (typeof pos === 'object' ? pos._id : pos) === position._id)
+    );
+    let compliantCount = 0;
+    employeesInPosition.forEach(emp => {
+      let isCompliant = true;
+      (position.requiredCertificates || []).forEach(certTypeId => {
+        const hasActive = certificates.some(cert =>
+          cert.staffMember === emp.name &&
+          cert.position === position._id &&
+          (cert.certificateType === certTypeId || cert.certificateName === certTypeId) &&
+          cert.status === 'ACTIVE'
+        );
+        if (!hasActive) isCompliant = false;
+      });
+      if (isCompliant) compliantCount++;
     });
+    return {
+      position: position.title,
+      department: position.department || 'No Department',
+      employees: employeesInPosition.length,
+      complianceRate: employeesInPosition.length > 0
+        ? Math.round((compliantCount / employeesInPosition.length) * 100)
+        : 0
+    };
+  }).sort((a, b) => a.complianceRate - b.complianceRate);
 
-    // Sort by compliance rate (lowest first)
-    positionStats.sort((a, b) => a.complianceRate - b.complianceRate);
-    setComplianceByPosition(positionStats.slice(0, 5)); // Top 5 positions needing attention
+  setComplianceByPosition(positionStats.slice(0, 5)); // Show lowest 5
 
-    // Urgent actions (expiring certificates)
-    const urgent = certificates
+  // 3. Urgent actions (same as before)
+  const urgent = certificates
     .filter(cert => {
       const expiryDate = new Date(cert.expirationDate);
-      return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow; // Changed here too
+      return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow;
     })
     .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate))
     .slice(0, 5)
     .map(cert => ({
       employee: cert.staffMember,
-      certificate: cert.certificateType || cert.certificateName || cert.CertType, // Added CertType as fallback
+      certificate: cert.certificateType || cert.certificateName || cert.CertType,
       expiryDate: cert.expirationDate,
       daysLeft: Math.ceil((new Date(cert.expirationDate) - today) / (1000 * 60 * 60 * 24))
     }));
-  
+
   setUrgentActions(urgent);
 };
 
