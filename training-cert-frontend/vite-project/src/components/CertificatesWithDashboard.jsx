@@ -64,7 +64,7 @@ const CertificatesWithDashboard = ({
             requiredCertCount++;
             const hasActive = certificates.some(cert =>
               cert.staffMember === emp.name &&
-              cert.certType === reqCert &&
+              (cert.CertType === reqCert || cert.certificateName === reqCert || cert.certificateType === reqCert) &&
               cert.status === 'ACTIVE'
             );
             if (hasActive) activeRequiredCertCount++;
@@ -120,7 +120,7 @@ const CertificatesWithDashboard = ({
       .slice(0, 5)
       .map(cert => ({
         employee: cert.staffMember,
-        certificate: cert.certificateType || cert.certificateName || cert.CertType,
+        certificate: cert.CertType || cert.certificateName || cert.certificateType,
         expiryDate: cert.expirationDate,
         daysLeft: Math.ceil((new Date(cert.expirationDate) - today) / (1000 * 60 * 60 * 24))
       }));
@@ -159,7 +159,8 @@ const CertificatesWithDashboard = ({
     const certificateData = {
       staffMember: employee.name,
       position: selectedPosition,
-      certificateType: certType.name,
+      CertType: certType.name,
+      certificateName: certType.name,
       issueDate: issueDate,
       expirationDate: expiryDate
     };
@@ -198,9 +199,9 @@ const CertificatesWithDashboard = ({
   const filteredCertificates = certificates.filter(cert => {
     const employeeMatch = !selectedFilterEmployee || cert.staffMember === selectedFilterEmployee;
     const certTypeMatch = !selectedFilterCertType || 
-      cert.certificateType === selectedFilterCertType || 
+      cert.CertType === selectedFilterCertType || 
       cert.certificateName === selectedFilterCertType ||
-      cert.CertType === selectedFilterCertType;
+      cert.certificateType === selectedFilterCertType;
     return employeeMatch && certTypeMatch;
   });
 
@@ -431,7 +432,7 @@ const CertificatesWithDashboard = ({
               >
                 <option value="">All Certificates</option>
                 {[...new Set(certificates.map(cert => 
-                  cert.certificateType || cert.certificateName || cert.CertType
+                  cert.CertType || cert.certificateName || cert.certificateType
                 ))].filter(Boolean).map(name => (
                   <option key={name} value={name}>{name}</option>
                 ))}
@@ -487,7 +488,7 @@ const CertificatesWithDashboard = ({
                       {isArchived && <span className="archived-badge">Archived</span>}
                     </td>
                     <td>{positionTitle}</td>
-                    <td>{cert.certificateName || cert.certificateType}</td>
+                    <td>{cert.CertType || cert.certificateName}</td>
                     <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
                     <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
                     <td>
