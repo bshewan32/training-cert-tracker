@@ -11,6 +11,7 @@ import EmployeeRequirements from './components/EmployeeRequirements';
 import EmployeeForm from './components/EmployeeForm';
 import EmployeePositionsDashboard from './components/EmployeePositionsDashboard';
 import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard';
+import CertificatesWithDashboard from './components/CertificatesWithDashboard';
 
 // // Enhanced certificates component
 // const CertificatesWithDashboard = ({
@@ -217,104 +218,6 @@ import MultiPositionComplianceDashboard from './components/MultiPositionComplian
 //   setUrgentActions(urgent);
 // };
 
-const calculateDashboardStats = () => {
-  const today = new Date();
-  const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-  const totalCertificates = certificates.length;
-  const activeCertificates = certificates.filter(cert => cert.status === 'ACTIVE').length;
-  const expiringSoon = certificates.filter(cert => {
-    const expiryDate = new Date(cert.expirationDate);
-    return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow;
-  }).length;
-  const expired = certificates.filter(cert => cert.status === 'EXPIRED').length;
-
-  const activeEmployees = employees.filter(emp => emp.active !== false);
-  const totalEmployees = activeEmployees.length;
-
-  // --- TRUE COMPLIANCE CALCULATION ---
-
-  // 1. Per-employee compliance (for overall)
-  let compliantEmployeesCount = 0;
-  activeEmployees.forEach(emp => {
-    let isCompliant = true;
-    (emp.positions || []).forEach(posId => {
-      const posObj = positions.find(p => p._id === (typeof posId === 'object' ? posId._id : posId));
-      if (!posObj) return;
-      const requiredCertTypes = posObj.requiredCertificates || [];
-      requiredCertTypes.forEach(certTypeId => {
-        // Does employee have at least one ACTIVE cert for this position/cert type?
-        const hasActive = certificates.some(cert =>
-          cert.staffMember === emp.name &&
-          cert.position === posObj._id &&
-          (cert.certificateType === certTypeId || cert.certificateName === certTypeId) && // fallback if needed
-          cert.status === 'ACTIVE'
-        );
-        if (!hasActive) isCompliant = false;
-      });
-    });
-    if (isCompliant) compliantEmployeesCount++;
-  });
-
-  const complianceRate = totalEmployees > 0 ? Math.round((compliantEmployeesCount / totalEmployees) * 100) : 0;
-
-  setDashboardStats({
-    totalCertificates,
-    activeCertificates,
-    expiringSoon,
-    expired,
-    totalEmployees,
-    complianceRate
-  });
-
-  // 2. Per-position compliance
-  const positionStats = positions.map(position => {
-    const employeesInPosition = activeEmployees.filter(emp =>
-      (emp.positions || []).some(pos => (typeof pos === 'object' ? pos._id : pos) === position._id)
-    );
-    let compliantCount = 0;
-    employeesInPosition.forEach(emp => {
-      let isCompliant = true;
-      (position.requiredCertificates || []).forEach(certTypeId => {
-        const hasActive = certificates.some(cert =>
-          cert.staffMember === emp.name &&
-          cert.position === position._id &&
-          (cert.certificateType === certTypeId || cert.certificateName === certTypeId) &&
-          cert.status === 'ACTIVE'
-        );
-        if (!hasActive) isCompliant = false;
-      });
-      if (isCompliant) compliantCount++;
-    });
-    return {
-      position: position.title,
-      department: position.department || 'No Department',
-      employees: employeesInPosition.length,
-      complianceRate: employeesInPosition.length > 0
-        ? Math.round((compliantCount / employeesInPosition.length) * 100)
-        : 0
-    };
-  }).sort((a, b) => a.complianceRate - b.complianceRate);
-
-  setComplianceByPosition(positionStats.slice(0, 5)); // Show lowest 5
-
-  // 3. Urgent actions (same as before)
-  const urgent = certificates
-    .filter(cert => {
-      const expiryDate = new Date(cert.expirationDate);
-      return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow;
-    })
-    .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate))
-    .slice(0, 5)
-    .map(cert => ({
-      employee: cert.staffMember,
-      certificate: cert.certificateType || cert.certificateName || cert.CertType,
-      expiryDate: cert.expirationDate,
-      daysLeft: Math.ceil((new Date(cert.expirationDate) - today) / (1000 * 60 * 60 * 24))
-    }));
-
-  setUrgentActions(urgent);
-};
 
   // Handle form input changes
   const handleInputChange = (e) => {
