@@ -43,12 +43,17 @@ const CertificatesWithDashboard = ({
     const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const totalCertificates = certificates.length;
-    const activeCertificates = certificates.filter(cert => cert.status === 'ACTIVE').length;
+    const activeCertificates = certificates.filter(cert => 
+      cert.status === 'ACTIVE' || cert.status === 'Active'
+    ).length;
     const expiringSoon = certificates.filter(cert => {
       const expiryDate = new Date(cert.expirationDate);
-      return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow;
+      const isActive = cert.status === 'ACTIVE' || cert.status === 'Active';
+      return isActive && expiryDate > today && expiryDate <= thirtyDaysFromNow;
     }).length;
-    const expired = certificates.filter(cert => cert.status === 'EXPIRED').length;
+    const expired = certificates.filter(cert => 
+      cert.status === 'EXPIRED' || cert.status === 'Expired'
+    ).length;
 
     const activeEmployees = employees.filter(emp => emp.active !== false);
     const totalEmployees = activeEmployees.length;
@@ -62,11 +67,14 @@ const CertificatesWithDashboard = ({
         if (position && position.requiredCertTypes) {
           position.requiredCertTypes.forEach(reqCert => {
             requiredCertCount++;
-            const hasActive = certificates.some(cert =>
-              cert.staffMember === emp.name &&
-              (cert.CertType === reqCert || cert.certificateName === reqCert || cert.certificateType === reqCert) &&
-              cert.status === 'ACTIVE'
-            );
+            const hasActive = certificates.some(cert => {
+              const isActive = cert.status === 'ACTIVE' || cert.status === 'Active';
+              const certTypeMatch = cert.certType === reqCert || 
+                                   cert.CertType === reqCert || 
+                                   cert.certificateName === reqCert || 
+                                   cert.certificateType === reqCert;
+              return cert.staffMember === emp.name && certTypeMatch && isActive;
+            });
             if (hasActive) activeRequiredCertCount++;
           });
         }
@@ -89,7 +97,9 @@ const CertificatesWithDashboard = ({
     const positionStats = [];
     positions.forEach(position => {
       const positionCerts = certificates.filter(cert => cert.position === position._id);
-      const activeCerts = positionCerts.filter(cert => cert.status === 'ACTIVE');
+      const activeCerts = positionCerts.filter(cert => 
+        cert.status === 'ACTIVE' || cert.status === 'Active'
+      );
       const employeesInPosition = activeEmployees.filter(emp =>
         emp.positions && emp.positions.some(pos =>
           (typeof pos === 'object' ? pos._id : pos) === position._id
@@ -114,13 +124,14 @@ const CertificatesWithDashboard = ({
     const urgent = certificates
       .filter(cert => {
         const expiryDate = new Date(cert.expirationDate);
-        return cert.status === 'ACTIVE' && expiryDate > today && expiryDate <= thirtyDaysFromNow;
+        const isActive = cert.status === 'ACTIVE' || cert.status === 'Active';
+        return isActive && expiryDate > today && expiryDate <= thirtyDaysFromNow;
       })
       .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate))
       .slice(0, 5)
       .map(cert => ({
         employee: cert.staffMember,
-        certificate: cert.CertType || cert.certificateName || cert.certificateType,
+        certificate: cert.certType || cert.CertType || cert.certificateName || cert.certificateType,
         expiryDate: cert.expirationDate,
         daysLeft: Math.ceil((new Date(cert.expirationDate) - today) / (1000 * 60 * 60 * 24))
       }));
@@ -159,8 +170,7 @@ const CertificatesWithDashboard = ({
     const certificateData = {
       staffMember: employee.name,
       position: selectedPosition,
-      CertType: certType.name,
-      certificateName: certType.name,
+      certType: certType.name,
       issueDate: issueDate,
       expirationDate: expiryDate
     };
@@ -199,6 +209,7 @@ const CertificatesWithDashboard = ({
   const filteredCertificates = certificates.filter(cert => {
     const employeeMatch = !selectedFilterEmployee || cert.staffMember === selectedFilterEmployee;
     const certTypeMatch = !selectedFilterCertType || 
+      cert.certType === selectedFilterCertType || 
       cert.CertType === selectedFilterCertType || 
       cert.certificateName === selectedFilterCertType ||
       cert.certificateType === selectedFilterCertType;
@@ -432,7 +443,7 @@ const CertificatesWithDashboard = ({
               >
                 <option value="">All Certificates</option>
                 {[...new Set(certificates.map(cert => 
-                  cert.CertType || cert.certificateName || cert.certificateType
+                  cert.certType || cert.CertType || cert.certificateName || cert.certificateType
                 ))].filter(Boolean).map(name => (
                   <option key={name} value={name}>{name}</option>
                 ))}
@@ -488,7 +499,7 @@ const CertificatesWithDashboard = ({
                       {isArchived && <span className="archived-badge">Archived</span>}
                     </td>
                     <td>{positionTitle}</td>
-                    <td>{cert.CertType || cert.certificateName}</td>
+                    <td>{cert.certType || cert.CertType || cert.certificateName}</td>
                     <td>{new Date(cert.issueDate).toLocaleDateString()}</td>
                     <td>{new Date(cert.expirationDate).toLocaleDateString()}</td>
                     <td>
