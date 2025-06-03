@@ -25,6 +25,7 @@ const CertificatesWithDashboard = ({
   });
   const [complianceByPosition, setComplianceByPosition] = useState([]);
   const [urgentActions, setUrgentActions] = useState([]);
+  const [positionRequirements, setPositionRequirements] = useState([]);
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
   const [selectedFilterCertType, setSelectedFilterCertType] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -36,7 +37,30 @@ const CertificatesWithDashboard = ({
 
   useEffect(() => {
     calculateDashboardStats();
-  }, [certificates, employees, positions]);
+  }, [certificates, employees, positions, positionRequirements]);
+
+  // Fetch position requirements when component mounts
+  useEffect(() => {
+    fetchPositionRequirements();
+  }, [token]);
+
+  const fetchPositionRequirements = async () => {
+    try {
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const requirements = await response.json();
+        setPositionRequirements(requirements);
+      }
+    } catch (error) {
+      console.error('Error fetching position requirements:', error);
+    }
+  };
 
   const calculateDashboardStats = () => {
     const today = new Date();
@@ -63,16 +87,24 @@ const CertificatesWithDashboard = ({
 
     activeEmployees.forEach(emp => {
       emp.positions.forEach(posId => {
-        const position = positions.find(p => p._id === (typeof posId === 'object' ? posId._id : posId));
-        if (position && position.requiredCertTypes) {
-          position.requiredCertTypes.forEach(reqCert => {
+        const positionId = typeof posId === 'object' ? posId._id : posId;
+        const position = positions.find(p => p._id === positionId);
+        
+        if (position) {
+          // Find requirements for this position
+          const requirements = positionRequirements.filter(req => {
+            const reqPositionId = typeof req.position === 'object' ? req.position._id : req.position;
+            return reqPositionId === positionId && req.isRequired && req.active;
+          });
+          
+          requirements.forEach(requirement => {
             requiredCertCount++;
             const hasActive = certificates.some(cert => {
               const isActive = cert.status === 'ACTIVE' || cert.status === 'Active';
-              const certTypeMatch = cert.certType === reqCert || 
-                                   cert.CertType === reqCert || 
-                                   cert.certificateName === reqCert || 
-                                   cert.certificateType === reqCert;
+              const certTypeMatch = cert.certType === requirement.certificateType || 
+                                   cert.CertType === requirement.certificateType || 
+                                   cert.certificateName === requirement.certificateType || 
+                                   cert.certificateType === requirement.certificateType;
               return cert.staffMember === emp.name && certTypeMatch && isActive;
             });
             if (hasActive) activeRequiredCertCount++;
@@ -105,16 +137,46 @@ const CertificatesWithDashboard = ({
           (typeof pos === 'object' ? pos._id : pos) === position._id
         )
       );
-      if (employeesInPosition.length > 0) {
+      
+      // Get requirements for this position
+      const requirements = positionRequirements.filter(req => {
+        const reqPositionId = typeof req.position === 'object' ? req.position._id : req.position;
+        return reqPositionId === position._id && req.isRequired && req.active;
+      });
+      
+      if (employeesInPosition.length > 0 && requirements.length > 0) {
+        // Calculate compliance based on required certificates vs actual certificates
+        let totalRequiredCerts = employeesInPosition.length * requirements.length;
+        let completedRequiredCerts = 0;
+        
+        employeesInPosition.forEach(emp => {
+          requirements.forEach(requirement => {
+            const hasValidCert = certificates.some(cert => {
+              const isActive = cert.status === 'ACTIVE' || cert.status === 'Active';
+              const certTypeMatch = cert.certType === requirement.certificateType || 
+                                   cert.CertType === requirement.certificateType || 
+                                   cert.certificateName === requirement.certificateType || 
+                                   cert.certificateType === requirement.certificateType;
+              return cert.staffMember === emp.name && certTypeMatch && isActive;
+            });
+            if (hasValidCert) completedRequiredCerts++;
+          });
+        });
+        
+        const complianceRate = totalRequiredCerts > 0
+          ? Math.round((completedRequiredCerts / totalRequiredCerts) * 100)
+          : 0;
+        
         positionStats.push({
           position: position.title,
           department: position.department || 'No Department',
           employees: employeesInPosition.length,
           totalCerts: positionCerts.length,
           activeCerts: activeCerts.length,
-          complianceRate: positionCerts.length > 0
-            ? Math.round((activeCerts.length / positionCerts.length) * 100)
-            : 0
+          requiredCerts: requirements.length,
+          totalRequiredCerts,
+          completedRequiredCerts,
+          complianceRate
         });
       }
     });
@@ -287,7 +349,7 @@ const CertificatesWithDashboard = ({
                       }`}>
                         {pos.complianceRate}%
                       </div>
-                      <div className="employee-count">{pos.activeCerts}/{pos.totalCerts} certs</div>
+                      <div className="employee-count">{pos.completedRequiredCerts}/{pos.totalRequiredCerts} required</div>
                     </div>
                   </div>
                 ))}
