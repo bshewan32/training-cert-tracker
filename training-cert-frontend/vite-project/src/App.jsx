@@ -11,7 +11,7 @@ import EmployeeRequirements from './components/EmployeeRequirements';
 import EmployeeForm from './components/EmployeeForm';
 import EmployeePositionsDashboard from './components/EmployeePositionsDashboard';
 import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard';
-import ComplianceWithDashboard from './components/ComplianceWithDashboard';
+import ComplianceWithDashboard from './components/CertificatesWithDashboard';
 
 function App() {
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
