@@ -802,6 +802,12 @@ function App() {
                 Bulk Import
               </button>
               <button
+                className={`tab-button ${activeTab === 'employees' ? 'active' : ''}`}
+                onClick={() => setActiveTab('employees')}
+              >
+                Employees
+              </button>
+              <button
                 className={`tab-button ${activeTab === 'positions' ? 'active' : ''}`}
                 onClick={() => setActiveTab('positions')}
               >
@@ -814,6 +820,7 @@ function App() {
                 Certificate Types
               </button>
             </div>
+
 
             <div className="setup-content">
               {/* Bulk Import Tab */}
@@ -828,6 +835,157 @@ function App() {
                     onSuccess={handleBulkUploadSuccess}
                     onError={handleBulkUploadError}
                   />
+                </div>
+              )}
+
+              {activeTab === 'employees' && (
+                <div className="setup-section">
+                  <div className="setup-section-header">
+                    <h3>Manage Employees</h3>
+                    <p>Add new employees and manage existing staff members and their position assignments.</p>
+                  </div>
+
+                  <form onSubmit={handleEmployeeSubmit} className="setup-form">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Employee Name:</label>
+                        <input type="text" name="name" required placeholder="e.g. John Smith" />
+                      </div>
+                      <div className="form-group">
+                        <label>Email:</label>
+                        <input type="email" name="email" required placeholder="john.smith@company.com" />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Primary Position:</label>
+                        <select name="primaryPosition" required>
+                          <option value="">Select Primary Position</option>
+                          {positions.map(pos => (
+                            <option key={pos._id} value={pos._id}>
+                              {pos.title} - {pos.department || 'No Department'}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="checkbox-label">
+                          <input type="checkbox" name="active" defaultChecked />
+                          Employee is active
+                        </label>
+                      </div>
+                    </div>
+                    <button type="submit" className="add-button">Add Employee</button>
+                  </form>
+
+                  <div className="setup-list">
+                    <div className="list-header">
+                      <h4>Existing Employees ({employees.length})</h4>
+                      <div className="list-controls">
+                        <label className="checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={showArchivedEmployees}
+                            onChange={(e) => {
+                              setShowArchivedEmployees(e.target.checked);
+                              fetchSetupData(e.target.checked);
+                            }}
+                          />
+                          Show archived employees
+                        </label>
+                      </div>
+                    </div>
+
+                    {employees.length === 0 ? (
+                      <div className="empty-state">
+                        <p>No employees found. Add your first employee above.</p>
+                      </div>
+                    ) : (
+                      employees.map(emp => (
+                        <div key={emp._id} className={`list-item ${emp.active === false ? 'archived-employee' : ''}`}>
+                          <div className="employee-info">
+                            <span className="item-title">
+                              {emp.name}
+                              {emp.active === false && <span className="archived-badge">Archived</span>}
+                            </span>
+                            <span className="item-subtitle">
+                              {emp.email} • Primary: {
+                                emp.primaryPosition
+                                  ? (typeof emp.primaryPosition === 'object'
+                                    ? emp.primaryPosition.title
+                                    : positions.find(p => p._id === emp.primaryPosition)?.title || 'Unknown')
+                                  : 'None assigned'
+                              }
+                            </span>
+                            <div className="current-positions">
+                              Positions: {emp.positions && emp.positions.length > 0
+                                ? emp.positions.map(pos =>
+                                  typeof pos === 'object' ? pos.title : positions.find(p => p._id === pos)?.title || 'Unknown'
+                                ).join(', ')
+                                : 'None assigned'
+                              }
+                            </div>
+                          </div>
+                          <div className="employee-actions">
+                            <button
+                              onClick={() => {
+                                setSelectedEmployeeForEdit(emp);
+                                setView('employeeDetails');
+                              }}
+                              className="edit-button"
+                            >
+                              Edit Details
+                            </button>
+                            {emp.active === false ? (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${emp._id}/reactivate`, {
+                                      method: 'PUT',
+                                      headers: {
+                                        'Authorization': `Bearer ${token}`
+                                      }
+                                    });
+                                    if (!response.ok) throw new Error('Failed to reactivate employee');
+                                    setMessage(`${emp.name} has been reactivated`);
+                                    fetchSetupData(showArchivedEmployees);
+                                  } catch (err) {
+                                    setError(err.message);
+                                  }
+                                }}
+                                className="reactivate-button"
+                              >
+                                🔄 Reactivate
+                              </button>
+                            ) : (
+                              <button
+                                onClick={async () => {
+                                  if (confirm(`Archive ${emp.name}? They will be excluded from compliance calculations.`)) {
+                                    try {
+                                      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${emp._id}/archive`, {
+                                        method: 'PUT',
+                                        headers: {
+                                          'Authorization': `Bearer ${token}`
+                                        }
+                                      });
+                                      if (!response.ok) throw new Error('Failed to archive employee');
+                                      setMessage(`${emp.name} has been archived`);
+                                      fetchSetupData(showArchivedEmployees);
+                                    } catch (err) {
+                                      setError(err.message);
+                                    }
+                                  }
+                                }}
+                                className="archive-button"
+                              >
+                                📁 Archive
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
 

@@ -15,7 +15,7 @@ const CertificatesWithDashboard = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+  }
   // Dashboard stats
   const [dashboardStats, setDashboardStats] = useState({
     totalCertificates: 0,
@@ -122,25 +122,7 @@ const CertificatesWithDashboard = ({
     }
   }, [formData.certificateType, formData.issueDate, certificateTypes]);
   
-  // const calculateDashboardStats = () => {
-  //   try {
-  //     const today = new Date();
-  //     const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
-      
-  //     // Basic certificate stats
-  //     const totalCertificates = certificates.length;
-  //     const activeCertificates = certificates.filter(cert => cert.status === 'Active').length;
-      
-  //     const expiringSoon = certificates.filter(cert => {
-  //       try {
-  //         const expiryDate = new Date(cert.expirationDate);
-  //         if (isNaN(expiryDate.getTime())) return false;
-  //         return expiryDate > today && expiryDate <= thirtyDaysFromNow;
-  //       } catch {
-  //         return false;
-  //       }
-  //     }).length;
-
+  
       const calculateDashboardStats = () => {
       try {
         const today = new Date();
@@ -268,10 +250,7 @@ const CertificatesWithDashboard = ({
         .filter(Boolean);
       
       setUrgentActions(urgent);
-    } catch (err) {
-      console.error('Error calculating dashboard stats:', err);
-    }
-  };
+       
   
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -1445,6 +1424,6 @@ const CertificatesWithDashboard = ({
       `}</style>
     </div>
   );
-};
+
 
 export default CertificatesWithDashboard;
