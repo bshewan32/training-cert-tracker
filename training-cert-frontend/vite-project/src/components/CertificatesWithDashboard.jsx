@@ -31,6 +31,7 @@ const CertificatesWithDashboard = ({
   const [selectedFilterPosition, setSelectedFilterPosition] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [selectedPosition, setSelectedPosition] = useState('');
+  const [selectedCertificateType, setSelectedCertificateType] = useState('');
   const [issueDate, setIssueDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [error, setError] = useState('');
@@ -44,6 +45,19 @@ const CertificatesWithDashboard = ({
   useEffect(() => {
     fetchPositionRequirements();
   }, [token]);
+
+  // Auto-calculate expiry date when certificate type or issue date changes
+  useEffect(() => {
+    if (selectedCertificateType && issueDate) {
+      const certType = certificateTypes.find(cert => cert._id === selectedCertificateType);
+      if (certType && certType.validityPeriod) {
+        const issue = new Date(issueDate);
+        const expiry = new Date(issue);
+        expiry.setMonth(expiry.getMonth() + certType.validityPeriod);
+        setExpiryDate(expiry.toISOString().split('T')[0]);
+      }
+    }
+  }, [selectedCertificateType, issueDate, certificateTypes]);
 
   const fetchPositionRequirements = async () => {
     if (!token) return;
@@ -259,7 +273,7 @@ const CertificatesWithDashboard = ({
       return;
     }
 
-    const certType = certificateTypes.find(cert => cert._id === e.target.certificateType.value);
+    const certType = certificateTypes.find(cert => cert._id === selectedCertificateType);
     if (!certType) {
       setError('Please select a valid certificate type');
       return;
@@ -296,6 +310,7 @@ const CertificatesWithDashboard = ({
       // Reset form
       setSelectedEmployee(null);
       setSelectedPosition('');
+      setSelectedCertificateType('');
       setIssueDate('');
       setExpiryDate('');
       e.target.reset();
@@ -463,10 +478,16 @@ const CertificatesWithDashboard = ({
           <div className="form-row">
             <div className="form-group">
               <label>Certificate Type:</label>
-              <select name="certificateType" required>
+              <select 
+                value={selectedCertificateType} 
+                onChange={(e) => setSelectedCertificateType(e.target.value)}
+                required
+              >
                 <option value="">Select Certificate Type</option>
                 {certificateTypes.map(cert => (
-                  <option key={cert._id} value={cert._id}>{cert.name}</option>
+                  <option key={cert._id} value={cert._id}>
+                    {cert.name} ({cert.validityPeriod} months)
+                  </option>
                 ))}
               </select>
             </div>
@@ -489,8 +510,15 @@ const CertificatesWithDashboard = ({
                 type="date" 
                 value={expiryDate} 
                 onChange={(e) => setExpiryDate(e.target.value)}
+                className={selectedCertificateType && issueDate ? "readonly-input" : ""}
+                readOnly={selectedCertificateType && issueDate}
                 required 
               />
+              {selectedCertificateType && issueDate && (
+                <div className="helper-text">
+                  Auto-calculated based on certificate type validity period
+                </div>
+              )}
             </div>
 
             <div className="form-actions">
@@ -502,6 +530,7 @@ const CertificatesWithDashboard = ({
                 onClick={() => {
                   setSelectedEmployee(null);
                   setSelectedPosition('');
+                  setSelectedCertificateType('');
                   setIssueDate('');
                   setExpiryDate('');
                   setError('');
@@ -639,7 +668,6 @@ const CertificatesWithDashboard = ({
 };
 
 export default CertificatesWithDashboard;
-
 // import {
 //   useState,
 //   useEffect
