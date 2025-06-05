@@ -328,6 +328,19 @@ const CertificatesWithDashboard = ({
       cert.certificateName === selectedFilterCertType ||
       cert.certificateType === selectedFilterCertType;
     return employeeMatch && positionMatch && certTypeMatch;
+  }).sort((a, b) => {
+    // Primary sort: Employee name (alphabetical)
+    const nameComparison = a.staffMember.localeCompare(b.staffMember);
+    if (nameComparison !== 0) return nameComparison;
+    
+    // Secondary sort: Certificate type (alphabetical)
+    const aCertType = a.certType || a.CertType || a.certificateName || a.certificateType || '';
+    const bCertType = b.certType || b.CertType || b.certificateName || b.certificateType || '';
+    const certTypeComparison = aCertType.localeCompare(bCertType);
+    if (certTypeComparison !== 0) return certTypeComparison;
+    
+    // Tertiary sort: Expiration date (newest first)
+    return new Date(b.expirationDate) - new Date(a.expirationDate);
   });
 
   return (
@@ -668,6 +681,7 @@ const CertificatesWithDashboard = ({
 };
 
 export default CertificatesWithDashboard;
+
 // import {
 //   useState,
 //   useEffect
@@ -698,8 +712,10 @@ export default CertificatesWithDashboard;
 //   const [positionRequirements, setPositionRequirements] = useState([]);
 //   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
 //   const [selectedFilterCertType, setSelectedFilterCertType] = useState('');
+//   const [selectedFilterPosition, setSelectedFilterPosition] = useState('');
 //   const [selectedEmployee, setSelectedEmployee] = useState(null);
 //   const [selectedPosition, setSelectedPosition] = useState('');
+//   const [selectedCertificateType, setSelectedCertificateType] = useState('');
 //   const [issueDate, setIssueDate] = useState('');
 //   const [expiryDate, setExpiryDate] = useState('');
 //   const [error, setError] = useState('');
@@ -713,6 +729,19 @@ export default CertificatesWithDashboard;
 //   useEffect(() => {
 //     fetchPositionRequirements();
 //   }, [token]);
+
+//   // Auto-calculate expiry date when certificate type or issue date changes
+//   useEffect(() => {
+//     if (selectedCertificateType && issueDate) {
+//       const certType = certificateTypes.find(cert => cert._id === selectedCertificateType);
+//       if (certType && certType.validityPeriod) {
+//         const issue = new Date(issueDate);
+//         const expiry = new Date(issue);
+//         expiry.setMonth(expiry.getMonth() + certType.validityPeriod);
+//         setExpiryDate(expiry.toISOString().split('T')[0]);
+//       }
+//     }
+//   }, [selectedCertificateType, issueDate, certificateTypes]);
 
 //   const fetchPositionRequirements = async () => {
 //     if (!token) return;
@@ -928,7 +957,7 @@ export default CertificatesWithDashboard;
 //       return;
 //     }
 
-//     const certType = certificateTypes.find(cert => cert._id === e.target.certificateType.value);
+//     const certType = certificateTypes.find(cert => cert._id === selectedCertificateType);
 //     if (!certType) {
 //       setError('Please select a valid certificate type');
 //       return;
@@ -965,6 +994,7 @@ export default CertificatesWithDashboard;
 //       // Reset form
 //       setSelectedEmployee(null);
 //       setSelectedPosition('');
+//       setSelectedCertificateType('');
 //       setIssueDate('');
 //       setExpiryDate('');
 //       e.target.reset();
@@ -975,12 +1005,13 @@ export default CertificatesWithDashboard;
 
 //   const filteredCertificates = certificates.filter(cert => {
 //     const employeeMatch = !selectedFilterEmployee || cert.staffMember === selectedFilterEmployee;
+//     const positionMatch = !selectedFilterPosition || cert.position === selectedFilterPosition;
 //     const certTypeMatch = !selectedFilterCertType || 
 //       cert.certType === selectedFilterCertType || 
 //       cert.CertType === selectedFilterCertType || 
 //       cert.certificateName === selectedFilterCertType ||
 //       cert.certificateType === selectedFilterCertType;
-//     return employeeMatch && certTypeMatch;
+//     return employeeMatch && positionMatch && certTypeMatch;
 //   });
 
 //   return (
@@ -1131,10 +1162,16 @@ export default CertificatesWithDashboard;
 //           <div className="form-row">
 //             <div className="form-group">
 //               <label>Certificate Type:</label>
-//               <select name="certificateType" required>
+//               <select 
+//                 value={selectedCertificateType} 
+//                 onChange={(e) => setSelectedCertificateType(e.target.value)}
+//                 required
+//               >
 //                 <option value="">Select Certificate Type</option>
 //                 {certificateTypes.map(cert => (
-//                   <option key={cert._id} value={cert._id}>{cert.name}</option>
+//                   <option key={cert._id} value={cert._id}>
+//                     {cert.name} ({cert.validityPeriod} months)
+//                   </option>
 //                 ))}
 //               </select>
 //             </div>
@@ -1157,8 +1194,15 @@ export default CertificatesWithDashboard;
 //                 type="date" 
 //                 value={expiryDate} 
 //                 onChange={(e) => setExpiryDate(e.target.value)}
+//                 className={selectedCertificateType && issueDate ? "readonly-input" : ""}
+//                 readOnly={selectedCertificateType && issueDate}
 //                 required 
 //               />
+//               {selectedCertificateType && issueDate && (
+//                 <div className="helper-text">
+//                   Auto-calculated based on certificate type validity period
+//                 </div>
+//               )}
 //             </div>
 
 //             <div className="form-actions">
@@ -1170,6 +1214,7 @@ export default CertificatesWithDashboard;
 //                 onClick={() => {
 //                   setSelectedEmployee(null);
 //                   setSelectedPosition('');
+//                   setSelectedCertificateType('');
 //                   setIssueDate('');
 //                   setExpiryDate('');
 //                   setError('');
@@ -1198,6 +1243,19 @@ export default CertificatesWithDashboard;
 //                 <option value="">All Employees</option>
 //                 {[...new Set(certificates.map(cert => cert.staffMember))].map(name => (
 //                   <option key={name} value={name}>{name}</option>
+//                 ))}
+//               </select>
+//             </div>
+
+//             <div className="filter-group">
+//               <label>Filter by Position:</label>
+//               <select 
+//                 value={selectedFilterPosition || ''} 
+//                 onChange={(e) => setSelectedFilterPosition(e.target.value)}
+//               >
+//                 <option value="">All Positions</option>
+//                 {positions.map(pos => (
+//                   <option key={pos._id} value={pos._id}>{pos.title}</option>
 //                 ))}
 //               </select>
 //             </div>
