@@ -330,12 +330,25 @@ const CertificatesWithDashboard = ({
     return employeeMatch && positionMatch && certTypeMatch;
   }).sort((a, b) => {
     // Primary sort: Employee name (alphabetical)
-    const nameComparison = a.staffMember.localeCompare(b.staffMember);
+    const nameComparison = (a.staffMember || '').localeCompare(b.staffMember || '');
     if (nameComparison !== 0) return nameComparison;
     
     // Secondary sort: Certificate type (alphabetical)
     const aCertType = a.certType || a.CertType || a.certificateName || a.certificateType || '';
     const bCertType = b.certType || b.CertType || b.certificateName || b.certificateType || '';
+    
+    // Debug logging for sorting issues
+    if (selectedFilterEmployee) {
+      console.log('Sorting certificates:', {
+        employeeA: a.staffMember,
+        employeeB: b.staffMember,
+        certTypeA: aCertType,
+        certTypeB: bCertType,
+        nameComparison,
+        certTypeComparison: aCertType.localeCompare(bCertType)
+      });
+    }
+    
     const certTypeComparison = aCertType.localeCompare(bCertType);
     if (certTypeComparison !== 0) return certTypeComparison;
     
