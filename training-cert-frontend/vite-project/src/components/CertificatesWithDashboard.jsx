@@ -583,9 +583,12 @@ const CertificatesWithDashboard = ({
                 onChange={(e) => setSelectedFilterEmployee(e.target.value)}
               >
                 <option value="">All Employees</option>
-                {[...new Set(certificates.map(cert => cert.staffMember))].map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
+                {[...new Set(certificates.map(cert => cert.staffMember))]
+                  .filter(Boolean)
+                  .sort()
+                  .map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
               </select>
             </div>
 
