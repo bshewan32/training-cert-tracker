@@ -20,7 +20,7 @@ const generateExcelTemplate = () => {
   // Create a new workbook
   const wb = XLSX.utils.book_new();
   
-  // Define column headers and example data
+  // Define column headers and example data with DD/MM/YYYY format
   const templateData = [
     // Example row 1
     {
@@ -28,8 +28,8 @@ const generateExcelTemplate = () => {
       'Position Title': 'Senior Developer',
       'Department': 'Engineering',
       'Type': 'First Aid',
-      'Booking Date': '2025-01-15',
-      'Expiry Date': '2026-01-15',
+      'Booking Date': '15/01/2025',
+      'Expiry Date': '15/01/2026',
       'Company': 'john.smith@company.com'
     },
     // Example row 2
@@ -38,8 +38,8 @@ const generateExcelTemplate = () => {
       'Position Title': 'Project Manager',
       'Department': 'Operations',
       'Type': 'Fire Safety',
-      'Booking Date': '2025-02-20',
-      'Expiry Date': '2026-02-20',
+      'Booking Date': '20/02/2025',
+      'Expiry Date': '20/02/2026',
       'Company': 'jane.doe@company.com'
     },
     // Empty row for user to fill
@@ -69,21 +69,22 @@ const generateExcelTemplate = () => {
   ];
   ws['!cols'] = wscols;
   
-  // Add notes to the template
-  ws['!comments'] = {
-    A1: { author: 'System', text: 'Required: Full name of the employee' },
-    B1: { author: 'System', text: 'Required: Employee\'s position title' },
-    C1: { author: 'System', text: 'Optional: Department name' },
-    D1: { author: 'System', text: 'Required: Type of certificate/training' },
-    E1: { author: 'System', text: 'Optional: Date format YYYY-MM-DD (defaults to today)' },
-    F1: { author: 'System', text: 'Optional: Date format YYYY-MM-DD (calculated if not provided)' },
-    G1: { author: 'System', text: 'Optional: Employee\'s email address' }
-  };
+  // Add comments to the template
+  if (!ws['!comments']) ws['!comments'] = {};
+  ws['!comments']['A1'] = { author: 'System', text: 'Required: Full name of the employee' };
+  ws['!comments']['B1'] = { author: 'System', text: 'Required: Employee\'s position title' };
+  ws['!comments']['C1'] = { author: 'System', text: 'Optional: Department name' };
+  ws['!comments']['D1'] = { author: 'System', text: 'Required: Type of certificate/training' };
+  ws['!comments']['E1'] = { author: 'System', text: 'Optional: Date format DD/MM/YYYY (defaults to today)' };
+  ws['!comments']['F1'] = { author: 'System', text: 'Optional: Date format DD/MM/YYYY (calculated if not provided)' };
+  ws['!comments']['G1'] = { author: 'System', text: 'Optional: Employee\'s email address' };
   
   // Add formatting to indicate required fields
   const range = XLSX.utils.decode_range(ws['!ref']);
   for (let C = range.s.c; C <= range.e.c; C++) {
     const cellRef = XLSX.utils.encode_cell({ r: 0, c: C });
+    if (!ws[cellRef].s) ws[cellRef].s = {};
+    
     ws[cellRef].s = {
       font: { bold: true },
       fill: { fgColor: { rgb: "EFEFEF" } }
@@ -109,16 +110,23 @@ const generateExcelTemplate = () => {
     [""],
     ["Optional Columns:"],
     ["Department", "Department the employee belongs to (defaults to 'General')"],
-    ["Booking Date", "Date training was completed in YYYY-MM-DD format (defaults to today)"],
-    ["Expiry Date", "Date when certification expires in YYYY-MM-DD format (calculated if not provided)"],
+    ["Booking Date", "Date training was completed in DD/MM/YYYY format (defaults to today)"],
+    ["Expiry Date", "Date when certification expires in DD/MM/YYYY format (calculated if not provided)"],
     ["Company", "Employee's email address"],
+    [""],
+    ["Date Format Examples:"],
+    ["15/01/2025", "Correct format (DD/MM/YYYY)"],
+    ["1/1/2025", "Also acceptable (D/M/YYYY)"],
+    ["2025-01-15", "Will be converted from YYYY-MM-DD"],
     [""],
     ["Notes:"],
     ["1. Do not change the column headers"],
     ["2. You can add as many rows as needed"],
     ["3. Yellow cells indicate required fields"],
     ["4. Existing employees will be updated with new certificates"],
-    ["5. If expiry date is not provided, it will be calculated based on certificate type"]
+    ["5. If expiry date is not provided, it will be calculated based on certificate type"],
+    ["6. Use DD/MM/YYYY format for dates (e.g., 15/01/2025)"],
+    ["7. The system will validate all dates before import"]
   ];
   
   const wsInstructions = XLSX.utils.aoa_to_sheet(instructionsData);
@@ -130,16 +138,20 @@ const generateExcelTemplate = () => {
   ];
   
   // Add formatting to instructions sheet
-  wsInstructions['A1'].s = {
-    font: { bold: true, sz: 14 },
-    alignment: { horizontal: "center" }
-  };
+  if (wsInstructions['A1']) {
+    wsInstructions['A1'].s = {
+      font: { bold: true, sz: 14 },
+      alignment: { horizontal: "center" }
+    };
+  }
   
   // Add section headers formatting
-  ['A3', 'A8', 'A14'].forEach(ref => {
-    wsInstructions[ref].s = {
-      font: { bold: true, sz: 12 }
-    };
+  ['A3', 'A8', 'A14', 'A19'].forEach(ref => {
+    if (wsInstructions[ref]) {
+      wsInstructions[ref].s = {
+        font: { bold: true, sz: 12 }
+      };
+    }
   });
   
   // Add the instructions sheet to the workbook
