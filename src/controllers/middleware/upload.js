@@ -1,31 +1,25 @@
-const multer = require('multer');
-const path = require('path');
+// In your upload middleware file (controllers/middleware/upload.js)
+const multer = require("multer");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/certificates/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
+// Change from diskStorage to memoryStorage
+const storage = multer.memoryStorage();
 
-const fileFilter = (req, file, cb) => {
-  const filetypes = /pdf|jpg|jpeg|png/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    cb('Error: Only PDFs and images are allowed!');
-  }
-};
-
-const upload = multer({ 
+const upload = multer({
   storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images and PDFs
+    if (
+      file.mimetype.startsWith("image/") ||
+      file.mimetype === "application/pdf"
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files and PDFs are allowed!"), false);
+    }
+  },
 });
 
 module.exports = upload;

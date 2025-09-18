@@ -78,46 +78,46 @@ function App() {
     setError(err.message || 'Error importing data');
   };
 
-  // const handleSubmit = async (e, type) => {
-  //   e.preventDefault();
-  //   setError('');
-  //   setMessage('');
+  const handleSubmit = async (e, type) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
 
-  //   const formData = new FormData(e.target);
-  //   const data = Object.fromEntries(formData.entries());
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
 
-  //   console.log('Login attempt:', { type, data: { ...data, password: '[REDACTED]' } });
+    console.log('Login attempt:', { type, data: { ...data, password: '[REDACTED]' } });
 
-  //   try {
-  //     const response = await fetch(`https://training-cert-tracker.onrender.com/api/users/${type}`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify(data),
-  //     });
+    try {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/users/${type}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-  //     console.log('Login response status:', response.status);
-  //     const result = await response.json();
-  //     console.log('Login response data:', result);
+      console.log('Login response status:', response.status);
+      const result = await response.json();
+      console.log('Login response data:', result);
 
-  //     if (!response.ok) {
-  //       throw new Error(result.message || 'Authentication failed');
-  //     }
+      if (!response.ok) {
+        throw new Error(result.message || 'Authentication failed');
+      }
 
-  //     setToken(result.token);
-  //     localStorage.setItem('authToken', result.token);
-  //     localStorage.setItem('isAdmin', result.isAdmin);
-  //     setIsAdmin(result.isAdmin);
-  //     setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} successful!`);
+      setToken(result.token);
+      localStorage.setItem('authToken', result.token);
+      localStorage.setItem('isAdmin', result.isAdmin);
+      setIsAdmin(result.isAdmin);
+      setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} successful!`);
 
-  //     // Always go to certificates view for simplicity
-  //     setView('certificates');
-  //   } catch (err) {
-  //     console.error('Login error:', err);
-  //     setError(err.message);
-  //   }
-  // };
+      // Always go to certificates view for simplicity
+      setView('certificates');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message);
+    }
+  };
 
   const handleLogout = () => {
     setToken('');
