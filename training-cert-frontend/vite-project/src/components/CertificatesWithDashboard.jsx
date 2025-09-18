@@ -252,73 +252,129 @@ const CertificatesWithDashboard = ({
     setUrgentActions(urgent);
   };
 
+  
   const handleCertificateSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setMessage('');
+  e.preventDefault();
+  setError('');
+  setMessage('');
 
-    if (!selectedEmployee || !selectedPosition || !issueDate || !expiryDate) {
-      setError('Please fill in all fields');
-      return;
+  if (!selectedEmployee || !selectedPosition || !issueDate || !expiryDate) {
+    setError('Please fill in all fields');
+    return;
+  }
+
+  const employee = employees.find(emp => emp._id === selectedEmployee);
+  if (!employee) {
+    setError('Please select a valid employee');
+    return;
+  }
+
+  const position = positions.find(pos => pos._id === selectedPosition);
+  if (!position) {
+    setError('Please select a valid position');
+    return;
+  }
+
+  const certType = certificateTypes.find(cert => cert._id === selectedCertificateType);
+  if (!certType) {
+    setError('Please select a valid certificate type');
+    return;
+  }
+
+  try {
+    // Step 1: Upload file to OneDrive if provided
+    let onedriveFileId = null;
+    let onedriveFilePath = null;
+    
+    if (certificateFile) {
+      console.log('Uploading file to OneDrive...'); // Debug log
+      try {
+        const fileFormData = new FormData();
+        fileFormData.append('file', certificateFile);
+        fileFormData.append('employeeName', employee.name);
+        fileFormData.append('certificateType', certType.name);
+        fileFormData.append('issueDate', issueDate);
+
+        const fileUploadResponse = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload-image', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: fileFormData
+        });
+
+        if (!fileUploadResponse.ok) {
+          const fileError = await fileUploadResponse.json();
+          throw new Error(fileError.message || 'Failed to upload certificate file');
+        }
+
+        const fileUploadResult = await fileUploadResponse.json();
+        onedriveFileId = fileUploadResult.fileId;
+        onedriveFilePath = fileUploadResult.filePath;
+        
+        console.log('File uploaded successfully:', { onedriveFileId, onedriveFilePath });
+      } catch (fileError) {
+        console.error('File upload error:', fileError);
+        setError(`Warning: Certificate will be created but file upload failed: ${fileError.message}`);
+      }
     }
 
-    const employee = employees.find(emp => emp._id === selectedEmployee);
-    if (!employee) {
-      setError('Please select a valid employee');
-      return;
-    }
-
-    const position = positions.find(pos => pos._id === selectedPosition);
-    if (!position) {
-      setError('Please select a valid position');
-      return;
-    }
-
-    const certType = certificateTypes.find(cert => cert._id === selectedCertificateType);
-    if (!certType) {
-      setError('Please select a valid certificate type');
-      return;
-    }
-
+    // Step 2: Create certificate with OneDrive fields
     const certificateData = {
       staffMember: employee.name,
       position: selectedPosition,
-      certificateType: certType.name, // This will be mapped to certType in the backend
+      certificateType: certType.name,
       issueDate: issueDate,
-      expirationDate: expiryDate
+      expirationDate: expiryDate,
+      // Add OneDrive fields
+      onedriveFileId: onedriveFileId,
+      onedriveFilePath: onedriveFilePath
     };
 
-    try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(certificateData)
-      });
+    console.log('Creating certificate with data:', certificateData); // Debug log
 
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.message || 'Failed to add certificate');
-      }
+    const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(certificateData)
+    });
 
-      setMessage('Certificate added successfully!');
-      if (onCertificateAdded) {
-        onCertificateAdded({ message: 'Certificate added successfully!' });
-      }
-      
-      // Reset form
-      setSelectedEmployee(null);
-      setSelectedPosition('');
-      setSelectedCertificateType('');
-      setIssueDate('');
-      setExpiryDate('');
-      e.target.reset();
-    } catch (err) {
-      setError(err.message);
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.message || 'Failed to add certificate');
     }
-  };
+
+    const successMsg = certificateFile 
+      ? 'Certificate and image added successfully!' 
+      : 'Certificate added successfully!';
+    setMessage(successMsg);
+    
+    if (onCertificateAdded) {
+      onCertificateAdded({ message: successMsg });
+    }
+    
+    // Reset form including file
+    setSelectedEmployee(null);
+    setSelectedPosition('');
+    setSelectedCertificateType('');
+    setIssueDate('');
+    setExpiryDate('');
+    setCertificateFile(null); // Reset file state
+    
+    // Reset file input element
+    const fileInput = document.getElementById('certificateFile');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    
+    e.target.reset();
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   const filteredCertificates = certificates.filter(cert => {
     const employeeMatch = !selectedFilterEmployee || cert.staffMember === selectedFilterEmployee;
