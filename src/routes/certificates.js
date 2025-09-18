@@ -95,7 +95,7 @@ router.post("/upload-image", upload.single("file"), async (req, res) => {
 
     // Create folder if it doesn't exist
     try {
-      await graphClient.api(`/me/drive/root:${folderPath}`).get();
+      await graphClient.api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/root:${folderPath}`).get();
       console.log("Folder exists:", folderPath);
     } catch (folderError) {
       console.log("Creating folder:", folderPath);
@@ -109,13 +109,13 @@ router.post("/upload-image", upload.single("file"), async (req, res) => {
         currentPath = currentPath ? `${currentPath}/${part}` : `/${part}`;
 
         try {
-          await graphClient.api(`/me/drive/root:${currentPath}`).get();
+          await graphClient.api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/root:${currentPath}`).get();
           console.log("Folder exists:", currentPath);
         } catch (partError) {
           console.log("Creating folder part:", currentPath);
           await graphClient
             .api(
-              `/me/drive/root${
+              `/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/root${
                 parentPath === "/" ? "" : ":" + parentPath
               }:/children`
             )
@@ -131,7 +131,7 @@ router.post("/upload-image", upload.single("file"), async (req, res) => {
     // Upload file to OneDrive
     console.log("Uploading file to OneDrive...");
     const uploadResponse = await graphClient
-      .api(`/me/drive/root:${fullPath}:/content`)
+      .api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/root:${fullPath}:/content`)
       .put(file.buffer);
 
     console.log("File uploaded successfully:", uploadResponse.id);
@@ -171,10 +171,10 @@ router.get("/:id/image", authenticateToken, async (req, res) => {
 
     // Initialize Microsoft Graph client
     const graphClient = await getGraphClient();
-
+    const userId = process.env.AZURE_USER_ID;
     // Get file stream from OneDrive
     const fileStream = await graphClient
-      .api(`/me/drive/items/${certificate.onedriveFileId}/content`)
+      .api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/items/${certificate.onedriveFileId}/content`)
       .getStream();
 
     // Set appropriate headers
@@ -294,7 +294,7 @@ router.delete("/:id", authenticateToken, async (req, res) => {
         console.log("Deleting OneDrive file:", certificate.onedriveFileId);
         const graphClient = await getGraphClient();
         await graphClient
-          .api(`/me/drive/items/${certificate.onedriveFileId}`)
+          .api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/items/${certificate.onedriveFileId}`)
           .delete();
         console.log("OneDrive file deleted successfully");
       } catch (oneDriveError) {
