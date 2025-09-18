@@ -65,92 +65,71 @@ router.post("/upload", authenticateToken, async (req, res) => {
   }
 });
 
+// Replace your OneDrive upload endpoint with SharePoint
 router.post("/upload-image", upload.single("file"), async (req, res) => {
   try {
     const { employeeName, certificateType, issueDate } = req.body;
     const file = req.file;
 
     if (!file) {
-      return res.status(400).json({ message: "No file provided" });
+      return res.status(400).json({ message: 'No file provided' });
     }
 
-    console.log("Uploading file:", {
-      employeeName,
-      certificateType,
-      issueDate,
-      fileName: file.originalname,
-    });
-
-    // Initialize Microsoft Graph client
     const graphClient = await getGraphClient();
-
-    // Create folder structure in OneDrive
+    
+    const siteName = process.env.SHAREPOINT_SITE_NAME;
     const folderPath = `/Training Certificates/${employeeName}`;
-    const fileName = `${certificateType}_${issueDate}_${Date.now()}.${file.originalname
-      .split(".")
-      .pop()}`;
+    const fileName = `${certificateType}_${issueDate}_${Date.now()}.${file.originalname.split('.').pop()}`;
     const fullPath = `${folderPath}/${fileName}`;
 
-    console.log("Uploading to path:", fullPath);
-
+    // Correct SharePoint API format
+    const siteApi = `/sites/root:/sites/${siteName}`;
+    
     // Create folder if it doesn't exist
     try {
-      await graphClient.api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/root:${folderPath}`).get();
-      console.log("Folder exists:", folderPath);
+      await graphClient.api(`${siteApi}:/drive/root:${folderPath}`).get();
     } catch (folderError) {
-      console.log("Creating folder:", folderPath);
-
-      // Create folder structure step by step
-      const pathParts = folderPath.split("/").filter((part) => part);
-      let currentPath = "";
-
+      // Create folder
+      const pathParts = folderPath.split('/').filter(part => part);
+      let currentPath = '';
+      
       for (const part of pathParts) {
-        const parentPath = currentPath || "/";
         currentPath = currentPath ? `${currentPath}/${part}` : `/${part}`;
-
+        
         try {
-          await graphClient.api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/root:${currentPath}`).get();
-          console.log("Folder exists:", currentPath);
+          await graphClient.api(`${siteApi}:/drive/root:${currentPath}`).get();
         } catch (partError) {
-          console.log("Creating folder part:", currentPath);
+          const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/';
           await graphClient
-            .api(
-              `/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/root${
-                parentPath === "/" ? "" : ":" + parentPath
-              }:/children`
-            )
+            .api(`${siteApi}:/drive/root${parentPath === '/' ? '' : ':' + parentPath}:/children`)
             .post({
               name: part,
               folder: {},
-              "@microsoft.graph.conflictBehavior": "rename",
+              '@microsoft.graph.conflictBehavior': 'rename'
             });
         }
       }
     }
 
-    // Upload file to OneDrive
-    console.log("Uploading file to OneDrive...");
+    // Upload file to SharePoint
     const uploadResponse = await graphClient
-      .api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/root:${fullPath}:/content`)
+      .api(`${siteApi}:/drive/root:${fullPath}:/content`)
       .put(file.buffer);
-
-    console.log("File uploaded successfully:", uploadResponse.id);
 
     res.json({
       fileId: uploadResponse.id,
       filePath: fullPath,
-      fileName: fileName,
-      message: "File uploaded to OneDrive successfully",
+      message: 'File uploaded to SharePoint successfully'
     });
+
   } catch (error) {
-    console.error("OneDrive upload error:", error);
-    res.status(500).json({
-      message: "Failed to upload file to OneDrive",
-      error: error.message,
+    console.error('SharePoint upload error:', error);
+    res.status(500).json({ 
+      message: 'Failed to upload file to SharePoint', 
+      error: error.message 
     });
   }
 });
-
 router.get("/:id/image", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
