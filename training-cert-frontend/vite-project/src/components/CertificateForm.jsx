@@ -276,7 +276,7 @@ const CertificatesWithDashboard = ({
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  
+  console.log('Form submitted with file:', certificateFile);
   // Validate form
   if (!formData.staffMember || !formData.position || !formData.certificateType || !formData.issueDate) {
     setError('Please fill in all required fields');
@@ -305,6 +305,7 @@ const handleSubmit = async (e) => {
     let onedriveFilePath = null;
     
     if (certificateFile) {
+      console.log('Attempting to upload file:', certificateFile.name); 
       try {
         // Create FormData for file upload
         const fileFormData = new FormData();
@@ -332,6 +333,7 @@ const handleSubmit = async (e) => {
         onedriveFilePath = fileUploadResult.filePath;
         
         console.log('File uploaded successfully:', { onedriveFileId, onedriveFilePath });
+        console.log('File upload response:', fileUploadResult);
       } catch (fileError) {
         console.error('File upload error:', fileError);
         // Continue without file - don't fail the entire certificate creation
