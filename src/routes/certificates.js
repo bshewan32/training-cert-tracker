@@ -193,32 +193,47 @@ router.get("/:id/image", authenticateToken, async (req, res) => {
   }
 });
 
-// GET all certificates
-router.post("/upload", authenticateToken, async (req, res) => {
+// ADD THIS INSTEAD:
+router.get("/", authenticateToken, async (req, res) => {
   try {
-    console.log("Received certificate data:", req.body);
+    const certificates = await Certificate.aggregate([
+      {
+        $lookup: {
+          from: "certificatetypes",
+          localField: "certType",
+          foreignField: "name",
+          as: "certificateTypeDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$certificateTypeDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          certificateName: {
+            $ifNull: [
+              "$certificateTypeDetails.name",
+              { $ifNull: ["$certType", "$CertType"] },
+            ],
+          },
+          validityPeriod: "$certificateTypeDetails.validityPeriod",
+          status: {
+            $cond: {
+              if: { $lt: ["$expirationDate", new Date()] },
+              then: "EXPIRED",
+              else: "ACTIVE",
+            },
+          },
+        },
+      },
+    ]);
 
-    const certificate = new Certificate({
-      staffMember: req.body.staffMember,
-      position: req.body.position,
-      certType: req.body.certificateType,
-      issueDate: req.body.issueDate,
-      expirationDate: req.body.expirationDate,
-      documentPath: req.body.documentPath || "pending",
-      // Add OneDrive fields
-      onedriveFileId: req.body.onedriveFileId || null,
-      onedriveFilePath: req.body.onedriveFilePath || null,
-      originalFileName: req.body.originalFileName || null,
-      fileMetadata: req.body.fileMetadata || {},
-    });
-
-    const saved = await certificate.save();
-    console.log("Certificate saved with OneDrive data:", saved._id);
-
-    res.status(201).json(saved);
+    res.json(certificates);
   } catch (error) {
-    console.error("Error saving certificate:", error);
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
