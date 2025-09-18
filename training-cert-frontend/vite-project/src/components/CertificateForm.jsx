@@ -38,6 +38,8 @@ const CertificatesWithDashboard = ({
     expirationDate: ''
   });
   
+  const [certificateFile, setCertificateFile] = useState(null);
+
   // Filters
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
   const [selectedFilterCertType, setSelectedFilterCertType] = useState('');
@@ -269,85 +271,150 @@ const CertificatesWithDashboard = ({
     }
   };
   
-  // Reset form to defaults
-  const resetForm = () => {
-    setFormData({
-      staffMember: '',
-      position: '',
-      certificateType: '',
-      issueDate: new Date().toISOString().split('T')[0],
-      expirationDate: ''
-    });
-    setError('');
-    setSuccess('');
-  };
   
-  // Submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate form
-    if (!formData.staffMember || !formData.position || !formData.certificateType || !formData.issueDate) {
-      setError('Please fill in all required fields');
-      return;
+  // Replace your existing handleSubmit function with this updated version:
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  // Validate form
+  if (!formData.staffMember || !formData.position || !formData.certificateType || !formData.issueDate) {
+    setError('Please fill in all required fields');
+    return;
+  }
+  
+  setLoading(true);
+  setError('');
+  setSuccess('');
+  
+  try {
+    // Get employee name from ID
+    const employee = employees.find(emp => emp._id === formData.staffMember);
+    if (!employee) {
+      throw new Error('Employee not found');
     }
     
-    setLoading(true);
-    setError('');
-    setSuccess('');
+    // Get certificate type name from ID
+    const certType = certificateTypes.find(cert => cert._id === formData.certificateType);
+    if (!certType) {
+      throw new Error('Certificate type not found');
+    }
     
-    try {
-      // Get employee name from ID
-      const employee = employees.find(emp => emp._id === formData.staffMember);
-      if (!employee) {
-        throw new Error('Employee not found');
+    // Step 1: Upload file to OneDrive if provided
+    let onedriveFileId = null;
+    let onedriveFilePath = null;
+    
+    if (certificateFile) {
+      try {
+        // Create FormData for file upload
+        const fileFormData = new FormData();
+        fileFormData.append('file', certificateFile);
+        fileFormData.append('employeeName', employee.name);
+        fileFormData.append('certificateType', certType.name);
+        fileFormData.append('issueDate', formData.issueDate);
+
+        // Upload file to OneDrive
+        const fileUploadResponse = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload-image', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}` // Your existing app token
+          },
+          body: fileFormData
+        });
+
+        if (!fileUploadResponse.ok) {
+          const fileError = await fileUploadResponse.json();
+          throw new Error(fileError.message || 'Failed to upload certificate file');
+        }
+
+        const fileUploadResult = await fileUploadResponse.json();
+        onedriveFileId = fileUploadResult.fileId;
+        onedriveFilePath = fileUploadResult.filePath;
+        
+        console.log('File uploaded successfully:', { onedriveFileId, onedriveFilePath });
+      } catch (fileError) {
+        console.error('File upload error:', fileError);
+        // Continue without file - don't fail the entire certificate creation
+        setError(`Warning: Certificate will be created but file upload failed: ${fileError.message}`);
       }
-      
-      // Get certificate type name from ID
-      const certType = certificateTypes.find(cert => cert._id === formData.certificateType);
-      if (!certType) {
-        throw new Error('Certificate type not found');
-      }
-      
-      // Prepare data for API
-      const certificateData = {
-        staffMember: employee.name,
-        position: formData.position,
-        certificateType: certType.name,
-        issueDate: formData.issueDate,
-        expirationDate: formData.expirationDate
-      };
-      
-      // Submit to API
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(certificateData),
-      });
-      
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.message || 'Failed to add certificate');
-      }
-      
+    }
+    
+    // Step 2: Create certificate record (with or without OneDrive file)
+    const certificateData = {
+      staffMember: employee.name,
+      position: formData.position,
+      certificateType: certType.name,
+      issueDate: formData.issueDate,
+      expirationDate: formData.expirationDate,
+      // Add OneDrive fields (will be null if no file was uploaded)
+      onedriveFileId: onedriveFileId,
+      onedriveFilePath: onedriveFilePath
+    };
+    
+    // Submit to your existing API
+    const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(certificateData),
+    });
+    
+    if (!response.ok) {
       const result = await response.json();
-      
-      setSuccess('Certificate added successfully!');
-      resetForm();
-      
-      // Notify parent component
-      if (onCertificateAdded) {
-        onCertificateAdded(result);
-      }
-    } catch (err) {
-      setError(err.message || 'Error adding certificate');
-    } finally {
-      setLoading(false);
+      throw new Error(result.message || 'Failed to add certificate');
     }
-  };
+    
+    const result = await response.json();
+    
+    // Success message
+    const successMsg = certificateFile 
+      ? 'Certificate and image added successfully!' 
+      : 'Certificate added successfully!';
+    setSuccess(successMsg);
+    
+    // Reset form
+    resetForm();
+    setCertificateFile(null); // Reset file selection
+    
+    // Reset file input element
+    const fileInput = document.getElementById('certificateFile');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    
+    // Notify parent component
+    if (onCertificateAdded) {
+      onCertificateAdded(result);
+    }
+    
+  } catch (err) {
+    setError(err.message || 'Error adding certificate');
+  } finally {
+    setLoading(false);
+  }
+};
+
+// You'll also need to update your resetForm function to include the file:
+const resetForm = () => {
+  setFormData({
+    staffMember: '',
+    position: '',
+    certificateType: '',
+    issueDate: new Date().toISOString().split('T')[0],
+    expirationDate: ''
+  });
+  setCertificateFile(null); // Add this line
+  setError('');
+  setSuccess('');
+  
+  // Reset file input
+  const fileInput = document.getElementById('certificateFile');
+  if (fileInput) {
+    fileInput.value = '';
+  }
+};
   
   // Get position title from ID or fallback to matching by title string
   const getPositionTitle = (positionId) => {
@@ -611,8 +678,27 @@ const CertificatesWithDashboard = ({
                 Auto-calculated based on certificate type
               </div>
             </div>
-            
-            <div className="form-group">
+
+             <div className="form-group">
+              <label htmlFor="certificateFile">Certificate Image (Optional):</label>
+              <input
+                type="file"
+                id="certificateFile"
+                name="certificateFile"
+                accept="image/*,.pdf"
+                onChange={(e) => setCertificateFile(e.target.files[0])}
+                className="file-input"
+              />
+              <div className="helper-text">
+                 Upload an image or PDF of the certificate (max 10MB)
+            </div>
+            {certificateFile && (
+              <div className="file-selected">
+                Selected: {certificateFile.name}
+              </div>
+            )}
+          </div>
+          <div className="form-group">
               <div className="form-actions">
                 <button
                   type="submit"
@@ -930,6 +1016,21 @@ const CertificatesWithDashboard = ({
           margin: 0 0 15px 0;
           font-size: 1.1rem;
           font-weight: 600;
+        }
+          .file-input {
+          padding: 8px 0;
+          border: 2px dashed #cbd5e0;
+          border-radius: 4px;
+          background-color: #f7fafc;
+        }
+
+        .file-selected {
+          background-color: #e6fffa;
+          color: #234e52;
+          padding: 8px 12px;
+          border-radius: 4px;
+          font-size: 0.9rem;
+          margin-top: 5px;
         }
         
         .no-data {

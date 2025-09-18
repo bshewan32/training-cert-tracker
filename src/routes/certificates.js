@@ -1,13 +1,13 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Certificate = require('../models/Certificate');
-const { authenticateToken } = require('../controllers/middleware/auth');
-const upload = require('../controllers/middleware/upload');
+const Certificate = require("../models/Certificate");
+const { authenticateToken } = require("../controllers/middleware/auth");
+const upload = require("../controllers/middleware/upload");
 
 // POST new certificate
-router.post('/upload', authenticateToken, async (req, res) => {
+router.post("/upload", authenticateToken, async (req, res) => {
   try {
-    console.log('Received data:', req.body);
+    console.log("Received data:", req.body);
 
     const certificate = new Certificate({
       staffMember: req.body.staffMember,
@@ -15,19 +15,32 @@ router.post('/upload', authenticateToken, async (req, res) => {
       certType: req.body.certificateType,
       issueDate: req.body.issueDate,
       expirationDate: req.body.expirationDate,
-      documentPath: req.body.documentPath || 'pending'
+      documentPath: req.body.documentPath || "pending",
     });
 
     const saved = await certificate.save();
     res.status(201).json(saved);
   } catch (error) {
-    console.error('Error saving certificate:', error);
+    console.error("Error saving certificate:", error);
     res.status(400).json({ message: error.message });
   }
 });
 
+app.post(
+  "/api/certificates/upload-image",
+  upload.single("file"),
+  async (req, res) => {
+    // Simple OneDrive upload code here
+  }
+);
+
+// 2. Get image from OneDrive
+app.get("/api/certificates/:id/image", async (req, res) => {
+  // Simple image retrieval code here
+});
+
 // GET all certificates
-router.get('/', authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const certificates = await Certificate.aggregate([
       {
@@ -35,34 +48,33 @@ router.get('/', authenticateToken, async (req, res) => {
           from: "certificatetypes",
           localField: "certType",
           foreignField: "name",
-          as: "certificateTypeDetails"
-        }
+          as: "certificateTypeDetails",
+        },
       },
       {
         $unwind: {
           path: "$certificateTypeDetails",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
-              $addFields: {
-        certificateName: {
-          $ifNull: [
-            "$certificateTypeDetails.name",
-            { $ifNull: ["$certType", "$CertType"] } // Support both old and new field names
-          ]
+        $addFields: {
+          certificateName: {
+            $ifNull: [
+              "$certificateTypeDetails.name",
+              { $ifNull: ["$certType", "$CertType"] }, // Support both old and new field names
+            ],
+          },
+          validityPeriod: "$certificateTypeDetails.validityPeriod",
+          status: {
+            $cond: {
+              if: { $lt: ["$expirationDate", new Date()] },
+              then: "EXPIRED",
+              else: "ACTIVE",
+            },
+          },
         },
-        validityPeriod: "$certificateTypeDetails.validityPeriod",
-        status: {
-          $cond: {
-            if: { $lt: ["$expirationDate", new Date()] },
-            then: "EXPIRED",
-            else: "ACTIVE"
-          }
-        }
-      }
-
-      }
+      },
     ]);
 
     res.json(certificates);
@@ -72,7 +84,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // GET certificates by status
-router.get('/status/:status', authenticateToken, async (req, res) => {
+router.get("/status/:status", authenticateToken, async (req, res) => {
   try {
     const certificates = await Certificate.aggregate([
       {
@@ -80,33 +92,33 @@ router.get('/status/:status', authenticateToken, async (req, res) => {
           from: "certificatetypes",
           localField: "certType",
           foreignField: "name",
-          as: "certificateTypeDetails"
-        }
+          as: "certificateTypeDetails",
+        },
       },
       {
         $unwind: {
           path: "$certificateTypeDetails",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $addFields: {
           certificateName: {
-            $ifNull: ["$certificateTypeDetails.name", "$certType"]
+            $ifNull: ["$certificateTypeDetails.name", "$certType"],
           },
           validityPeriod: "$certificateTypeDetails.validityPeriod",
           status: {
             $cond: {
               if: { $lt: ["$expirationDate", new Date()] },
               then: "EXPIRED",
-              else: "ACTIVE"
-            }
-          }
-        }
+              else: "ACTIVE",
+            },
+          },
+        },
       },
       {
-        $match: { status: req.params.status }
-      }
+        $match: { status: req.params.status },
+      },
     ]);
     res.json(certificates);
   } catch (error) {
@@ -115,16 +127,16 @@ router.get('/status/:status', authenticateToken, async (req, res) => {
 });
 
 // ✅ DELETE certificate by ID
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete("/:id", authenticateToken, async (req, res) => {
   try {
     const deleted = await Certificate.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      return res.status(404).json({ message: 'Certificate not found' });
+      return res.status(404).json({ message: "Certificate not found" });
     }
-    res.json({ message: 'Certificate deleted successfully' });
+    res.json({ message: "Certificate deleted successfully" });
   } catch (error) {
-    console.error('Error deleting certificate:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error deleting certificate:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
