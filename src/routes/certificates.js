@@ -16,6 +16,9 @@ router.post("/upload", authenticateToken, async (req, res) => {
       issueDate: req.body.issueDate,
       expirationDate: req.body.expirationDate,
       documentPath: req.body.documentPath || "pending",
+      // Add OneDrive fields
+      onedriveFileId: req.body.onedriveFileId || null,
+      onedriveFilePath: req.body.onedriveFilePath || null,
     });
 
     const saved = await certificate.save();
@@ -26,17 +29,40 @@ router.post("/upload", authenticateToken, async (req, res) => {
   }
 });
 
-app.post(
-  "/api/certificates/upload-image",
-  upload.single("file"),
-  async (req, res) => {
-    // Simple OneDrive upload code here
-  }
-);
+router.post("/upload-image", upload.single("file"), async (req, res) => {
+  try {
+    const { employeeName, certificateType, issueDate } = req.body;
+    const file = req.file;
 
-// 2. Get image from OneDrive
-app.get("/api/certificates/:id/image", async (req, res) => {
-  // Simple image retrieval code here
+    if (!file) {
+      return res.status(400).json({ message: "No file provided" });
+    }
+
+    // For now, return a mock response to test the endpoint
+    res.json({
+      fileId: "mock-file-id-" + Date.now(),
+      filePath: `/Training Certificates/${employeeName}/${certificateType}_${issueDate}.${file.originalname
+        .split(".")
+        .pop()}`,
+      message: "File upload endpoint working (mock response)",
+    });
+  } catch (error) {
+    console.error("File upload error:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to upload file", error: error.message });
+  }
+});
+
+router.get("/:id/image", async (req, res) => {
+  try {
+    res.json({ message: "Image retrieval endpoint working (mock response)" });
+  } catch (error) {
+    console.error("Error fetching image:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to fetch image", error: error.message });
+  }
 });
 
 // GET all certificates
