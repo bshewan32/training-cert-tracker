@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@azure/msal-node": "^3.7.4",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "multer": "^2.0.2"
   }
