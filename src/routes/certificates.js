@@ -72,40 +72,64 @@ router.post("/upload-image", upload.single("file"), async (req, res) => {
     const file = req.file;
 
     if (!file) {
-      return res.status(400).json({ message: 'No file provided' });
+      return res.status(400).json({ message: "No file provided" });
     }
 
-    const graphClient = await getGraphClient();
-    
-    const siteName = process.env.SHAREPOINT_SITE_NAME;
-    const folderPath = `/Training Certificates/${employeeName}`;
-    const fileName = `${certificateType}_${issueDate}_${Date.now()}.${file.originalname.split('.').pop()}`;
-    const fullPath = `${folderPath}/${fileName}`;
+    console.log("Starting SharePoint upload...");
 
-    // Correct SharePoint API format
-    const siteApi = `/sites/root:/sites/${siteName}`;
-    
+    const graphClient = await getGraphClient();
+
+    const siteName = process.env.SHAREPOINT_SITE_NAME; // "Training"
+    const tenant = process.env.SHAREPOINT_TENANT; // "gordonmckayelectrical"
+    const folderPath = `Training Certificates/${employeeName}`;
+    const fileName = `${certificateType}_${issueDate}_${Date.now()}.${file.originalname
+      .split(".")
+      .pop()}`;
+
+    console.log("SharePoint details:", { tenant, siteName, folderPath });
+
+    // Get the site using the correct tenant format
+    const siteResponse = await graphClient
+      .api(`/sites/${tenant}.sharepoint.com:/sites/${siteName}`)
+      .get();
+
+    console.log("Site found:", siteResponse.id);
+
     // Create folder if it doesn't exist
     try {
-      await graphClient.api(`${siteApi}:/drive/root:${folderPath}`).get();
+      await graphClient
+        .api(`/sites/${siteResponse.id}/drive/root:/${folderPath}`)
+        .get();
     } catch (folderError) {
-      // Create folder
-      const pathParts = folderPath.split('/').filter(part => part);
-      let currentPath = '';
-      
+      console.log("Creating folder:", folderPath);
+      // Create the folder
+      const pathParts = folderPath.split("/");
+      let currentPath = "";
+
       for (const part of pathParts) {
-        currentPath = currentPath ? `${currentPath}/${part}` : `/${part}`;
-        
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+
         try {
-          await graphClient.api(`${siteApi}:/drive/root:${currentPath}`).get();
-        } catch (partError) {
-          const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/';
           await graphClient
-            .api(`${siteApi}:/drive/root${parentPath === '/' ? '' : ':' + parentPath}:/children`)
+            .api(`/sites/${siteResponse.id}/drive/root:/${currentPath}`)
+            .get();
+        } catch (partError) {
+          const parentPath = currentPath.substring(
+            0,
+            currentPath.lastIndexOf("/")
+          );
+          const folderName = currentPath.split("/").pop();
+
+          await graphClient
+            .api(
+              `/sites/${siteResponse.id}/drive/root${
+                parentPath ? ":/" + parentPath : ""
+              }:/children`
+            )
             .post({
-              name: part,
+              name: folderName,
               folder: {},
-              '@microsoft.graph.conflictBehavior': 'rename'
+              "@microsoft.graph.conflictBehavior": "rename",
             });
         }
       }
@@ -113,62 +137,61 @@ router.post("/upload-image", upload.single("file"), async (req, res) => {
 
     // Upload file to SharePoint
     const uploadResponse = await graphClient
-      .api(`${siteApi}:/drive/root:${fullPath}:/content`)
+      .api(
+        `/sites/${siteResponse.id}/drive/root:/${folderPath}/${fileName}:/content`
+      )
       .put(file.buffer);
+
+    console.log("File uploaded successfully:", uploadResponse.id);
 
     res.json({
       fileId: uploadResponse.id,
-      filePath: fullPath,
-      message: 'File uploaded to SharePoint successfully'
+      filePath: `/${folderPath}/${fileName}`,
+      message: "File uploaded to SharePoint successfully",
     });
-
   } catch (error) {
-    console.error('SharePoint upload error:', error);
-    res.status(500).json({ 
-      message: 'Failed to upload file to SharePoint', 
-      error: error.message 
+    console.error("SharePoint upload error:", error);
+    console.error("Error response:", error.response?.data || error.body);
+
+    res.status(500).json({
+      message: "Failed to upload file to SharePoint",
+      error: error.message,
     });
   }
 });
+
 router.get("/:id/image", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Find certificate in database
     const certificate = await Certificate.findById(id);
 
     if (!certificate || !certificate.onedriveFileId) {
       return res.status(404).json({ message: "Certificate image not found" });
     }
 
-    console.log(
-      "Fetching image for certificate:",
-      id,
-      "File ID:",
-      certificate.onedriveFileId
-    );
-
-    // Initialize Microsoft Graph client
     const graphClient = await getGraphClient();
-    const userId = process.env.AZURE_USER_ID;
-    // Get file stream from OneDrive
+    const tenant = process.env.SHAREPOINT_TENANT;
+    const siteName = process.env.SHAREPOINT_SITE_NAME;
+
+    const siteResponse = await graphClient
+      .api(`/sites/${tenant}.sharepoint.com:/sites/${siteName}`)
+      .get();
+
     const fileStream = await graphClient
-      .api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/items/${certificate.onedriveFileId}/content`)
+      .api(
+        `/sites/${siteResponse.id}/drive/items/${certificate.onedriveFileId}/content`
+      )
       .getStream();
 
-    // Set appropriate headers
     res.setHeader("Content-Type", "application/octet-stream");
     res.setHeader("Cache-Control", "private, max-age=3600");
-    res.setHeader("Content-Disposition", "inline");
 
-    // Pipe the file stream to response
     fileStream.pipe(res);
   } catch (error) {
-    console.error("Error fetching certificate image:", error);
-    res.status(500).json({
-      message: "Failed to fetch certificate image",
-      error: error.message,
-    });
+    console.error("Error fetching image:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to fetch image", error: error.message });
   }
 });
 
@@ -273,7 +296,9 @@ router.delete("/:id", authenticateToken, async (req, res) => {
         console.log("Deleting OneDrive file:", certificate.onedriveFileId);
         const graphClient = await getGraphClient();
         await graphClient
-          .api(`/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/items/${certificate.onedriveFileId}`)
+          .api(
+            `/users/f9da6533-d022-40e9-a1ad-a96776677a26/drive/drive/items/${certificate.onedriveFileId}`
+          )
           .delete();
         console.log("OneDrive file deleted successfully");
       } catch (oneDriveError) {
