@@ -768,16 +768,19 @@ const CertificatesWithDashboard = ({
                         {cert.status}
                       </span>
                     </td>
-                    <td>
-                      {cert.onedriveFileId ? (
-                        <button className="view-image-btn">
+                                    <td>
+                      {(cert.gridFsFileId || cert.onedriveFileId) ? (
+                        <button
+                          className="view-image-btn"
+                          onClick={() => window.open(`/api/certificates/${cert._id}/image`, '_blank')}
+                        >
                           📎 View
                         </button>
                       ) : (
                         <span className="no-image">No Image</span>
                       )}
                     </td>
-                    <td className="actions-cell">
+                                    <td className="actions-cell">
                       <button
                         onClick={() => setRenewingCert(cert)}
                         className="renew-btn"
@@ -785,7 +788,7 @@ const CertificatesWithDashboard = ({
                       >
                         🔄 Renew
                       </button>
-                      <button
+                                      <button
                         onClick={() => handleDelete(cert._id)}
                         className="delete-btn"
                         title="Delete this certificate"

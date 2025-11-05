@@ -461,35 +461,46 @@ router.get("/:id/history", authenticateToken, async (req, res) => {
 });
 
 // Stream an image by certificate id (DELEGATED)
-router.get("/:id/image", authenticateToken, async (req, res) => {
+router.get('/:id/image', authenticateToken, async (req, res) => {
   try {
-    const certificate = await Certificate.findById(req.params.id);
-    if (!certificate || !certificate.onedriveFileId) {
-      return res.status(404).json({ message: "Certificate image not found" });
+    const cert = await Certificate.findById(req.params.id);
+    if (!cert) return res.status(404).json({ message: 'Certificate not found' });
+
+    // ✅ Prefer Mongo GridFS
+    if (cert.gridFsFileId) {
+      const bucket = await getGridFSBucket();
+
+      // Try to get file doc to set Content-Type properly
+      const files = await bucket
+        .find({ _id: new mongoose.Types.ObjectId(cert.gridFsFileId) })
+        .toArray();
+
+      if (!files.length) return res.status(404).json({ message: 'File not found' });
+
+      const fileDoc = files[0];
+      const mime =
+        (fileDoc.contentType) ||
+        (fileDoc.metadata && fileDoc.metadata.mimeType) ||
+        'application/octet-stream';
+
+      res.setHeader('Content-Type', mime);
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+
+      const stream = bucket.openDownloadStream(fileDoc._id);
+      stream.on('error', () => res.status(404).json({ message: 'File not found' }));
+      return stream.pipe(res);
     }
 
-    const appUserId = req.user?.id || req.user?._id || req.user;
-    const accessToken = await getUserAccessToken(appUserId);
-    const graphClient = getGraphClient(accessToken);
+    // 🔁 Legacy OneDrive fallback for old records (keep your existing code here)
+    if (cert.onedriveFileId) {
+      // ... existing Graph streaming logic ...
+      return;
+    }
 
-    const site = await graphClient
-      .api(`/sites/${process.env.SP_HOST}:/${process.env.SP_SITE_PATH}`)
-      .get();
-
-    const fileStream = await graphClient
-      .api(
-        `/sites/${site.id}/drive/items/${certificate.onedriveFileId}/content`
-      )
-      .getStream();
-
-    res.setHeader("Content-Type", "application/octet-stream");
-    res.setHeader("Cache-Control", "private, max-age=3600");
-    fileStream.pipe(res);
-  } catch (error) {
-    console.error("Error fetching image:", error);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch image", error: error.message });
+    return res.status(404).json({ message: 'No stored image for this certificate' });
+  } catch (e) {
+    console.error('GET /:id/image error:', e);
+    res.status(500).json({ message: 'Failed to fetch image' });
   }
 });
 
