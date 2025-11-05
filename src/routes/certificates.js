@@ -6,6 +6,19 @@ const { authenticateToken } = require("../controllers/middleware/auth");
 const upload = require("../controllers/middleware/upload");
 const { Client } = require("@microsoft/microsoft-graph-client");
 const msal = require("@azure/msal-node");
+const mongoose = require('mongoose');
+const { Readable } = require('stream');
+
+
+const { Readable } = require('stream');
+
+let gridfsBucket = null;
+function getGridFSBucket(mongoose) {
+  if (gridfsBucket) return gridfsBucket;
+  gridfsBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'certfiles' });
+  return gridfsBucket;
+}
+
 
 // ---------- MSAL CONFIG (delegated flow) ----------
 const msalConfig = {
@@ -133,7 +146,8 @@ router.post("/upload", authenticateToken, async (req, res) => {
 });
 
 // Upload certificate image to SharePoint (DELEGATED)
-// Upload certificate image to SharePoint (DELEGATED)
+
+
 router.post(
   "/upload-image",
   authenticateToken,
@@ -150,49 +164,79 @@ router.post(
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      // Toggle: default to Mongo GridFS unless explicitly using OneDrive
+      const USE_ONEDRIVE = String(process.env.USE_ONEDRIVE).toLowerCase() === 'true';
+
+      if (!USE_ONEDRIVE) {
+        // ✅ Store file in MongoDB GridFS
+        try {
+          const bucket = getGridFSBucket();
+          const readable = Readable.from(file.buffer);
+          const filename = file.originalname || `certificate_${Date.now()}`;
+
+          const uploadStream = bucket.openUploadStream(filename, {
+            contentType: file.mimetype,
+            metadata: {
+              uploadedBy: req.user.id || null,
+              employeeName: employeeName || null,
+              certificateType: certificateType || null,
+              issueDate: issueDate || null,
+            },
+          });
+
+          readable
+            .pipe(uploadStream)
+            .on('error', (e) => {
+              console.error('GridFS upload error:', e);
+              return res.status(500).json({ message: 'Failed to store file', error: e.message });
+            })
+            .on('finish', () => {
+              return res.json({
+                ok: true,
+                fileId: uploadStream.id.toString(), // GridFS ObjectId as string
+                webUrl: null,
+                filePath: filename,                 // keep a simple logical path/label
+                message: "File stored in MongoDB",
+              });
+            });
+
+          return; // important: stop here after piping
+        } catch (e) {
+          console.error('GridFS setup/store error:', e);
+          return res.status(500).json({ message: 'Storage error', error: e.message });
+        }
+      }
+
+      // 🔁 OneDrive/SharePoint path retained for optional use
       // 1) Get a fresh user access token from Mongo-stored refresh token
       const accessToken = await getUserAccessToken(req.user.id);
       const graphClient = getGraphClient(accessToken);
 
       // 2) Resolve the SharePoint site once per request (or cache this in memory)
-      const SP_HOST = process.env.SP_HOST; // e.g. "gordonmckayelectrical.sharepoint.com"
+      const SP_HOST = process.env.SP_HOST; // e.g. "yourtenant.sharepoint.com"
       const SP_SITE_PATH = process.env.SP_SITE_PATH; // e.g. "sites/Training"
-      const site = await graphClient
-        .api(`/sites/${SP_HOST}:/${SP_SITE_PATH}`)
-        .get();
+      const site = await graphClient.api(`/sites/${SP_HOST}:/${SP_SITE_PATH}`).get();
 
       // 3) Build safe folder path + filename
-      const safeEmployee = String(employeeName || "Unknown")
-        .replace(/[\\/:*?"<>|]/g, "-")
-        .trim();
-      const safeCert = String(certificateType || "Certificate")
-        .replace(/[\\/:*?"<>|]/g, "-")
-        .trim();
+      const safeEmployee = String(employeeName || "Unknown").replace(/[\\/:*?"<>|]/g, "-").trim();
+      const safeCert = String(certificateType || "Certificate").replace(/[\\/:*?"<>|]/g, "-").trim();
       const ext = (file.originalname.split(".").pop() || "bin").toLowerCase();
       const folderPath = `Training Certificates/${safeEmployee}/${safeCert}`;
-      const fileName = `${safeCert}_${
-        issueDate || "unknown"
-      }_${Date.now()}.${ext}`;
+      const fileName = `${safeCert}_${issueDate || "unknown"}_${Date.now()}.${ext}`;
 
-      // 4) Ensure nested folders exist (idempotent mkdir -p behavior)
+      // 4) Ensure nested folders exist
       const parts = folderPath.split("/").filter(Boolean);
       let currentPath = "";
       for (const part of parts) {
         currentPath = currentPath ? `${currentPath}/${part}` : part;
         try {
-          await graphClient
-            .api(`/sites/${site.id}/drive/root:/${currentPath}`)
-            .get();
+          await graphClient.api(`/sites/${site.id}/drive/root:/${currentPath}`).get();
         } catch {
           const parentPath = currentPath.includes("/")
             ? currentPath.substring(0, currentPath.lastIndexOf("/"))
             : "";
           await graphClient
-            .api(
-              `/sites/${site.id}/drive/root${
-                parentPath ? `:/${parentPath}` : ""
-              }:/children`
-            )
+            .api(`/sites/${site.id}/drive/root${parentPath ? `:/${parentPath}` : ""}:/children`)
             .post({
               name: part,
               folder: {},
@@ -201,24 +245,24 @@ router.post(
         }
       }
 
-      // 5) Upload file (simple PUT for small files; switch to upload session if you ever go > 250MB)
+      // 5) Upload file
       const uploaded = await graphClient
         .api(`/sites/${site.id}/drive/root:/${folderPath}/${fileName}:/content`)
         .put(file.buffer);
 
-      // 6) Return the Graph IDs/links — save these on your certificate document if you like
+      // 6) Return Graph IDs/links
       return res.json({
         ok: true,
         fileId: uploaded.id,
-        webUrl: uploaded.webUrl, // direct link workers can open in SP
-        filePath: `/${folderPath}/${fileName}`, // your logical path
+        webUrl: uploaded.webUrl,
+        filePath: `/${folderPath}/${fileName}`,
         message: "File uploaded to SharePoint successfully",
       });
     } catch (error) {
-      console.error("SharePoint upload error:", error);
+      console.error("Upload error:", error);
       const details = error.body || error.response?.data || error.message;
       return res.status(error.statusCode || 500).json({
-        message: "Failed to upload file to SharePoint",
+        message: "Failed to upload file",
         error: details,
       });
     }

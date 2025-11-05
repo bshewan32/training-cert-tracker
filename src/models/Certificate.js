@@ -1,3 +1,4 @@
+// models/Certificate.js
 const mongoose = require("mongoose");
 
 const CertificateSchema = new mongoose.Schema({
@@ -5,7 +6,7 @@ const CertificateSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  // Changed to reference an actual position ID
+  // Reference to a Position document
   position: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Position",
@@ -18,48 +19,67 @@ const CertificateSchema = new mongoose.Schema({
   issueDate: {
     type: Date,
     required: true,
-    set: (v) => new Date(v), // helps with date formatting
+    set: (v) => new Date(v),
   },
   expirationDate: {
     type: Date,
     required: true,
     set: (v) => new Date(v),
   },
-  // Keep existing documentPath for backward compatibility
+
+  // Backward-compatibility (legacy file path on disk, if any)
   documentPath: {
     type: String,
-    default: "pending", // temporary solution until file upload is implemented
+    default: "pending",
   },
-  // NEW: OneDrive integration fields
+
+  // ---- OneDrive (legacy/optional) ----
   onedriveFileId: {
     type: String,
     default: null,
-    index: true, // Index for faster lookups when fetching images
-    sparse: true, // Only index documents that have this field
+    index: true,
+    sparse: true,
   },
   onedriveFilePath: {
     type: String,
     default: null,
-    trim: true, // Remove any whitespace
+    trim: true,
   },
-  // Optional: Store original filename for display purposes
+
+  // ---- GridFS (preferred) ----
+  gridFsFileId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null,
+    index: true,
+    sparse: true,
+  },
+  gridFsFilename: {
+    type: String,
+    default: null,
+    trim: true,
+  },
+
+  // Display/original filename (works for either storage)
   originalFileName: {
     type: String,
     default: null,
     trim: true,
   },
-  // Optional: Store file metadata
+
+  // Optional file metadata
   fileMetadata: {
-    size: { type: Number, default: null }, // File size in bytes
-    mimeType: { type: String, default: null }, // e.g., 'image/jpeg', 'application/pdf'
-    uploadedAt: { type: Date, default: null }, // When the file was uploaded
+    size: { type: Number, default: null },       // bytes
+    mimeType: { type: String, default: null },   // e.g. image/jpeg, application/pdf
+    uploadedAt: { type: Date, default: null },   // first time we stored a file
   },
+
   status: {
     type: String,
     enum: ["Active", "Expiring Soon", "Expired"],
     default: "Active",
   },
-  // Add timestamps for better tracking
+
+  // Timestamps
   createdAt: {
     type: Date,
     default: Date.now,
@@ -69,114 +89,96 @@ const CertificateSchema = new mongoose.Schema({
     default: Date.now,
   },
 
-  // ... existing fields ...
+  // ---- Revision / renewal history ----
+  revisions: [
+    {
+      issueDate: { type: Date, required: true },
+      expirationDate: { type: Date, required: true },
+      archivedAt: { type: Date, default: Date.now },
 
-  // NEW: Revision/renewal history
-  revisions: [{
-    issueDate: {
-      type: Date,
-      required: true
-    },
-    expirationDate: {
-      type: Date,
-      required: true
-    },
-    archivedAt: {
-      type: Date,
-      default: Date.now
-    },
-    onedriveFileId: {
-      type: String,
-      default: null
-    },
-    onedriveFilePath: {
-      type: String,
-      default: null
-    },
-    originalFileName: {
-      type: String,
-      default: null
-    },
-    status: {
-      type: String,
-      enum: ["Active", "Expiring Soon", "Expired"]
-    },
-    notes: {
-      type: String,
-      default: ''
-    }
-  }],
+      // Preserve whichever storage the previous version used
+      onedriveFileId: { type: String, default: null },
+      onedriveFilePath: { type: String, default: null },
+      gridFsFileId: { type: mongoose.Schema.Types.ObjectId, default: null },
+      gridFsFilename: { type: String, default: null },
 
-// ... rest of schema (status, createdAt, updatedAt, etc)
+      originalFileName: { type: String, default: null },
+      status: { type: String, enum: ["Active", "Expiring Soon", "Expired"] },
+      notes: { type: String, default: "" },
+    },
+  ],
 });
 
-// Pre-save middleware to update status and timestamps
+// ---------------- Pre-save: status + timestamps + first-upload marker -------------
 CertificateSchema.pre("save", function (next) {
   const now = new Date();
-
-  // Update the updatedAt timestamp
   this.updatedAt = now;
 
-  // Calculate status based on expiration date
-  const expirationDate = this.expirationDate;
-  const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  // Calculate status
+  const expiry = this.expirationDate;
+  const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  if (expiry <= now) this.status = "Expired";
+  else if (expiry <= in30) this.status = "Expiring Soon";
+  else this.status = "Active";
 
-  if (expirationDate <= now) {
-    this.status = "Expired";
-  } else if (expirationDate <= thirtyDaysFromNow) {
-    this.status = "Expiring Soon";
-  } else {
-    this.status = "Active";
-  }
+  // Mark uploadedAt on first attach (GridFS or OneDrive)
+  const hasAnyFile =
+    !!this.gridFsFileId ||
+    !!this.onedriveFileId ||
+    (this.documentPath && this.documentPath !== "pending");
 
-  // Set file upload timestamp if OneDrive file is being added for the first time
-  if (this.onedriveFileId && !this.fileMetadata.uploadedAt) {
+  if (hasAnyFile && (!this.fileMetadata || !this.fileMetadata.uploadedAt)) {
+    this.fileMetadata = this.fileMetadata || {};
     this.fileMetadata.uploadedAt = now;
   }
 
   next();
 });
 
-// Virtual property to check if certificate has an image
+// ---------------- Virtuals ----------------
 CertificateSchema.virtual("hasImage").get(function () {
   return !!(
+    this.gridFsFileId ||
     this.onedriveFileId ||
     (this.documentPath && this.documentPath !== "pending")
   );
 });
 
-// Instance method to get the display filename
+// Prefer a friendly name: originalFileName → GridFS → OneDrive → fallback
 CertificateSchema.methods.getDisplayFileName = function () {
-  if (this.originalFileName) {
-    return this.originalFileName;
-  }
-  if (this.onedriveFilePath) {
-    return this.onedriveFilePath.split("/").pop(); // Get filename from path
-  }
+  if (this.originalFileName) return this.originalFileName;
+  if (this.gridFsFilename) return this.gridFsFilename;
+  if (this.onedriveFilePath) return this.onedriveFilePath.split("/").pop();
   return "Certificate Document";
 };
 
-// Instance method to check if file is in OneDrive
+CertificateSchema.methods.isStoredInGridFS = function () {
+  return !!this.gridFsFileId;
+};
+
 CertificateSchema.methods.isStoredInOneDrive = function () {
   return !!this.onedriveFileId;
 };
 
-// Static method to find certificates with images
+// ---------------- Statics (include GridFS) ----------------
 CertificateSchema.statics.findWithImages = function () {
   return this.find({
     $or: [
+      { gridFsFileId: { $exists: true, $ne: null } },
       { onedriveFileId: { $exists: true, $ne: null } },
       { documentPath: { $exists: true, $ne: "pending", $ne: null } },
     ],
   });
 };
 
-// Static method to find certificates without images
 CertificateSchema.statics.findWithoutImages = function () {
   return this.find({
     $and: [
       {
-        $or: [{ onedriveFileId: { $exists: false } }, { onedriveFileId: null }],
+        $and: [
+          { $or: [{ gridFsFileId: { $exists: false } }, { gridFsFileId: null }] },
+          { $or: [{ onedriveFileId: { $exists: false } }, { onedriveFileId: null }] },
+        ],
       },
       {
         $or: [
@@ -189,13 +191,15 @@ CertificateSchema.statics.findWithoutImages = function () {
   });
 };
 
-// Index for better query performance
+// ---------------- Indexes ----------------
 CertificateSchema.index({ staffMember: 1, certType: 1 });
 CertificateSchema.index({ expirationDate: 1 });
 CertificateSchema.index({ status: 1 });
 CertificateSchema.index({ createdAt: -1 });
+CertificateSchema.index({ gridFsFileId: 1 }, { sparse: true });
+CertificateSchema.index({ onedriveFileId: 1 }, { sparse: true });
 
-// Ensure virtual fields are serialized
+// Serialize virtuals
 CertificateSchema.set("toJSON", { virtuals: true });
 CertificateSchema.set("toObject", { virtuals: true });
 
