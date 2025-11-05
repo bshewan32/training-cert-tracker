@@ -280,124 +280,162 @@ router.post("/:id/renew", authenticateToken, upload.single("file"), async (req, 
   try {
     const { issueDate, expirationDate, notes } = req.body;
     const file = req.file;
-    
+
     // Find the certificate
     const certificate = await Certificate.findById(req.params.id);
     if (!certificate) {
       return res.status(404).json({ message: "Certificate not found" });
     }
 
-    // Archive current version to revisions array
+    // Archive current version to revisions array (both storage types)
     certificate.revisions.push({
       issueDate: certificate.issueDate,
       expirationDate: certificate.expirationDate,
-      onedriveFileId: certificate.onedriveFileId,
-      onedriveFilePath: certificate.onedriveFilePath,
-      originalFileName: certificate.originalFileName,
+      onedriveFileId: certificate.onedriveFileId || null,
+      onedriveFilePath: certificate.onedriveFilePath || null,
+      gridFsFileId: certificate.gridFsFileId || null,
+      gridFsFilename: certificate.gridFsFilename || null,
+      originalFileName: certificate.originalFileName || null,
       status: certificate.status,
       archivedAt: new Date(),
-      notes: 'Previous version'
+      notes: notes || 'Previous version',
     });
 
+    // Prepare new pointers defaulting to current (will be overwritten if new file uploaded)
+    let newOneDriveId = certificate.onedriveFileId || null;
+    let newOneDrivePath = certificate.onedriveFilePath || null;
+    let newFileName = certificate.originalFileName || null;
+
+    // Also track GridFS fields on the live record
+    let newGridFsId = certificate.gridFsFileId || null;
+    let newGridFsFilename = certificate.gridFsFilename || null;
+
+    const USE_ONEDRIVE = String(process.env.USE_ONEDRIVE).toLowerCase() === 'true';
+
     // Upload new file if provided
-    let newFileId = certificate.onedriveFileId;
-    let newFilePath = certificate.onedriveFilePath;
-    let newFileName = certificate.originalFileName;
-
     if (file) {
-      try {
-        if (!req.user?.id) {
-          return res.status(401).json({ message: "Not authenticated" });
-        }
-
-        // Get access token
-        const accessToken = await getUserAccessToken(req.user.id);
-        const graphClient = getGraphClient(accessToken);
-
-        // Resolve SharePoint site
-        const SP_HOST = process.env.SP_HOST;
-        const SP_SITE_PATH = process.env.SP_SITE_PATH;
-        const site = await graphClient
-          .api(`/sites/${SP_HOST}:/${SP_SITE_PATH}`)
-          .get();
-
-        // Build file path
-        const safeEmployee = String(certificate.staffMember || "Unknown")
-          .replace(/[\\/:*?"<>|]/g, "-")
-          .trim();
-        const safeCert = String(certificate.certType || "Certificate")
-          .replace(/[\\/:*?"<>|]/g, "-")
-          .trim();
-        const ext = (file.originalname.split(".").pop() || "bin").toLowerCase();
-        const folderPath = `Training Certificates/${safeEmployee}/${safeCert}`;
-        const fileName = `${safeCert}_${issueDate || "renewal"}_${Date.now()}.${ext}`;
-
-        // Ensure folders exist
-        const parts = folderPath.split("/").filter(Boolean);
-        let currentPath = "";
-        for (const part of parts) {
-          currentPath = currentPath ? `${currentPath}/${part}` : part;
-          try {
-            await graphClient
-              .api(`/sites/${site.id}/drive/root:/${currentPath}`)
-              .get();
-          } catch {
-            const parentPath = currentPath.includes("/")
-              ? currentPath.substring(0, currentPath.lastIndexOf("/"))
-              : "";
-            await graphClient
-              .api(
-                `/sites/${site.id}/drive/root${
-                  parentPath ? `:/${parentPath}` : ""
-                }:/children`
-              )
-              .post({
-                name: part,
-                folder: {},
-                "@microsoft.graph.conflictBehavior": "rename",
-              });
+      if (USE_ONEDRIVE) {
+        // ---------- OneDrive path ----------
+        try {
+          if (!req.user?.id) {
+            return res.status(401).json({ message: "Not authenticated" });
           }
+
+          const accessToken = await getUserAccessToken(req.user.id);
+          const graphClient = getGraphClient(accessToken);
+
+          const SP_HOST = process.env.SP_HOST;
+          const SP_SITE_PATH = process.env.SP_SITE_PATH;
+          const site = await graphClient.api(`/sites/${SP_HOST}:/${SP_SITE_PATH}`).get();
+
+          const safeEmployee = String(certificate.staffMember || "Unknown")
+            .replace(/[\\/:*?"<>|]/g, "-")
+            .trim();
+          const safeCert = String(certificate.certType || "Certificate")
+            .replace(/[\\/:*?"<>|]/g, "-")
+            .trim();
+          const ext = (file.originalname.split(".").pop() || "bin").toLowerCase();
+          const folderPath = `Training Certificates/${safeEmployee}/${safeCert}`;
+          const fileName = `${safeCert}_${issueDate || "renewal"}_${Date.now()}.${ext}`;
+
+          // ensure folders exist
+          const parts = folderPath.split("/").filter(Boolean);
+          let currentPath = "";
+          for (const part of parts) {
+            currentPath = currentPath ? `${currentPath}/${part}` : part;
+            try {
+              await graphClient.api(`/sites/${site.id}/drive/root:/${currentPath}`).get();
+            } catch {
+              const parentPath = currentPath.includes("/")
+                ? currentPath.substring(0, currentPath.lastIndexOf("/"))
+                : "";
+              await graphClient
+                .api(`/sites/${site.id}/drive/root${parentPath ? `:/${parentPath}` : ""}:/children`)
+                .post({
+                  name: part,
+                  folder: {},
+                  "@microsoft.graph.conflictBehavior": "rename",
+                });
+            }
+          }
+
+          const uploaded = await graphClient
+            .api(`/sites/${site.id}/drive/root:/${folderPath}/${fileName}:/content`)
+            .put(file.buffer);
+
+          // set OneDrive pointers; clear GridFS (we're storing in OneDrive for this revision)
+          newOneDriveId = uploaded.id;
+          newOneDrivePath = `/${folderPath}/${fileName}`;
+          newFileName = file.originalname;
+
+          newGridFsId = null;
+          newGridFsFilename = null;
+        } catch (uploadError) {
+          console.error("File upload error during renewal (OneDrive):", uploadError);
+          // Continue renewal even if upload fails
         }
+      } else {
+        // ---------- Mongo GridFS path ----------
+        try {
+          const bucket = await getGridFSBucket();
+          const readable = Readable.from(file.buffer);
+          const filename = file.originalname || `certificate_${Date.now()}`;
 
-        // Upload new file
-        const uploaded = await graphClient
-          .api(`/sites/${site.id}/drive/root:/${folderPath}/${fileName}:/content`)
-          .put(file.buffer);
+          const uploadStream = bucket.openUploadStream(filename, {
+            contentType: file.mimetype,
+            metadata: {
+              renewedFrom: certificate._id.toString(),
+              by: req.user?.id || null,
+            },
+          });
 
-        newFileId = uploaded.id;
-        newFilePath = `/${folderPath}/${fileName}`;
-        newFileName = file.originalname;
+          await new Promise((resolve, reject) => {
+            readable.pipe(uploadStream).on('error', reject).on('finish', resolve);
+          });
 
-      } catch (uploadError) {
-        console.error("File upload error during renewal:", uploadError);
-        // Continue with renewal even if file upload fails
+          // set GridFS pointers; clear OneDrive (we're storing in Mongo for this revision)
+          newGridFsId = uploadStream.id;
+          newGridFsFilename = filename;
+          newFileName = filename;
+
+          newOneDriveId = null;
+          newOneDrivePath = null;
+        } catch (e) {
+          console.error("GridFS upload error during renewal:", e);
+          // Continue renewal even if upload fails
+        }
       }
     }
 
     // Update certificate with new data
     certificate.issueDate = new Date(issueDate);
     certificate.expirationDate = new Date(expirationDate);
-    certificate.onedriveFileId = newFileId;
-    certificate.onedriveFilePath = newFilePath;
+
+    // Apply storage pointers based on what we just did
+    certificate.onedriveFileId = newOneDriveId;
+    certificate.onedriveFilePath = newOneDrivePath;
+    certificate.gridFsFileId = newGridFsId;
+    certificate.gridFsFilename = newGridFsFilename;
     certificate.originalFileName = newFileName;
+
     certificate.updatedAt = new Date();
-    
-    // Status will be recalculated by pre-save middleware
+
+    // Status recalculated by pre-save
     await certificate.save();
 
     res.json({
       message: "Certificate renewed successfully",
-      certificate
+      certificate,
     });
-
   } catch (error) {
     console.error("Error renewing certificate:", error);
-    res.status(500).json({ 
-      message: "Failed to renew certificate", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to renew certificate",
+      error: error.message,
     });
   }
 });
+
 
 // Also add a route to get revision history
 router.get("/:id/history", authenticateToken, async (req, res) => {
