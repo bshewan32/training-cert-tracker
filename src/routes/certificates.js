@@ -10,11 +10,18 @@ const mongoose = require('mongoose');
 const { Readable } = require('stream');
 
 
-
 let gridfsBucket = null;
-function getGridFSBucket(mongoose) {
-  if (gridfsBucket) return gridfsBucket;
-  gridfsBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'certfiles' });
+async function getGridFSBucket() {
+  // 1 = connected; if not connected yet, wait
+  if (mongoose.connection.readyState !== 1) {
+    await mongoose.connection.asPromise();
+  }
+  if (!gridfsBucket) {
+    gridfsBucket = new mongoose.mongo.GridFSBucket(
+      mongoose.connection.db,
+      { bucketName: 'certfiles' }
+    );
+  }
   return gridfsBucket;
 }
 
