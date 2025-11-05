@@ -388,16 +388,44 @@ const CertificatesWithDashboard = ({
 
       setMessage('Certificate deleted successfully');
       setTimeout(() => setMessage(''), 3000);
-      
+
       if (onCertificateDeleted) {
         onCertificateDeleted(certId);
       }
-      
+
       if (onRefreshData) {
         await onRefreshData();
       }
     } catch (err) {
       setError(err.message || 'Error deleting certificate');
+    }
+  };
+
+  // Handle viewing certificate image with authentication
+  const handleViewImage = async (certId) => {
+    try {
+      const response = await fetch(`/api/certificates/${certId}/image`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch image');
+      }
+
+      // Get the blob and create a URL for it
+      const blob = await response.blob();
+      const imageUrl = URL.createObjectURL(blob);
+
+      // Open in a new window
+      window.open(imageUrl, '_blank');
+
+      // Clean up the URL after a delay
+      setTimeout(() => URL.revokeObjectURL(imageUrl), 100);
+    } catch (err) {
+      setError('Failed to load certificate image');
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -772,7 +800,7 @@ const CertificatesWithDashboard = ({
                       {(cert.gridFsFileId || cert.onedriveFileId) ? (
                         <button
                           className="view-image-btn"
-                          onClick={() => window.open(`/api/certificates/${cert._id}/image`, '_blank')}
+                          onClick={() => handleViewImage(cert._id)}
                         >
                           📎 View
                         </button>
