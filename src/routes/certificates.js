@@ -12,18 +12,21 @@ const { Readable } = require('stream');
 
 let gridfsBucket = null;
 async function getGridFSBucket() {
-  // 1 = connected; if not connected yet, wait
   if (mongoose.connection.readyState !== 1) {
-    await mongoose.connection.asPromise();
+    console.log("Waiting for MongoDB connection...");
+    await mongoose.connection.asPromise(); // Ensure MongoDB is connected
   }
+
   if (!gridfsBucket) {
-    gridfsBucket = new mongoose.mongo.GridFSBucket(
-      mongoose.connection.db,
-      { bucketName: 'certfiles' }
-    );
+    // Create a GridFS bucket using mongoose's underlying MongoDB connection
+    gridfsBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: 'certfiles', // Specify your bucket name here
+    });
   }
+
   return gridfsBucket;
 }
+
 
 
 // ---------- MSAL CONFIG (delegated flow) ----------
@@ -469,11 +472,9 @@ router.get('/:id/image', authenticateToken, async (req, res) => {
     // ✅ Prefer Mongo GridFS
     if (cert.gridFsFileId) {
       const bucket = await getGridFSBucket();
-
+      const { ObjectId } = mongoose.Types;
       // Try to get file doc to set Content-Type properly
-      const files = await bucket
-        .find({ _id: new mongoose.Types.ObjectId(cert.gridFsFileId) })
-        .toArray();
+      const files = await bucket.find({ _id: ObjectId(cert.gridFsFileId) }).toArray();
 
       if (!files.length) return res.status(404).json({ message: 'File not found' });
 
