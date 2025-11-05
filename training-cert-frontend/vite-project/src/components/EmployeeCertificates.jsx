@@ -109,7 +109,7 @@ const EmployeeCertificates = ({
       };
       
       // Submit to API
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
+      const response = await fetch('/api/certificates/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -150,7 +150,7 @@ const EmployeeCertificates = ({
     setSuccess('');
     
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/certificates/${certificateId}`, {
+      const response = await fetch(`/api/certificates/${certificateId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

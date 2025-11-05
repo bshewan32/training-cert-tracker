@@ -89,7 +89,7 @@ function App() {
     console.log('Login attempt:', { type, data: { ...data, password: '[REDACTED]' } });
 
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/users/${type}`, {
+      const response = await fetch(`/api/users/${type}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ function App() {
 
   const sendReminder = async (certificateId) => {
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/admin/send-reminder/${certificateId}`, {
+      const response = await fetch(`/api/admin/send-reminder/${certificateId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -151,7 +151,7 @@ function App() {
 
   const fetchCertificates = async () => {
   try {
-    const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates', {
+    const response = await fetch('/api/certificates', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -168,7 +168,7 @@ function App() {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/admin/dashboard', {
+      const response = await fetch('/api/admin/dashboard', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -207,7 +207,7 @@ function App() {
 
   const fetchSetupData = async (includeInactive = false) => {
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup?includeInactive=${includeInactive}`, {
+      const response = await fetch(`/api/setup?includeInactive=${includeInactive}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -227,7 +227,7 @@ function App() {
 
   const handleDelete = async (type, id) => {
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/${type}/${id}`, {
+      const response = await fetch(`/api/setup/${type}/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -249,7 +249,7 @@ function App() {
     console.log('Submitting employee data:', data);
 
     try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/employee', {
+      const response = await fetch('/api/setup/employee', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -277,7 +277,7 @@ function App() {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/position', {
+      const response = await fetch('/api/setup/position', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -300,7 +300,7 @@ function App() {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/certificatetype', {
+      const response = await fetch('/api/setup/certificatetype', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -349,7 +349,7 @@ function App() {
     };
 
     try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
+      const response = await fetch('/api/certificates/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -380,7 +380,7 @@ function App() {
   const handleCertificateDelete = async (certId) => {
     if (window.confirm('Are you sure you want to delete this certificate?')) {
       try {
-        const response = await fetch(`https://training-cert-tracker.onrender.com/api/certificates/${certId}`, {
+        const response = await fetch(`/api/certificates/${certId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -532,7 +532,7 @@ function App() {
                   <button
                     onClick={async () => {
                       try {
-                        const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}/reactivate`, {
+                        const response = await fetch(`/api/setup/employee/${selectedEmployeeForEdit._id}/reactivate`, {
                           method: 'PUT',
                           headers: {
                             'Authorization': `Bearer ${token}`
@@ -558,7 +558,7 @@ function App() {
                     onClick={async () => {
                       if (confirm(`Archive ${selectedEmployeeForEdit.name}? They will be excluded from compliance calculations.`)) {
                         try {
-                          const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}/archive`, {
+                          const response = await fetch(`/api/setup/employee/${selectedEmployeeForEdit._id}/archive`, {
                             method: 'PUT',
                             headers: {
                               'Authorization': `Bearer ${token}`
@@ -605,7 +605,7 @@ function App() {
                 showArchiveControls={true}
                 onSubmit={async (updatedEmployee) => {
                   try {
-                    const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${selectedEmployeeForEdit._id}`, {
+                    const response = await fetch(`/api/setup/employee/${selectedEmployeeForEdit._id}`, {
                       method: 'PUT',
                       headers: {
                         'Authorization': `Bearer ${token}`,
@@ -940,7 +940,7 @@ function App() {
                               <button
                                 onClick={async () => {
                                   try {
-                                    const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${emp._id}/reactivate`, {
+                                    const response = await fetch(`/api/setup/employee/${emp._id}/reactivate`, {
                                       method: 'PUT',
                                       headers: {
                                         'Authorization': `Bearer ${token}`
@@ -962,7 +962,7 @@ function App() {
                                 onClick={async () => {
                                   if (confirm(`Archive ${emp.name}? They will be excluded from compliance calculations.`)) {
                                     try {
-                                      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${emp._id}/archive`, {
+                                      const response = await fetch(`/api/setup/employee/${emp._id}/archive`, {
                                         method: 'PUT',
                                         headers: {
                                           'Authorization': `Bearer ${token}`

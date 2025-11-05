@@ -44,7 +44,7 @@ const EmployeeRequirements = ({ employeeId, token }) => {
     
     try {
       console.log('Fetching requirements for employee ID:', employeeId); // Debug log
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/positionRequirements/employee/${employeeId}`, {
+      const response = await fetch(`/api/positionRequirements/employee/${employeeId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

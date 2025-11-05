@@ -64,7 +64,7 @@ const CertificatesWithDashboard = ({
     if (!token) return;
     
     try {
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
+      const response = await fetch('/api/positionRequirements', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -290,7 +290,7 @@ const CertificatesWithDashboard = ({
           fileFormData.append('certificateType', certType.name);
           fileFormData.append('issueDate', issueDate);
 
-          const fileUploadResponse = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload-image', {
+          const fileUploadResponse = await fetch('/api/certificates/upload-image', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`
@@ -326,7 +326,7 @@ const CertificatesWithDashboard = ({
 
       console.log('Creating certificate with data:', certificateData);
 
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
+      const response = await fetch('/api/certificates/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -375,7 +375,7 @@ const CertificatesWithDashboard = ({
     }
 
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/certificates/${certId}`, {
+      const response = await fetch(`/api/certificates/${certId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

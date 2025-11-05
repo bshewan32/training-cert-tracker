@@ -263,7 +263,7 @@ const ExcelTemplateUploader = ({ token, onSuccess, onError }) => {
 
     try {
       // Fetch with proper authorization header
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/template', {
+      const response = await fetch('/api/setup/template', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -338,7 +338,7 @@ const ExcelTemplateUploader = ({ token, onSuccess, onError }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup/bulk-upload', {
+      const response = await fetch('/api/setup/bulk-upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -927,7 +927,7 @@ const ExcelTemplateUploader = ({ token, onSuccess, onError }) => {
 
 export default ExcelTemplateUploader;
 
-// // Enhanced ExcelTemplateUploader.jsx with XLSX parsing and preview
+
 // import { useState, useCallback } from 'react';
 // import { AlertCircle, FileUp, FileDown, Check, Info, Upload, X } from 'lucide-react';
 // import ImportPreview from './ImportPreview';

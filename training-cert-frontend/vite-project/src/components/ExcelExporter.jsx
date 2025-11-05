@@ -45,7 +45,7 @@ const ExcelExporter = ({ token }) => {
     
     try {
       // Fetch certificates
-      const certResponse = await fetch('https://training-cert-tracker.onrender.com/api/certificates', {
+      const certResponse = await fetch('/api/certificates', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -59,7 +59,7 @@ const ExcelExporter = ({ token }) => {
       setCertificates(certData);
       
       // Fetch setup data (employees, positions, certificate types)
-      const setupResponse = await fetch('https://training-cert-tracker.onrender.com/api/setup', {
+      const setupResponse = await fetch('/api/setup', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

@@ -114,7 +114,7 @@ const EmployeeForm = ({
     }
     
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${employee._id}/archive`, {
+      const response = await fetch(`/api/setup/employee/${employee._id}/archive`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -144,7 +144,7 @@ const EmployeeForm = ({
     if (!employee || !employee._id) return;
     
     try {
-      const response = await fetch(`https://training-cert-tracker.onrender.com/api/setup/employee/${employee._id}/reactivate`, {
+      const response = await fetch(`/api/setup/employee/${employee._id}/reactivate`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -177,14 +177,14 @@ const EmployeeForm = ({
     try {
       // Fetch both requirements and employee certificates
       const [requirementsResponse, certificatesResponse] = await Promise.all([
-        fetch('https://training-cert-tracker.onrender.com/api/positionRequirements', {
+        fetch('/api/positionRequirements', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         }),
         // Fetch all certificates to find ones for this employee
-        fetch('https://training-cert-tracker.onrender.com/api/certificates', {
+        fetch('/api/certificates', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

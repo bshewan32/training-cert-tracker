@@ -41,7 +41,7 @@ const RenewalModal = ({ certificate, token, onClose, onSuccess }) => {
       }
 
       const response = await fetch(
-        `https://training-cert-tracker.onrender.com/api/certificates/${certificate._id}/renew`,
+        `/api/certificates/${certificate._id}/renew`,
         {
           method: 'POST',
           headers: {

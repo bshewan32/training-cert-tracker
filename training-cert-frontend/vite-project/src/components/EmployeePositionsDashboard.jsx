@@ -59,7 +59,7 @@ const EmployeePositionsDashboard = ({ token }) => {
     
     try {
       // Fetch setup data
-      const response = await fetch('https://training-cert-tracker.onrender.com/api/setup', {
+      const response = await fetch('/api/setup', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
