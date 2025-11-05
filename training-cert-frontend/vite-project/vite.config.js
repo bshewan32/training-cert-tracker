@@ -1,7 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()]
+  plugins: [react()],
+  server: {
+    proxy: {
+      // dev only: proxies /api to your Render backend
+      '/api': {
+        target: 'https://training-cert-tracker.onrender.com',
+        changeOrigin: true,
+        secure: true
+      }
+    }
+  }
 })
