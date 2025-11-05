@@ -1274,6 +1274,12 @@ const CertificatesWithDashboard = ({
           color: #2d3748;
         }
 
+        .certificates-table td.actions-cell,
+          .certificates-table th:last-child {
+            min-width: 150px;
+            white-space: nowrap;
+          }
+
         .certificates-table tr:hover {
           background: #f7fafc;
         }
