@@ -68,6 +68,46 @@ const CertificateSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+
+  // ... existing fields ...
+
+  // NEW: Revision/renewal history
+  revisions: [{
+    issueDate: {
+      type: Date,
+      required: true
+    },
+    expirationDate: {
+      type: Date,
+      required: true
+    },
+    archivedAt: {
+      type: Date,
+      default: Date.now
+    },
+    onedriveFileId: {
+      type: String,
+      default: null
+    },
+    onedriveFilePath: {
+      type: String,
+      default: null
+    },
+    originalFileName: {
+      type: String,
+      default: null
+    },
+    status: {
+      type: String,
+      enum: ["Active", "Expiring Soon", "Expired"]
+    },
+    notes: {
+      type: String,
+      default: ''
+    }
+  }],
+
+// ... rest of schema (status, createdAt, updatedAt, etc)
 });
 
 // Pre-save middleware to update status and timestamps

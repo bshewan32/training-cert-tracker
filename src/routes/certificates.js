@@ -225,6 +225,153 @@ router.post(
   }
 );
 
+// RENEW/UPDATE an existing certificate
+router.post("/:id/renew", authenticateToken, upload.single("file"), async (req, res) => {
+  try {
+    const { issueDate, expirationDate, notes } = req.body;
+    const file = req.file;
+    
+    // Find the certificate
+    const certificate = await Certificate.findById(req.params.id);
+    if (!certificate) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    // Archive current version to revisions array
+    certificate.revisions.push({
+      issueDate: certificate.issueDate,
+      expirationDate: certificate.expirationDate,
+      onedriveFileId: certificate.onedriveFileId,
+      onedriveFilePath: certificate.onedriveFilePath,
+      originalFileName: certificate.originalFileName,
+      status: certificate.status,
+      archivedAt: new Date(),
+      notes: 'Previous version'
+    });
+
+    // Upload new file if provided
+    let newFileId = certificate.onedriveFileId;
+    let newFilePath = certificate.onedriveFilePath;
+    let newFileName = certificate.originalFileName;
+
+    if (file) {
+      try {
+        if (!req.user?.id) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        // Get access token
+        const accessToken = await getUserAccessToken(req.user.id);
+        const graphClient = getGraphClient(accessToken);
+
+        // Resolve SharePoint site
+        const SP_HOST = process.env.SP_HOST;
+        const SP_SITE_PATH = process.env.SP_SITE_PATH;
+        const site = await graphClient
+          .api(`/sites/${SP_HOST}:/${SP_SITE_PATH}`)
+          .get();
+
+        // Build file path
+        const safeEmployee = String(certificate.staffMember || "Unknown")
+          .replace(/[\\/:*?"<>|]/g, "-")
+          .trim();
+        const safeCert = String(certificate.certType || "Certificate")
+          .replace(/[\\/:*?"<>|]/g, "-")
+          .trim();
+        const ext = (file.originalname.split(".").pop() || "bin").toLowerCase();
+        const folderPath = `Training Certificates/${safeEmployee}/${safeCert}`;
+        const fileName = `${safeCert}_${issueDate || "renewal"}_${Date.now()}.${ext}`;
+
+        // Ensure folders exist
+        const parts = folderPath.split("/").filter(Boolean);
+        let currentPath = "";
+        for (const part of parts) {
+          currentPath = currentPath ? `${currentPath}/${part}` : part;
+          try {
+            await graphClient
+              .api(`/sites/${site.id}/drive/root:/${currentPath}`)
+              .get();
+          } catch {
+            const parentPath = currentPath.includes("/")
+              ? currentPath.substring(0, currentPath.lastIndexOf("/"))
+              : "";
+            await graphClient
+              .api(
+                `/sites/${site.id}/drive/root${
+                  parentPath ? `:/${parentPath}` : ""
+                }:/children`
+              )
+              .post({
+                name: part,
+                folder: {},
+                "@microsoft.graph.conflictBehavior": "rename",
+              });
+          }
+        }
+
+        // Upload new file
+        const uploaded = await graphClient
+          .api(`/sites/${site.id}/drive/root:/${folderPath}/${fileName}:/content`)
+          .put(file.buffer);
+
+        newFileId = uploaded.id;
+        newFilePath = `/${folderPath}/${fileName}`;
+        newFileName = file.originalname;
+
+      } catch (uploadError) {
+        console.error("File upload error during renewal:", uploadError);
+        // Continue with renewal even if file upload fails
+      }
+    }
+
+    // Update certificate with new data
+    certificate.issueDate = new Date(issueDate);
+    certificate.expirationDate = new Date(expirationDate);
+    certificate.onedriveFileId = newFileId;
+    certificate.onedriveFilePath = newFilePath;
+    certificate.originalFileName = newFileName;
+    certificate.updatedAt = new Date();
+    
+    // Status will be recalculated by pre-save middleware
+    await certificate.save();
+
+    res.json({
+      message: "Certificate renewed successfully",
+      certificate
+    });
+
+  } catch (error) {
+    console.error("Error renewing certificate:", error);
+    res.status(500).json({ 
+      message: "Failed to renew certificate", 
+      error: error.message 
+    });
+  }
+});
+
+// Also add a route to get revision history
+router.get("/:id/history", authenticateToken, async (req, res) => {
+  try {
+    const certificate = await Certificate.findById(req.params.id);
+    if (!certificate) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+    
+    res.json({
+      current: {
+        issueDate: certificate.issueDate,
+        expirationDate: certificate.expirationDate,
+        status: certificate.status,
+        onedriveFileId: certificate.onedriveFileId,
+        updatedAt: certificate.updatedAt
+      },
+      revisions: certificate.revisions || []
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Stream an image by certificate id (DELEGATED)
 router.get("/:id/image", authenticateToken, async (req, res) => {
   try {

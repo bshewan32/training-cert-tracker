@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import RenewalModal from './RenewalModal'; // Add this import
 
 const CertificatesWithDashboard = ({ 
   token, 
@@ -10,12 +11,14 @@ const CertificatesWithDashboard = ({
   onViewEmployee,
   onViewAdmin,
   onCertificateAdded,
-  onCertificateDeleted 
+  onCertificateDeleted,
+  onRefreshData // Add this prop
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  }
+  const [message, setMessage] = useState(''); // Add this for refresh messages
+  
   // Dashboard stats
   const [dashboardStats, setDashboardStats] = useState({
     totalCertificates: 0,
@@ -39,6 +42,7 @@ const CertificatesWithDashboard = ({
   });
   
   const [certificateFile, setCertificateFile] = useState(null);
+  const [renewingCert, setRenewingCert] = useState(null); // MOVED INSIDE COMPONENT
 
   // Filters
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
@@ -125,50 +129,30 @@ const CertificatesWithDashboard = ({
   }, [formData.certificateType, formData.issueDate, certificateTypes]);
   
   
-      const calculateDashboardStats = () => {
-      try {
-        const today = new Date();
-        const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
-    
-        const totalCertificates = certificates.length;
-    
-        let activeCertificates = 0;
-        let expired = 0;
-        let expiringSoon = 0;
-    
-        certificates.forEach(cert => {
-          const expiryDate = new Date(cert.expirationDate);
-          if (isNaN(expiryDate.getTime())) return;
-    
-          if (expiryDate < today) {
-            expired++;
-          } else {
-            activeCertificates++;
-            if (expiryDate <= thirtyDaysFromNow) {
-              expiringSoon++;
-            }
+  const calculateDashboardStats = () => {
+    try {
+      const today = new Date();
+      const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+  
+      const totalCertificates = certificates.length;
+  
+      let activeCertificates = 0;
+      let expired = 0;
+      let expiringSoon = 0;
+  
+      certificates.forEach(cert => {
+        const expiryDate = new Date(cert.expirationDate);
+        if (isNaN(expiryDate.getTime())) return;
+  
+        if (expiryDate < today) {
+          expired++;
+        } else {
+          activeCertificates++;
+          if (expiryDate <= thirtyDaysFromNow) {
+            expiringSoon++;
           }
-        });
-    
-        return {
-          totalCertificates,
-          activeCertificates,
-          expired,
-          expiringSoon,
-        };
-      } catch (error) {
-        console.error('Error calculating dashboard stats:', error);
-        return {
-          totalCertificates: 0,
-          activeCertificates: 0,
-          expired: 0,
-          expiringSoon: 0,
-        };
-      }
-    };
-
-      
-      const expired = certificates.filter(cert => cert.status === 'Expired').length;
+        }
+      });
       
       // Employee stats (only active employees)
       const totalEmployees = activeEmployees.length;
@@ -191,7 +175,10 @@ const CertificatesWithDashboard = ({
       const positionStats = [];
       positions.forEach(position => {
         const positionCerts = certificates.filter(cert => cert.position === position._id);
-        const activeCerts = positionCerts.filter(cert => cert.status === 'Active');
+        const activeCerts = positionCerts.filter(cert => {
+          const expiryDate = new Date(cert.expirationDate);
+          return expiryDate >= today;
+        });
         const employeesInPosition = activeEmployees.filter(emp => 
           emp.positions?.some(pos => 
             (typeof pos === 'object' ? pos._id : pos) === position._id
@@ -241,7 +228,7 @@ const CertificatesWithDashboard = ({
             const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
             return {
               employee: cert.staffMember,
-              certificate: cert.certificateType || cert.certificateName,
+              certificate: cert.certificateName || cert.certificateType || cert.certType,
               expiryDate: cert.expirationDate,
               daysLeft: daysLeft > 0 ? daysLeft : 0
             };
@@ -252,7 +239,10 @@ const CertificatesWithDashboard = ({
         .filter(Boolean);
       
       setUrgentActions(urgent);
-       
+    } catch (error) {
+      console.error('Error calculating dashboard stats:', error);
+    }
+  };
   
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -270,153 +260,181 @@ const CertificatesWithDashboard = ({
       }));
     }
   };
-  
-  
-  // Replace your existing handleSubmit function with this updated version:
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  console.log('Form submitted with file:', certificateFile);
-  // Validate form
-  if (!formData.staffMember || !formData.position || !formData.certificateType || !formData.issueDate) {
-    setError('Please fill in all required fields');
-    return;
-  }
-  
-  setLoading(true);
-  setError('');
-  setSuccess('');
-  
-  try {
-    // Get employee name from ID
-    const employee = employees.find(emp => emp._id === formData.staffMember);
-    if (!employee) {
-      throw new Error('Employee not found');
+  // Handle delete certificate
+  const handleDelete = async (certId) => {
+    if (!window.confirm('Are you sure you want to delete this certificate?')) {
+      return;
     }
-    
-    // Get certificate type name from ID
-    const certType = certificateTypes.find(cert => cert._id === formData.certificateType);
-    if (!certType) {
-      throw new Error('Certificate type not found');
-    }
-    
-    // Step 1: Upload file to OneDrive if provided
-    let onedriveFileId = null;
-    let onedriveFilePath = null;
-    
-    if (certificateFile) {
-      console.log('Attempting to upload file:', certificateFile.name); 
-      try {
-        // Create FormData for file upload
-        const fileFormData = new FormData();
-        fileFormData.append('file', certificateFile);
-        fileFormData.append('employeeName', employee.name);
-        fileFormData.append('certificateType', certType.name);
-        fileFormData.append('issueDate', formData.issueDate);
 
-        // Upload file to OneDrive
-        const fileUploadResponse = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload-image', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}` // Your existing app token
-          },
-          body: fileFormData
-        });
-
-        if (!fileUploadResponse.ok) {
-          const fileError = await fileUploadResponse.json();
-          throw new Error(fileError.message || 'Failed to upload certificate file');
+    try {
+      const response = await fetch(`https://training-cert-tracker.onrender.com/api/certificates/${certId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
+      });
 
-        const fileUploadResult = await fileUploadResponse.json();
-        onedriveFileId = fileUploadResult.fileId;
-        onedriveFilePath = fileUploadResult.filePath;
-        
-        console.log('File uploaded successfully:', { onedriveFileId, onedriveFilePath });
-        console.log('File upload response:', fileUploadResult);
-      } catch (fileError) {
-        console.error('File upload error:', fileError);
-        // Continue without file - don't fail the entire certificate creation
-        setError(`Warning: Certificate will be created but file upload failed: ${fileError.message}`);
+      if (!response.ok) {
+        throw new Error('Failed to delete certificate');
       }
+
+      setSuccess('Certificate deleted successfully');
+      
+      if (onCertificateDeleted) {
+        onCertificateDeleted(certId);
+      }
+      
+      if (onRefreshData) {
+        await onRefreshData();
+      }
+    } catch (err) {
+      setError(err.message || 'Error deleting certificate');
+    }
+  };
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log('Form submitted with file:', certificateFile);
+    
+    // Validate form
+    if (!formData.staffMember || !formData.position || !formData.certificateType || !formData.issueDate) {
+      setError('Please fill in all required fields');
+      return;
     }
     
-    // Step 2: Create certificate record (with or without OneDrive file)
-    const certificateData = {
-      staffMember: employee.name,
-      position: formData.position,
-      certificateType: certType.name,
-      issueDate: formData.issueDate,
-      expirationDate: formData.expirationDate,
-      // Add OneDrive fields (will be null if no file was uploaded)
-      onedriveFileId: onedriveFileId,
-      onedriveFilePath: onedriveFilePath
-    };
+    setLoading(true);
+    setError('');
+    setSuccess('');
     
-    // Submit to your existing API
-    const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(certificateData),
-    });
-    
-    if (!response.ok) {
+    try {
+      // Get employee name from ID
+      const employee = employees.find(emp => emp._id === formData.staffMember);
+      if (!employee) {
+        throw new Error('Employee not found');
+      }
+      
+      // Get certificate type name from ID
+      const certType = certificateTypes.find(cert => cert._id === formData.certificateType);
+      if (!certType) {
+        throw new Error('Certificate type not found');
+      }
+      
+      // Step 1: Upload file to OneDrive if provided
+      let onedriveFileId = null;
+      let onedriveFilePath = null;
+      
+      if (certificateFile) {
+        console.log('Attempting to upload file:', certificateFile.name); 
+        try {
+          // Create FormData for file upload
+          const fileFormData = new FormData();
+          fileFormData.append('file', certificateFile);
+          fileFormData.append('employeeName', employee.name);
+          fileFormData.append('certificateType', certType.name);
+          fileFormData.append('issueDate', formData.issueDate);
+
+          // Upload file to OneDrive
+          const fileUploadResponse = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload-image', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: fileFormData
+          });
+
+          if (!fileUploadResponse.ok) {
+            const fileError = await fileUploadResponse.json();
+            throw new Error(fileError.message || 'Failed to upload certificate file');
+          }
+
+          const fileUploadResult = await fileUploadResponse.json();
+          onedriveFileId = fileUploadResult.fileId;
+          onedriveFilePath = fileUploadResult.filePath;
+          
+          console.log('File uploaded successfully:', { onedriveFileId, onedriveFilePath });
+        } catch (fileError) {
+          console.error('File upload error:', fileError);
+          // Continue without file - don't fail the entire certificate creation
+          setError(`Warning: Certificate will be created but file upload failed: ${fileError.message}`);
+        }
+      }
+      
+      // Step 2: Create certificate record (with or without OneDrive file)
+      const certificateData = {
+        staffMember: employee.name,
+        position: formData.position,
+        certificateType: certType.name,
+        issueDate: formData.issueDate,
+        expirationDate: formData.expirationDate,
+        // Add OneDrive fields (will be null if no file was uploaded)
+        onedriveFileId: onedriveFileId,
+        onedriveFilePath: onedriveFilePath
+      };
+      
+      // Submit to your existing API
+      const response = await fetch('https://training-cert-tracker.onrender.com/api/certificates/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(certificateData),
+      });
+      
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.message || 'Failed to add certificate');
+      }
+      
       const result = await response.json();
-      throw new Error(result.message || 'Failed to add certificate');
+      
+      // Success message
+      const successMsg = certificateFile 
+        ? 'Certificate and image added successfully!' 
+        : 'Certificate added successfully!';
+      setSuccess(successMsg);
+      
+      // Reset form
+      resetForm();
+      setCertificateFile(null);
+      
+      // Reset file input element
+      const fileInput = document.getElementById('certificateFile');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
+      // Notify parent component
+      if (onCertificateAdded) {
+        onCertificateAdded(result);
+      }
+      
+    } catch (err) {
+      setError(err.message || 'Error adding certificate');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      staffMember: '',
+      position: '',
+      certificateType: '',
+      issueDate: new Date().toISOString().split('T')[0],
+      expirationDate: ''
+    });
+    setCertificateFile(null);
+    setError('');
+    setSuccess('');
     
-    const result = await response.json();
-    
-    // Success message
-    const successMsg = certificateFile 
-      ? 'Certificate and image added successfully!' 
-      : 'Certificate added successfully!';
-    setSuccess(successMsg);
-    
-    // Reset form
-    resetForm();
-    setCertificateFile(null); // Reset file selection
-    
-    // Reset file input element
+    // Reset file input
     const fileInput = document.getElementById('certificateFile');
     if (fileInput) {
       fileInput.value = '';
     }
-    
-    // Notify parent component
-    if (onCertificateAdded) {
-      onCertificateAdded(result);
-    }
-    
-  } catch (err) {
-    setError(err.message || 'Error adding certificate');
-  } finally {
-    setLoading(false);
-  }
-};
-
-// You'll also need to update your resetForm function to include the file:
-const resetForm = () => {
-  setFormData({
-    staffMember: '',
-    position: '',
-    certificateType: '',
-    issueDate: new Date().toISOString().split('T')[0],
-    expirationDate: ''
-  });
-  setCertificateFile(null); // Add this line
-  setError('');
-  setSuccess('');
-  
-  // Reset file input
-  const fileInput = document.getElementById('certificateFile');
-  if (fileInput) {
-    fileInput.value = '';
-  }
-};
+  };
   
   // Get position title from ID or fallback to matching by title string
   const getPositionTitle = (positionId) => {
@@ -450,7 +468,7 @@ const resetForm = () => {
     return certificates
       .filter(cert =>
         (!selectedFilterEmployee || cert.staffMember === selectedFilterEmployee) &&
-        (!selectedFilterCertType || (cert.certificateName || cert.certificateType) === selectedFilterCertType) &&
+        (!selectedFilterCertType || (cert.certificateName || cert.certificateType || cert.certType) === selectedFilterCertType) &&
         (!selectedFilterPosition || cert.position === selectedFilterPosition)
       )
       .sort((a, b) => {
@@ -575,6 +593,7 @@ const resetForm = () => {
         {loading && <div className="loading-indicator">Processing...</div>}
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
+        {message && <div className="success-message">{message}</div>}
         
         <form onSubmit={handleSubmit} className="certificate-form">
           <div className="form-row">
@@ -681,7 +700,7 @@ const resetForm = () => {
               </div>
             </div>
 
-             <div className="form-group">
+            <div className="form-group">
               <label htmlFor="certificateFile">Certificate Image (Optional):</label>
               <input
                 type="file"
@@ -692,32 +711,33 @@ const resetForm = () => {
                 className="file-input"
               />
               <div className="helper-text">
-                 Upload an image or PDF of the certificate (max 10MB)
+                Upload an image or PDF of the certificate (max 10MB)
+              </div>
+              {certificateFile && (
+                <div className="file-selected">
+                  Selected: {certificateFile.name}
+                </div>
+              )}
             </div>
-            {certificateFile && (
-              <div className="file-selected">
-                Selected: {certificateFile.name}
-              </div>
-            )}
           </div>
+          
           <div className="form-group">
-              <div className="form-actions">
-                <button
-                  type="submit"
-                  className="submit-btn"
-                  disabled={loading}
-                >
-                  {loading ? 'Adding...' : 'Add Certificate'}
-                </button>
-                <button
-                  type="button"
-                  className="reset-btn"
-                  onClick={resetForm}
-                  disabled={loading}
-                >
-                  Reset
-                </button>
-              </div>
+            <div className="form-actions">
+              <button
+                type="submit"
+                className="submit-btn"
+                disabled={loading}
+              >
+                {loading ? 'Adding...' : 'Add Certificate'}
+              </button>
+              <button
+                type="button"
+                className="reset-btn"
+                onClick={resetForm}
+                disabled={loading}
+              >
+                Reset
+              </button>
             </div>
           </div>
         </form>
@@ -733,7 +753,8 @@ const resetForm = () => {
               onClick={async () => {
                 if (onRefreshData) {
                   await onRefreshData();
-                  setMessage && setMessage('Data refreshed successfully');
+                  setMessage('Data refreshed successfully');
+                  setTimeout(() => setMessage(''), 3000);
                 }
               }}
               className="refresh-btn"
@@ -822,6 +843,7 @@ const resetForm = () => {
                 <th>Issue Date</th>
                 <th>Expiration Date</th>
                 <th>Status</th>
+                <th>Actions</th> {/* NEW COLUMN */}
               </tr>
             </thead>
             <tbody>
@@ -854,13 +876,29 @@ const resetForm = () => {
                       {isArchived && <span className="archived-badge">Archived</span>}
                     </td>
                     <td>{getPositionTitle(cert.position)}</td>
-                    <td>{cert.certificateName || cert.certificateType}</td>
+                    <td>{cert.certificateName || cert.certificateType || cert.certType}</td>
                     <td>{formatDate(cert.issueDate)}</td>
                     <td>{formatDate(cert.expirationDate)}</td>
                     <td>
                       <span className={`status-badge ${statusClass.replace('status-', '')}`}>
                         {cert.status}
                       </span>
+                    </td>
+                    <td className="actions-cell"> {/* NEW ACTIONS CELL */}
+                      <button
+                        onClick={() => setRenewingCert(cert)}
+                        className="renew-btn"
+                        title="Renew this certificate"
+                      >
+                        🔄 Renew
+                      </button>
+                      <button
+                        onClick={() => handleDelete(cert._id)}
+                        className="delete-btn"
+                        title="Delete this certificate"
+                      >
+                        🗑️ Delete
+                      </button>
                     </td>
                   </tr>
                 );
@@ -869,6 +907,24 @@ const resetForm = () => {
           </table>
         </div>
       </div>
+
+      {/* Renewal Modal */}
+      {renewingCert && (
+        <RenewalModal
+          certificate={renewingCert}
+          token={token}
+          certificateTypes={certificateTypes}
+          onClose={() => setRenewingCert(null)}
+          onSuccess={async () => {
+            setRenewingCert(null);
+            setSuccess('Certificate renewed successfully!');
+            setTimeout(() => setSuccess(''), 3000);
+            if (onRefreshData) {
+              await onRefreshData();
+            }
+          }}
+        />
+      )}
       
       <style jsx>{`
         .certificates-with-dashboard {
@@ -1019,7 +1075,8 @@ const resetForm = () => {
           font-size: 1.1rem;
           font-weight: 600;
         }
-          .file-input {
+          
+        .file-input {
           padding: 8px 0;
           border: 2px dashed #cbd5e0;
           border-radius: 4px;
@@ -1190,8 +1247,7 @@ const resetForm = () => {
           gap: 10px;
           justify-content: flex-start;
           align-items: center;
-          height: 100%;
-          padding-top: 25px;
+          padding-top: 10px;
         }
         
         .submit-btn {
@@ -1274,6 +1330,29 @@ const resetForm = () => {
           margin: 0;
           font-size: 1.25rem;
           font-weight: 600;
+        }
+        
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          flex-wrap: wrap;
+        }
+
+        .refresh-btn {
+          background-color: #10b981;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          padding: 8px 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          white-space: nowrap;
+        }
+
+        .refresh-btn:hover {
+          background-color: #059669;
         }
         
         .filter-controls {
@@ -1405,6 +1484,44 @@ const resetForm = () => {
           background-color: #fed7d7;
           color: #c53030;
         }
+
+        /* Action Buttons in Table */
+        .actions-cell {
+          white-space: nowrap;
+        }
+
+        .renew-btn {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.85rem;
+          margin-right: 8px;
+          transition: all 0.2s;
+        }
+
+        .renew-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .delete-btn {
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.85rem;
+          transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
         
         /* Responsive Design */
         @media (max-width: 1024px) {
@@ -1441,6 +1558,17 @@ const resetForm = () => {
           .table-header {
             flex-direction: column;
             align-items: flex-start;
+          }
+
+          .header-actions {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+          }
+          
+          .refresh-btn {
+            width: 100%;
+            text-align: center;
           }
           
           .filter-controls {
@@ -1488,45 +1616,9 @@ const resetForm = () => {
             width: 100%;
           }
         }
-                    
-          .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-          }
-
-          .refresh-btn {
-            background-color: #10b981;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            white-space: nowrap;
-          }
-
-          .refresh-btn:hover {
-            background-color: #059669;
-          }
-
-          @media (max-width: 768px) {
-            .header-actions {
-              flex-direction: column;
-              align-items: flex-start;
-              gap: 10px;
-            }
-            
-            .refresh-btn {
-              width: 100%;
-              text-align: center;
-            }
-          }
       `}</style>
     </div>
   );
-
+};
 
 export default CertificatesWithDashboard;
