@@ -179,7 +179,7 @@ router.post(
       if (!USE_ONEDRIVE) {
         // ✅ Store file in MongoDB GridFS
         try {
-          const bucket = getGridFSBucket();
+          const bucket = await getGridFSBucket();
           const readable = Readable.from(file.buffer);
           const filename = file.originalname || `certificate_${Date.now()}`;
 
