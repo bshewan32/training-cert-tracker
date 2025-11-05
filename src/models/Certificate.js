@@ -34,12 +34,7 @@ const CertificateSchema = new mongoose.Schema({
   },
 
   // ---- OneDrive (legacy/optional) ----
-  onedriveFileId: {
-    type: String,
-    default: null,
-    index: true,
-    sparse: true,
-  },
+  onedriveFileId: { type: String, default: null },
   onedriveFilePath: {
     type: String,
     default: null,
@@ -47,12 +42,7 @@ const CertificateSchema = new mongoose.Schema({
   },
 
   // ---- GridFS (preferred) ----
-  gridFsFileId: {
-    type: mongoose.Schema.Types.ObjectId,
-    default: null,
-    index: true,
-    sparse: true,
-  },
+  gridFsFileId: { type: mongoose.Schema.Types.ObjectId, default: null },
   gridFsFilename: {
     type: String,
     default: null,
