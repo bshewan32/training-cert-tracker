@@ -156,7 +156,7 @@ router.get("/auth/redirect", authenticateToken, async (req, res) => {
 });
 // ---------- YOUR EXISTING ROUTES ----------
 
-// POST new certificate (unchanged)
+// POST new certificate
 router.post("/upload", authenticateToken, async (req, res) => {
   try {
     const certificate = new Certificate({
@@ -166,8 +166,12 @@ router.post("/upload", authenticateToken, async (req, res) => {
       issueDate: req.body.issueDate,
       expirationDate: req.body.expirationDate,
       documentPath: req.body.documentPath || "pending",
+      // Support both GridFS and OneDrive storage
+      gridFsFileId: req.body.gridFsFileId || null,
+      gridFsFilename: req.body.gridFsFilename || null,
       onedriveFileId: req.body.onedriveFileId || null,
       onedriveFilePath: req.body.onedriveFilePath || null,
+      originalFileName: req.body.originalFileName || null,
     });
     const saved = await certificate.save();
     res.status(201).json(saved);

@@ -278,11 +278,12 @@ const CertificatesWithDashboard = ({
     }
 
     try {
-      let onedriveFileId = null;
-      let onedriveFilePath = null;
-      
+      let gridFsFileId = null;
+      let gridFsFilename = null;
+      let originalFileName = null;
+
       if (certificateFile) {
-        console.log('Uploading file to OneDrive...');
+        console.log('Uploading file...');
         try {
           const fileFormData = new FormData();
           fileFormData.append('file', certificateFile);
@@ -304,10 +305,12 @@ const CertificatesWithDashboard = ({
           }
 
           const fileUploadResult = await fileUploadResponse.json();
-          onedriveFileId = fileUploadResult.fileId;
-          onedriveFilePath = fileUploadResult.filePath;
-          
-          console.log('File uploaded successfully:', { onedriveFileId, onedriveFilePath });
+          // GridFS returns fileId and filePath
+          gridFsFileId = fileUploadResult.fileId;
+          gridFsFilename = fileUploadResult.filePath;
+          originalFileName = certificateFile.name;
+
+          console.log('File uploaded successfully:', { gridFsFileId, gridFsFilename });
         } catch (fileError) {
           console.error('File upload error:', fileError);
           setError(`Warning: Certificate will be created but file upload failed: ${fileError.message}`);
@@ -320,8 +323,9 @@ const CertificatesWithDashboard = ({
         certificateType: certType.name,
         issueDate: issueDate,
         expirationDate: expiryDate,
-        onedriveFileId: onedriveFileId,
-        onedriveFilePath: onedriveFilePath
+        gridFsFileId: gridFsFileId,
+        gridFsFilename: gridFsFilename,
+        originalFileName: originalFileName
       };
 
       console.log('Creating certificate with data:', certificateData);
