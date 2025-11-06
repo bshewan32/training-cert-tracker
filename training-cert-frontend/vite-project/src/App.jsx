@@ -12,6 +12,8 @@ import EmployeeForm from './components/EmployeeForm';
 import EmployeePositionsDashboard from './components/EmployeePositionsDashboard';
 import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard';
 import CertificatesWithDashboard from './components/CertificatesWithDashboard';
+import EmployeeSelfService from './components/EmployeeSelfService';
+
 
 function App() {
   const [selectedFilterEmployee, setSelectedFilterEmployee] = useState('');
@@ -61,11 +63,15 @@ function App() {
     const storedIsAdmin = localStorage.getItem('isAdmin') === 'true';
 
     if (storedToken) {
-      setToken(storedToken);
-      setIsAdmin(storedIsAdmin);
-      // Set initial view - always start with certificates for simplicity
-      setView('certificates');
+    setToken(storedToken);
+    setIsAdmin(storedIsAdmin);
+    // Route based on user type
+    if (storedIsAdmin) {
+      setView('certificates');  // Admins see full dashboard
+    } else {
+      setView('employeeSelfService');  // Employees see mobile view
     }
+  }
   }, []);
 
   // Modified handleBulkUpload - This will be handled by the new component
@@ -112,7 +118,11 @@ function App() {
       setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} successful!`);
 
       // Always go to certificates view for simplicity
-      setView('certificates');
+      if (result.isAdmin) {
+        setView('certificates');  // Admins see full dashboard
+      } else {
+        setView('employeeSelfService');  // Employees see mobile view
+      }
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message);
@@ -479,6 +489,13 @@ function App() {
           </form>
         )}
 
+      {/* Employee Self-Service View */}
+    {view === 'employeeSelfService' && (
+        <EmployeeSelfService 
+          token={token}
+          onLogout={handleLogout}
+        />
+      )}
         
         {/* Main Certificates View - Enhanced with Dashboard */}
     {view === 'certificates' && (
