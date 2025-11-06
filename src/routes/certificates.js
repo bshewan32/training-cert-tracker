@@ -474,7 +474,7 @@ router.get('/:id/image', authenticateToken, async (req, res) => {
       const bucket = await getGridFSBucket();
       const { ObjectId } = mongoose.Types;
       // Try to get file doc to set Content-Type properly
-      const files = await bucket.find({ _id: ObjectId(cert.gridFsFileId) }).toArray();
+      const files = await bucket.find({ _id: new ObjectId(cert.gridFsFileId) }).toArray();
 
       if (!files.length) return res.status(404).json({ message: 'File not found' });
 
