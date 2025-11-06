@@ -18,6 +18,10 @@ async function getGridFSBucket() {
   }
 
   if (!gridfsBucket) {
+    // Ensure we have a valid db connection
+    if (!mongoose.connection.db) {
+      throw new Error('MongoDB connection database not available');
+    }
     // Create a GridFS bucket using mongoose's underlying MongoDB connection
     gridfsBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
       bucketName: 'certfiles', // Specify your bucket name here
@@ -32,12 +36,19 @@ async function getGridFSBucket() {
 // ---------- MSAL CONFIG (delegated flow) ----------
 const msalConfig = {
   auth: {
-    clientId: process.env.AZURE_CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}`,
-    clientSecret: process.env.AZURE_CLIENT_SECRET, // confidential web app
+    clientId: process.env.AZURE_CLIENT_ID || 'placeholder',
+    authority: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID || 'common'}`,
+    clientSecret: process.env.AZURE_CLIENT_SECRET || 'placeholder', // confidential web app
   },
 };
-const cca = new msal.ConfidentialClientApplication(msalConfig);
+
+let cca;
+try {
+  cca = new msal.ConfidentialClientApplication(msalConfig);
+} catch (err) {
+  console.warn('MSAL initialization failed (OneDrive features will be unavailable):', err.message);
+  cca = null;
+}
 
 // Helper: build Graph client with a USER access token
 const getGraphClient = (userAccessToken) => {
@@ -48,6 +59,12 @@ const getGraphClient = (userAccessToken) => {
 
 // Helper: get a fresh user access token for this app user (uses Mongo-stored refresh token)
 async function getUserAccessToken(appUserId) {
+  if (!cca) {
+    const err = new Error("Microsoft authentication not configured");
+    err.status = 503;
+    throw err;
+  }
+
   const tokenDoc = await UserToken.findOne({ userId: appUserId });
   if (!tokenDoc) {
     const err = new Error(
@@ -86,6 +103,9 @@ async function getUserAccessToken(appUserId) {
 //
 
 router.get("/auth/login", async (req, res) => {
+  if (!cca) {
+    return res.status(503).send("Microsoft authentication not configured");
+  }
   const authUrl = await cca.getAuthCodeUrl({
     scopes: ["Files.ReadWrite.All", "offline_access"],
     redirectUri: process.env.AZURE_REDIRECT_URI,
@@ -96,6 +116,9 @@ router.get("/auth/login", async (req, res) => {
 // Step 2: MS redirects here; exchange code for tokens and persist refresh token
 router.get("/auth/redirect", authenticateToken, async (req, res) => {
   try {
+    if (!cca) {
+      return res.status(503).send("Microsoft authentication not configured");
+    }
     const tokenResponse = await cca.acquireTokenByCode({
       code: req.query.code,
       scopes: ["Files.ReadWrite.All", "offline_access"],
