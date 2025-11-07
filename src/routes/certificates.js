@@ -305,6 +305,70 @@ router.post(
   }
 );
 
+// ADD THIS ROUTE TO YOUR src/routes/certificates.js FILE
+// Add it after the /upload-image route (around line 240)
+
+// Upload/Update image for existing certificate
+router.put("/:id/upload-image", authenticateToken, upload.single("file"), async (req, res) => {
+  try {
+    const cert = await Certificate.findById(req.params.id);
+    if (!cert) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ message: "No file provided" });
+    }
+
+    // Upload to GridFS (same logic as the main upload-image endpoint)
+    const bucket = await getGridFSBucket();
+    const readable = Readable.from(file.buffer);
+    const filename = file.originalname || `certificate_${Date.now()}`;
+
+    const uploadStream = bucket.openUploadStream(filename, {
+      contentType: file.mimetype,
+      metadata: {
+        certificateId: cert._id.toString(),
+        uploadedBy: req.user?.id || null,
+        uploadedAt: new Date(),
+      },
+    });
+
+    // Wait for upload to complete
+    await new Promise((resolve, reject) => {
+      readable
+        .pipe(uploadStream)
+        .on('error', reject)
+        .on('finish', resolve);
+    });
+
+    // Update certificate with new image (replaces old one)
+    cert.gridFsFileId = uploadStream.id;
+    cert.gridFsFilename = filename;
+    cert.originalFileName = filename;
+    cert.fileMetadata = {
+      size: file.size,
+      mimeType: file.mimetype,
+      uploadedAt: new Date()
+    };
+    cert.updatedAt = new Date();
+
+    await cert.save();
+
+    res.json({
+      message: "Image uploaded successfully",
+      certificate: cert
+    });
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    res.status(500).json({
+      message: "Failed to upload image",
+      error: error.message
+    });
+  }
+});
+
 // RENEW/UPDATE an existing certificate
 router.post("/:id/renew", authenticateToken, upload.single("file"), async (req, res) => {
   try {

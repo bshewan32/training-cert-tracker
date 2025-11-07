@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import RenewalModal from './RenewalModal';
+import UploadImageModal from './UploadImageModal';
 
 const CertificatesWithDashboard = ({
   token,
@@ -37,6 +38,9 @@ const CertificatesWithDashboard = ({
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [renewingCert, setRenewingCert] = useState(null); // NEW: For renewal modal
+  const [uploadingCert, setUploadingCert] = useState(null); // For upload image modal
+
+  
 
   useEffect(() => {
     calculateDashboardStats();
@@ -800,18 +804,32 @@ const CertificatesWithDashboard = ({
                         {cert.status}
                       </span>
                     </td>
-                                    <td>
-                      {(cert.gridFsFileId || cert.onedriveFileId) ? (
-                        <button
-                          className="view-image-btn"
-                          onClick={() => handleViewImage(cert._id)}
-                        >
-                          📎 View
-                        </button>
-                      ) : (
-                        <span className="no-image">No Image</span>
-                      )}
-                    </td>
+                      <td className="image-actions-cell">
+                        {(cert.gridFsFileId || cert.onedriveFileId) ? (
+                          <>
+                            <button
+                              className="view-image-btn"
+                              onClick={() => handleViewImage(cert._id)}
+                            >
+                              📎 View
+                            </button>
+                            <button
+                              className="update-image-btn"
+                              onClick={() => setUploadingCert(cert)}
+                              title="Update image"
+                            >
+                              🔄
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            className="add-image-btn"
+                            onClick={() => setUploadingCert(cert)}
+                          >
+                            📎 Add Image
+                          </button>
+                        )}
+                      </td>
                                     <td className="actions-cell">
                       <button
                         onClick={() => setRenewingCert(cert)}
@@ -835,6 +853,23 @@ const CertificatesWithDashboard = ({
           </table>
         </div>
       </div>
+
+      {/* Upload Image Modal */}
+      {uploadingCert && (
+        <UploadImageModal
+          certificate={uploadingCert}
+          token={token}
+          onClose={() => setUploadingCert(null)}
+          onSuccess={async (message) => {
+            setUploadingCert(null);
+            setMessage(message);
+            setTimeout(() => setMessage(''), 3000);
+            if (onRefreshData) {
+              await onRefreshData();
+            }
+          }}
+        />
+      )}
 
       {/* Renewal Modal */}
       {renewingCert && (
@@ -1458,6 +1493,47 @@ const CertificatesWithDashboard = ({
             width: 100%;
           }
         }
+          
+        .image-actions-cell {
+          white-space: nowrap;
+        }
+
+        .update-image-btn {
+          background: #f59e0b;
+          color: white;
+          border: none;
+          padding: 4px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          margin-left: 4px;
+          transition: all 0.2s;
+        }
+
+        .update-image-btn:hover {
+          background: #d97706;
+          transform: scale(1.05);
+        }
+
+        .add-image-btn {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          border: none;
+          padding: 4px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+
+        .add-image-btn:hover {
+          transform: scale(1.05);
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+
+
       `}</style>
     </div>
   );
