@@ -1,0 +1,65 @@
+# render.yaml - Render Configuration for Cron Jobs
+# Place this in the ROOT of your backend repository
+
+services:
+  # Your existing web service
+  - type: web
+    name: training-cert-tracker
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: FRONTEND_URL
+        value: https://training-cert-tracker.vercel.app
+      - key: CRON_SECRET
+        generateValue: true  # Render will auto-generate a secret
+
+  # Daily Cron Job - Runs every day at 9 AM
+  - type: cron
+    name: daily-cert-notifications
+    env: node
+    schedule: "0 9 * * *"  # 9 AM UTC every day
+    buildCommand: npm install
+    startCommand: curl -H "x-cron-secret:$CRON_SECRET" https://training-cert-tracker.onrender.com/api/notifications/cron
+
+  # Monthly Cron Job - Runs on the 1st of every month at 8 AM
+  # (Uncomment if you want monthly instead of daily)
+  # - type: cron
+  #   name: monthly-cert-notifications
+  #   env: node
+  #   schedule: "0 8 1 * *"  # 8 AM UTC on the 1st of each month
+  #   buildCommand: npm install
+  #   startCommand: curl -H "x-cron-secret:$CRON_SECRET" https://training-cert-tracker.onrender.com/api/notifications/cron
+
+
+# CRON SCHEDULE FORMAT:
+# ┌───────────── minute (0 - 59)
+# │ ┌───────────── hour (0 - 23)
+# │ │ ┌───────────── day of month (1 - 31)
+# │ │ │ ┌───────────── month (1 - 12)
+# │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
+# │ │ │ │ │
+# * * * * *
+
+# EXAMPLES:
+# "0 9 * * *"      - Every day at 9 AM UTC
+# "0 9 * * 1"      - Every Monday at 9 AM UTC
+# "0 8 1 * *"      - 1st of every month at 8 AM UTC
+# "0 9 1,15 * *"   - 1st and 15th of month at 9 AM UTC
+# "0 */6 * * *"    - Every 6 hours
+
+# IMPORTANT NOTES:
+# 1. Times are in UTC. If you're in EST (-5 hours), 9 AM UTC = 4 AM EST
+# 2. Make sure your CRON_SECRET matches in both services
+# 3. You can have multiple cron jobs for different schedules
+# 4. Free tier on Render allows cron jobs but they sleep after 15 mins of inactivity
