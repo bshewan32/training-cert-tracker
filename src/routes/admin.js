@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Certificate = require('../models/Certificate');
 const User = require('../models/User');
-const { sendExpirationReminder, sendBatchSummary } = require('../utils/emailService');
+const { sendExpirationReminder, sendBatchSummary } = require('../utils/emailService.js');
 
 // Send reminder for a single certificate (manual trigger)
 router.post('/send-reminder/:certificateId', async (req, res) => {
