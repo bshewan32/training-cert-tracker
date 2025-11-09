@@ -1,8 +1,41 @@
 // routes/notifications.js
+// STANDALONE VERSION - No external middleware dependencies
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 const { sendExpirationNotifications, findCertificatesExpiringSoon } = require('../services/emailService');
+
+// ===== INLINE AUTH MIDDLEWARE (No external dependencies needed) =====
+const authenticateToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(403).json({ message: 'Invalid or expired token' });
+  }
+};
+
+const requireAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: 'Error verifying admin status' });
+  }
+};
+// ===== END INLINE AUTH =====
 
 // Manual trigger - Admin can click button to send notifications
 // POST /api/notifications/send
@@ -64,8 +97,6 @@ router.get('/preview', authenticateToken, requireAdmin, async (req, res) => {
 
 // Cron job endpoint - Called by Render Cron Job
 // GET /api/notifications/cron
-// This endpoint doesn't require auth since it's called by Render's cron service
-// But you should set a CRON_SECRET in your environment variables for security
 router.get('/cron', async (req, res) => {
   try {
     // Optional: Add secret key verification for security
