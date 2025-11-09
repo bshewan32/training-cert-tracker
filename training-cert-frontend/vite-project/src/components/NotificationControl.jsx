@@ -16,16 +16,42 @@ const NotificationControl = ({ token }) => {
     setLoading(true);
     setResult(null);
     try {
-      const response = await fetch(`/api/notifications/preview?days=${daysThreshold}`, {
+      // Using certificates endpoint to get expiring certs
+      const response = await fetch(`/api/certificates`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
-      if (!response.ok) throw new Error('Failed to get preview');
-      
-      const data = await response.json();
-      setPreview(data);
+
+      if (!response.ok) throw new Error('Failed to get certificates');
+
+      const allCerts = await response.json();
+
+      // Filter to expiring certificates
+      const now = new Date();
+      const threshold = new Date(now.getTime() + daysThreshold * 24 * 60 * 60 * 1000);
+
+      const expiringCerts = allCerts.filter(cert => {
+        const expiry = new Date(cert.expirationDate);
+        const isActive = cert.status === 'ACTIVE' || cert.status === 'Active';
+        return isActive && expiry > now && expiry <= threshold;
+      });
+
+      // Format for preview
+      const previewData = {
+        success: true,
+        count: expiringCerts.length,
+        daysThreshold,
+        certificates: expiringCerts.map(cert => ({
+          id: cert._id,
+          staffMember: cert.staffMember,
+          certType: cert.certType || cert.certificateName || cert.certificateType,
+          expirationDate: cert.expirationDate,
+          daysUntilExpiry: Math.ceil((new Date(cert.expirationDate) - now) / (1000 * 60 * 60 * 24))
+        }))
+      };
+
+      setPreview(previewData);
       setShowPreview(true);
     } catch (error) {
       alert('Error getting preview: ' + error.message);
@@ -36,58 +62,40 @@ const NotificationControl = ({ token }) => {
 
   // Send notifications to all expiring certificates
   const handleSendNotifications = async () => {
-    if (!confirm(`Send email notifications to ${preview?.count || 'all'} employees with expiring certificates?`)) {
+    if (!confirm(`Send email notifications to ${preview?.count || 'all'} employees with expiring certificates?\n\nNote: Make sure you have configured EMAIL_USER, EMAIL_PASSWORD, and SYSTEM_SECRET in your Render environment variables.`)) {
       return;
     }
 
     setLoading(true);
     setResult(null);
     try {
-      const response = await fetch('/api/notifications/send', {
+      // Using admin endpoint with system secret
+      const response = await fetch('/api/admin/send-expiration-reminders', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'X-System-Secret': prompt('Enter SYSTEM_SECRET (set in your Render environment variables):') || '',
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ daysThreshold })
+        }
       });
-      
-      if (!response.ok) throw new Error('Failed to send notifications');
-      
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to send notifications' }));
+        throw new Error(errorData.message || 'Failed to send notifications');
+      }
+
       const data = await response.json();
-      setResult(data);
+      setResult({
+        success: true,
+        stats: {
+          emailsSent: data.emailsSent || 0,
+          emailsFailed: data.emailsFailed || 0,
+          noEmailCount: data.noEmailCount || 0
+        }
+      });
       setShowPreview(false);
-      alert(`✓ Notifications sent!\n\nEmails sent: ${data.stats.emailsSent}\nFailed: ${data.stats.emailsFailed}\nNo email: ${data.stats.noEmailCount}`);
+      alert(`✓ Notifications sent!\n\nEmails sent: ${data.emailsSent}\nFailed: ${data.emailsFailed}\nNo email: ${data.noEmailCount}`);
     } catch (error) {
       alert('Error sending notifications: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Send test email
-  const handleTestEmail = async () => {
-    if (!testEmail) {
-      alert('Please enter an email address');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch('/api/notifications/test', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email: testEmail })
-      });
-      
-      if (!response.ok) throw new Error('Failed to send test email');
-      
-      alert('✓ Test email sent! Check your inbox.');
-    } catch (error) {
-      alert('Error sending test email: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -176,25 +184,21 @@ const NotificationControl = ({ token }) => {
         </div>
       )}
 
-      {/* Test Email Section */}
+      {/* Configuration Help */}
       <div style={styles.testSection}>
-        <h4 style={styles.testTitle}>🧪 Test Email Configuration</h4>
-        <div style={styles.testInputGroup}>
-          <input
-            type="email"
-            placeholder="your@email.com"
-            value={testEmail}
-            onChange={(e) => setTestEmail(e.target.value)}
-            style={styles.testInput}
-          />
-          <button 
-            onClick={handleTestEmail}
-            disabled={loading}
-            style={styles.testButton}
-          >
-            Send Test
-          </button>
-        </div>
+        <h4 style={styles.testTitle}>⚙️ Configuration Required</h4>
+        <p style={styles.helpText}>
+          To use email notifications, configure these environment variables in Render:
+        </p>
+        <ul style={styles.configList}>
+          <li><strong>EMAIL_USER</strong> - Your email address (e.g., your-email@gmail.com)</li>
+          <li><strong>EMAIL_PASSWORD</strong> - Gmail App Password (not your regular password)</li>
+          <li><strong>SYSTEM_SECRET</strong> - A random secret string for authentication</li>
+          <li><strong>FRONTEND_URL</strong> - https://training-cert-tracker.vercel.app</li>
+        </ul>
+        <p style={styles.helpText}>
+          See <strong>EMAIL_NOTIFICATION_SETUP.md</strong> for detailed setup instructions.
+        </p>
       </div>
 
       {/* Status Message */}
