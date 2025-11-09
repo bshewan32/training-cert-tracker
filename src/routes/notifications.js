@@ -1,5 +1,5 @@
 // routes/notifications.js
-// STANDALONE VERSION - No external middleware dependencies
+// STANDALONE VERSION - no middleware
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
