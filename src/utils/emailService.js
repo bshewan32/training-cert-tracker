@@ -3,16 +3,12 @@ const Employee = require('../models/Employee');
 const User = require('../models/User');
 const Certificate = require('../models/Certificate');
 
-// Create transporter using SendGrid
-// No app passwords needed - just an API key!
+// Create transporter using sendmail (local SMTP)
+// Sendmail is a local mail server that doesn't require authentication
 const transporter = nodemailer.createTransport({
-  host: 'smtp.sendgrid.net',
-  port: 587,
-  secure: false, // use TLS
-  auth: {
-    user: 'apikey', // This is literally the string 'apikey'
-    pass: process.env.SENDGRID_API_KEY // Your SendGrid API key
-  }
+  sendmail: true,
+  newline: 'unix',
+  path: '/usr/sbin/sendmail' // Default sendmail path on most Linux systems
 });
 
 // Verify transporter configuration
@@ -74,7 +70,7 @@ const sendExpirationReminder = async (certificate) => {
     const mailOptions = {
       from: {
         name: 'Certificate Tracker',
-        address: process.env.EMAIL_FROM || process.env.EMAIL_USER
+        address: process.env.EMAIL_FROM || 'noreply@localhost'
       },
       to: employeeEmail || adminEmails[0], // Primary recipient
       cc: employeeEmail ? adminEmails : adminEmails.slice(1), // CC admins if employee gets it
@@ -183,7 +179,7 @@ const sendBatchSummary = async (stats) => {
     const mailOptions = {
       from: {
         name: 'Certificate Tracker',
-        address: process.env.EMAIL_FROM || process.env.EMAIL_USER
+        address: process.env.EMAIL_FROM || 'noreply@localhost'
       },
       to: adminEmails,
       subject: `Daily Certificate Expiration Report - ${new Date().toLocaleDateString()}`,
