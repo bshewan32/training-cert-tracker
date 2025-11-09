@@ -13,6 +13,7 @@ import EmployeePositionsDashboard from './components/EmployeePositionsDashboard'
 import MultiPositionComplianceDashboard from './components/MultiPositionComplianceDashboard';
 import CertificatesWithDashboard from './components/CertificatesWithDashboard';
 import EmployeeSelfService from './components/EmployeeSelfService';
+import NotificationControl from './components/NotificationControl';
 
 
 function App() {
@@ -757,6 +758,7 @@ function App() {
                   </button>
                 </div>
               </div>
+               <NotificationControl token={token} />
 
               <div className="admin-card">
                 <div className="admin-card-icon">📊</div>
