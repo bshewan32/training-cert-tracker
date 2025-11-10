@@ -1,12 +1,10 @@
-//const nodemailer = require('nodemailer');
+// services/emailService.js
 const sgMail = require('@sendgrid/mail');
 const Employee = require('../models/Employee');
 const User = require('../models/User');
 const Certificate = require('../models/Certificate');
 
-// Create transporter using sendmail (local SMTP)
-// Sendmail is a local mail server that doesn't require authentication
-// 
+// === SendGrid setup ===
 if (!process.env.SENDGRID_API_KEY) {
   console.warn('⚠️ SENDGRID_API_KEY is not set – email sending will fail.');
 } else {
@@ -43,11 +41,13 @@ const sendExpirationReminder = async (certificate) => {
 
     // Get admin emails
     const admins = await User.find({ isAdmin: true });
-    const adminEmails = admins.map(admin => admin.email).filter(Boolean);
+    const adminEmails = admins.map((admin) => admin.email).filter(Boolean);
 
     // If no recipients, log warning and skip
     if (!employeeEmail && adminEmails.length === 0) {
-      console.warn(`No email recipients for certificate: ${certificate.staffMember} - ${certificate.certType}`);
+      console.warn(
+        `No email recipients for certificate: ${certificate.staffMember} - ${certificate.certType}`
+      );
       return false;
     }
 
@@ -57,22 +57,22 @@ const sendExpirationReminder = async (certificate) => {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
 
-    // Build recipient list for To/CC
     const fromAddress = process.env.EMAIL_FROM || 'noreply@example.com';
 
+    // Build SendGrid message
     const msg = {
       from: {
         name: 'Certificate Tracker',
         email: fromAddress,
       },
       to: employeeEmail || adminEmails[0],
-      // SendGrid accepts "cc" as an array of emails or a single email
+      // SendGrid accepts array for cc
       cc: employeeEmail ? adminEmails : adminEmails.slice(1),
       subject: `${urgency.level} PRIORITY: Certificate Expiring in ${daysLeft} Days`,
-      html: ` 
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -128,11 +128,13 @@ const sendExpirationReminder = async (certificate) => {
               <div class="action-box">
                 <h3>📋 Action Required</h3>
                 <p style="margin: 0;">
-                  ${daysLeft <= 7
-                    ? '<strong>IMMEDIATE ACTION NEEDED:</strong> This certificate expires in less than a week. Please renew immediately to maintain compliance.'
-                    : daysLeft <= 14
-                    ? '<strong>URGENT:</strong> Please schedule renewal within the next week to avoid expiration.'
-                    : 'Please plan to renew this certificate before the expiration date to maintain compliance.'}
+                  ${
+                    daysLeft <= 7
+                      ? '<strong>IMMEDIATE ACTION NEEDED:</strong> This certificate expires in less than a week. Please renew immediately to maintain compliance.'
+                      : daysLeft <= 14
+                      ? '<strong>URGENT:</strong> Please schedule renewal within the next week to avoid expiration.'
+                      : 'Please plan to renew this certificate before the expiration date to maintain compliance.'
+                  }
                 </p>
               </div>
 
@@ -150,11 +152,13 @@ const sendExpirationReminder = async (certificate) => {
           </div>
         </body>
         </html>
-      `
+      `,
     };
 
     await sgMail.send(msg);
-    console.log(`✓ Email sent for ${certificate.staffMember} - ${certificate.certType} (expires in ${daysLeft} days)`);
+    console.log(
+      `✓ Email sent for ${certificate.staffMember} - ${certificate.certType} (expires in ${daysLeft} days)`
+    );
     return true;
   } catch (error) {
     console.error('Email sending failed:', error);
@@ -166,7 +170,7 @@ const sendExpirationReminder = async (certificate) => {
 const sendBatchSummary = async (stats) => {
   try {
     const admins = await User.find({ isAdmin: true });
-    const adminEmails = admins.map(admin => admin.email).filter(Boolean);
+    const adminEmails = admins.map((admin) => admin.email).filter(Boolean);
 
     if (adminEmails.length === 0) {
       console.warn('No admin emails found for batch summary');
@@ -180,7 +184,7 @@ const sendBatchSummary = async (stats) => {
         name: 'Certificate Tracker',
         email: fromAddress,
       },
-      to: adminEmails, // array is fine
+      to: adminEmails,
       subject: `Daily Certificate Expiration Report - ${new Date().toLocaleDateString()}`,
       html: `
         <!DOCTYPE html>
@@ -204,7 +208,14 @@ const sendBatchSummary = async (stats) => {
           <div class="container">
             <div class="header">
               <h1>📊 Daily Certificate Report</h1>
-              <p style="margin: 5px 0 0 0; opacity: 0.9;">${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <p style="margin: 5px 0 0 0; opacity: 0.9;">
+                ${new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
             </div>
 
             <div class="stats">
@@ -216,12 +227,16 @@ const sendBatchSummary = async (stats) => {
                 <span class="stat-label">Emails Sent Successfully</span>
                 <span class="stat-value" style="color: #10b981;">${stats.emailsSent}</span>
               </div>
-              ${stats.emailsFailed > 0 ? `
+              ${
+                stats.emailsFailed > 0
+                  ? `
               <div class="stat-box error">
                 <span class="stat-label">Failed to Send</span>
                 <span class="stat-value" style="color: #dc2626;">${stats.emailsFailed}</span>
               </div>
-              ` : ''}
+              `
+                  : ''
+              }
               <div class="stat-box warning">
                 <span class="stat-label">No Email Address</span>
                 <span class="stat-value" style="color: #f59e0b;">${stats.noEmailCount || 0}</span>
@@ -230,12 +245,14 @@ const sendBatchSummary = async (stats) => {
 
             <div class="footer">
               <p>Automated Daily Report from Training Certificate Tracker</p>
-              <p><a href="${process.env.FRONTEND_URL || 'https://training-cert-tracker.vercel.app'}" style="color: #667eea;">View Dashboard</a></p>
+              <p><a href="${
+                process.env.FRONTEND_URL || 'https://training-cert-tracker.vercel.app'
+              }" style="color: #667eea;">View Dashboard</a></p>
             </div>
           </div>
         </body>
         </html>
-      `
+      `,
     };
 
     await sgMail.send(msg);
@@ -248,26 +265,21 @@ const sendBatchSummary = async (stats) => {
 };
 
 // Find certificates expiring soon (NOT expired)
-// This is what should be called for notifications
 const findCertificatesExpiringSoon = async (daysThreshold = 60) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    // Calculate the future date threshold
+
     const thresholdDate = new Date(today);
     thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
-    
-    // Find certificates that:
-    // 1. Expire AFTER today (not expired yet)
-    // 2. Expire BEFORE the threshold date (expiring soon)
+
     const certificates = await Certificate.find({
       expirationDate: {
-        $gt: today, // Greater than today (not expired)
-        $lte: thresholdDate // Less than or equal to threshold (expiring soon)
-      }
-    }).sort({ expirationDate: 1 }); // Sort by soonest first
-    
+        $gt: today,
+        $lte: thresholdDate,
+      },
+    }).sort({ expirationDate: 1 });
+
     console.log(`Found ${certificates.length} certificates expiring within ${daysThreshold} days`);
     return certificates;
   } catch (error) {
@@ -280,49 +292,49 @@ const findCertificatesExpiringSoon = async (daysThreshold = 60) => {
 const sendExpirationNotifications = async (daysThreshold = 60) => {
   try {
     const certificates = await findCertificatesExpiringSoon(daysThreshold);
-    
+
     const stats = {
       totalCerts: certificates.length,
       emailsSent: 0,
       emailsFailed: 0,
-      noEmailCount: 0
+      noEmailCount: 0,
     };
-    
-    console.log(`\n📧 Starting email notification process for ${certificates.length} certificates...`);
-    
+
+    console.log(
+      `\n📧 Starting email notification process for ${certificates.length} certificates...`
+    );
+
     for (const cert of certificates) {
       const daysLeft = getDaysUntilExpiry(cert.expirationDate);
       console.log(`Processing: ${cert.staffMember} - ${cert.certType} (${daysLeft} days left)`);
-      
+
       const employee = await Employee.findOne({ name: cert.staffMember });
-      
+
       if (!employee?.email) {
         console.warn(`  ⚠️ No email for ${cert.staffMember}`);
         stats.noEmailCount++;
         continue;
       }
-      
+
       const success = await sendExpirationReminder(cert);
-      
+
       if (success) {
         stats.emailsSent++;
       } else {
         stats.emailsFailed++;
       }
-      
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    
+
     console.log('\n📊 Email notification summary:');
     console.log(`   Total certificates: ${stats.totalCerts}`);
     console.log(`   ✓ Emails sent: ${stats.emailsSent}`);
     console.log(`   ✗ Failed: ${stats.emailsFailed}`);
     console.log(`   ⚠️ No email: ${stats.noEmailCount}\n`);
-    
-    // Send summary to admins
+
     await sendBatchSummary(stats);
-    
+
     return stats;
   } catch (error) {
     console.error('Error in sendExpirationNotifications:', error);
@@ -334,5 +346,5 @@ module.exports = {
   sendExpirationReminder,
   sendBatchSummary,
   findCertificatesExpiringSoon,
-  sendExpirationNotifications
+  sendExpirationNotifications,
 };
