@@ -5,10 +5,15 @@ const Certificate = require('../models/Certificate');
 
 // Create transporter using sendmail (local SMTP)
 // Sendmail is a local mail server that doesn't require authentication
+// 
 const transporter = nodemailer.createTransport({
-  sendmail: true,
-  newline: 'unix',
-  path: '/usr/sbin/sendmail' // Default sendmail path on most Linux systems
+  host: 'smtp.sendgrid.net',
+  port: 587,
+  secure: false,
+  auth: {
+    user: 'apikey', // this literal string is required by SendGrid
+    pass: process.env.SENDGRID_API_KEY,
+  },
 });
 
 // Verify transporter configuration
