@@ -1,4 +1,5 @@
-const nodemailer = require('nodemailer');
+//const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 const Employee = require('../models/Employee');
 const User = require('../models/User');
 const Certificate = require('../models/Certificate');
@@ -6,24 +7,12 @@ const Certificate = require('../models/Certificate');
 // Create transporter using sendmail (local SMTP)
 // Sendmail is a local mail server that doesn't require authentication
 // 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.sendgrid.net',
-  port: 587,
-  secure: false,
-  auth: {
-    user: 'apikey', // this literal string is required by SendGrid
-    pass: process.env.SENDGRID_API_KEY,
-  },
-});
-
-// Verify transporter configuration
-transporter.verify(function (error, success) {
-  if (error) {
-    console.log('Email transporter error:', error);
-  } else {
-    console.log('✓ Email server is ready to send messages');
-  }
-});
+if (!process.env.SENDGRID_API_KEY) {
+  console.warn('⚠️ SENDGRID_API_KEY is not set – email sending will fail.');
+} else {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log('✓ SendGrid mail client initialized');
+}
 
 // Calculate days until expiration
 const getDaysUntilExpiry = (expirationDate) => {
@@ -72,15 +61,18 @@ const sendExpirationReminder = async (certificate) => {
     });
 
     // Build recipient list for To/CC
-    const mailOptions = {
+    const fromAddress = process.env.EMAIL_FROM || 'noreply@example.com';
+
+    const msg = {
       from: {
         name: 'Certificate Tracker',
-        address: process.env.EMAIL_FROM || 'noreply@localhost'
+        email: fromAddress,
       },
-      to: employeeEmail || adminEmails[0], // Primary recipient
-      cc: employeeEmail ? adminEmails : adminEmails.slice(1), // CC admins if employee gets it
+      to: employeeEmail || adminEmails[0],
+      // SendGrid accepts "cc" as an array of emails or a single email
+      cc: employeeEmail ? adminEmails : adminEmails.slice(1),
       subject: `${urgency.level} PRIORITY: Certificate Expiring in ${daysLeft} Days`,
-      html: `
+      html: ` 
         <!DOCTYPE html>
         <html>
         <head>
@@ -161,7 +153,7 @@ const sendExpirationReminder = async (certificate) => {
       `
     };
 
-    await transporter.sendMail(mailOptions);
+    await sgMail.send(msg);
     console.log(`✓ Email sent for ${certificate.staffMember} - ${certificate.certType} (expires in ${daysLeft} days)`);
     return true;
   } catch (error) {
@@ -181,12 +173,14 @@ const sendBatchSummary = async (stats) => {
       return false;
     }
 
-    const mailOptions = {
+    const fromAddress = process.env.EMAIL_FROM || 'noreply@example.com';
+
+    const msg = {
       from: {
         name: 'Certificate Tracker',
-        address: process.env.EMAIL_FROM || 'noreply@localhost'
+        email: fromAddress,
       },
-      to: adminEmails,
+      to: adminEmails, // array is fine
       subject: `Daily Certificate Expiration Report - ${new Date().toLocaleDateString()}`,
       html: `
         <!DOCTYPE html>
@@ -244,7 +238,7 @@ const sendBatchSummary = async (stats) => {
       `
     };
 
-    await transporter.sendMail(mailOptions);
+    await sgMail.send(msg);
     console.log('✓ Batch summary email sent to admins');
     return true;
   } catch (error) {
