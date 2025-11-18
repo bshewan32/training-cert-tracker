@@ -12,6 +12,7 @@ const setupRoutes = require('./routes/setup');
 const templateRoutes = require('./routes/template');
 const positionRequirementsRoutes = require('./routes/positionRequirements');
 const employeeSelfServiceRoutes = require('./routes/employeeSelfService');
+const documentRoutes = require('./routes/documents');
 // const notificationRoutes = require('./routes/notifications'); // Not needed - using admin routes
 
 
@@ -93,6 +94,7 @@ class TrainingCertApp {
     this.app.use('/api/setup/template', templateRoutes);
     this.app.use('/api/positionRequirements', positionRequirementsRoutes);
     this.app.use('/api/employees', employeeSelfServiceRoutes);
+    this.app.use('/api/documents', documentRoutes);
     // Notifications route commented out - use admin route for email reminders
     // this.app.use('/api/notifications', notificationRoutes);
   }
