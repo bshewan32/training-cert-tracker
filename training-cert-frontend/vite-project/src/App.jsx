@@ -14,6 +14,7 @@ import MultiPositionComplianceDashboard from './components/MultiPositionComplian
 import CertificatesWithDashboard from './components/CertificatesWithDashboard';
 import EmployeeSelfService from './components/EmployeeSelfService';
 import NotificationControl from './components/NotificationControl';
+import DocumentManager from './components/DocumentManager';
 
 
 function App() {
@@ -758,7 +759,15 @@ function App() {
                   </button>
                 </div>
               </div>
-               <NotificationControl token={token} />
+
+              <div className="admin-card">
+                <div className="admin-card-icon">📧</div>
+                <div className="admin-card-content">
+                  <h3>Email Notifications</h3>
+                  <p>Send certificate expiration reminders to employees</p>
+                  <NotificationControl token={token} />
+                </div>
+              </div>
 
               <div className="admin-card">
                 <div className="admin-card-icon">📊</div>
@@ -770,6 +779,20 @@ function App() {
                     className="admin-action-btn"
                   >
                     Open Tools
+                  </button>
+                </div>
+              </div>
+
+              <div className="admin-card">
+                <div className="admin-card-icon">📚</div>
+                <div className="admin-card-content">
+                  <h3>Company Documents</h3>
+                  <p>Upload and manage shared documents for employees</p>
+                  <button
+                    onClick={() => setView('documents')}
+                    className="admin-action-btn"
+                  >
+                    Manage Documents
                   </button>
                 </div>
               </div>
@@ -799,6 +822,31 @@ function App() {
             </div>
           </div>
         )}
+
+        {/* Document Manager View - SEPARATE FROM ADMIN */}
+        {view === 'documents' && (
+          <div>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '20px', 
+              padding: '0 24px' 
+            }}>
+              <h2>Document Manager</h2>
+              <button
+                onClick={() => setView('admin')}
+                className="back-button"
+              >
+                ← Back to Admin
+              </button>
+            </div>
+            <DocumentManager token={token} />
+          </div>
+        )}
+
+
+
 
         {/* Setup View - Streamlined without Employee Management */}
         {view === 'setup' && (

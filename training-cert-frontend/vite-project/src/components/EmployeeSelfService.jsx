@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import CompanyDocuments from './CompanyDocuments';
 
 const EmployeeSelfService = ({ token, onLogout }) => {
   const [employee, setEmployee] = useState(null);
@@ -14,6 +15,7 @@ const EmployeeSelfService = ({ token, onLogout }) => {
   const [filterStatus, setFilterStatus] = useState('all'); // all, active, expiring, expired
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCert, setSelectedCert] = useState(null);
+  const [activeTab, setActiveTab] = useState('certificates'); // 'certificates' or 'documents'
 
   useEffect(() => {
     fetchEmployeeData();
@@ -135,7 +137,7 @@ const EmployeeSelfService = ({ token, onLogout }) => {
       <div className="mobile-header">
         <div className="header-content">
           <div className="welcome-section">
-            <h1>My Certificates</h1>
+            <h1>My Dashboard</h1>
             <p className="employee-name">{employee?.name || 'Loading...'}</p>
           </div>
           <button onClick={onLogout} className="logout-btn">
@@ -144,230 +146,282 @@ const EmployeeSelfService = ({ token, onLogout }) => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="stats-container">
-        <div className="stat-card total">
-          <div className="stat-value">{stats.total}</div>
-          <div className="stat-label">Total</div>
-        </div>
-        <div className="stat-card active">
-          <div className="stat-value">{stats.active}</div>
-          <div className="stat-label">Active</div>
-        </div>
-        <div className="stat-card expiring">
-          <div className="stat-value">{stats.expiringSoon}</div>
-          <div className="stat-label">Expiring</div>
-        </div>
-        <div className="stat-card expired">
-          <div className="stat-value">{stats.expired}</div>
-          <div className="stat-label">Expired</div>
-        </div>
+      {/* Tab Navigation */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '20px',
+        borderBottom: '2px solid #e5e7eb',
+        padding: '0 20px',
+        backgroundColor: 'white'
+      }}>
+        <button
+          onClick={() => setActiveTab('certificates')}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: 'transparent',
+            color: activeTab === 'certificates' ? '#667eea' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'certificates' ? '3px solid #667eea' : '3px solid transparent',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: '600',
+            marginBottom: '-2px',
+            transition: 'all 0.2s'
+          }}
+        >
+          📜 My Certificates
+        </button>
+        <button
+          onClick={() => setActiveTab('documents')}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: 'transparent',
+            color: activeTab === 'documents' ? '#667eea' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'documents' ? '3px solid #667eea' : '3px solid transparent',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: '600',
+            marginBottom: '-2px',
+            transition: 'all 0.2s'
+          }}
+        >
+          📚 Company Documents
+        </button>
       </div>
 
-      {/* Filter Bar */}
-      <div className="filter-bar">
-        <div className="filter-buttons">
-          <button 
-            className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
-            onClick={() => setFilterStatus('all')}
-          >
-            All
-          </button>
-          <button 
-            className={`filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
-            onClick={() => setFilterStatus('active')}
-          >
-            Active
-          </button>
-          <button 
-            className={`filter-btn ${filterStatus === 'expiring' ? 'active' : ''}`}
-            onClick={() => setFilterStatus('expiring')}
-          >
-            Expiring
-          </button>
-          <button 
-            className={`filter-btn ${filterStatus === 'expired' ? 'active' : ''}`}
-            onClick={() => setFilterStatus('expired')}
-          >
-            Expired
-          </button>
-        </div>
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="Search certificates..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
-
-      {/* Certificates List */}
-      <div className="certificates-container">
-        {filteredCertificates.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">📋</div>
-            <h3>No certificates found</h3>
-            <p>
-              {filterStatus !== 'all' 
-                ? `You don't have any ${filterStatus} certificates`
-                : 'No certificates have been added to your profile yet'}
-            </p>
-          </div>
-        ) : (
-          filteredCertificates.map(cert => (
-            <div 
-              key={cert._id} 
-              className="certificate-card"
-              onClick={() => setSelectedCert(cert)}
-            >
-              <div className="card-header">
-                <div className="cert-info">
-                  <h3 className="cert-name">{cert.certificateName}</h3>
-                  <p className="cert-position">
-                    {cert.positionTitle}
-                    {cert.positionDepartment && ` • ${cert.positionDepartment}`}
-                  </p>
-                </div>
-                <div 
-                  className="status-badge"
-                  style={{ 
-                    backgroundColor: getStatusColor(cert.status) + '20',
-                    color: getStatusColor(cert.status),
-                    borderColor: getStatusColor(cert.status)
-                  }}
-                >
-                  {getStatusIcon(cert.status)} {cert.status}
-                </div>
-              </div>
-
-              <div className="card-body">
-                <div className="cert-dates">
-                  <div className="date-item">
-                    <span className="date-label">Issued:</span>
-                    <span className="date-value">
-                      {new Date(cert.issueDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="date-item">
-                    <span className="date-label">Expires:</span>
-                    <span className="date-value">
-                      {new Date(cert.expirationDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-
-                {cert.status === 'EXPIRING SOON' && cert.daysUntilExpiration !== undefined && (
-                  <div className="urgency-banner expiring">
-                    ⚠️ Expires in {cert.daysUntilExpiration} day{cert.daysUntilExpiration !== 1 ? 's' : ''}
-                  </div>
-                )}
-
-                {cert.status === 'EXPIRED' && (
-                  <div className="urgency-banner expired">
-                    ✗ This certificate has expired
-                  </div>
-                )}
-              </div>
-
-              {(cert.gridFsFileId || cert.onedriveFileId) && (
-                <div className="card-footer">
-                  <button
-                    className="view-cert-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewImage(cert._id);
-                    }}
-                  >
-                    📎 View Certificate Image
-                  </button>
-                </div>
-              )}
+      {/* Content based on active tab */}
+      {activeTab === 'certificates' ? (
+        <>
+          {/* Stats Cards */}
+          <div className="stats-container">
+            <div className="stat-card total">
+              <div className="stat-value">{stats.total}</div>
+              <div className="stat-label">Total</div>
             </div>
-          ))
-        )}
-      </div>
+            <div className="stat-card active">
+              <div className="stat-value">{stats.active}</div>
+              <div className="stat-label">Active</div>
+            </div>
+            <div className="stat-card expiring">
+              <div className="stat-value">{stats.expiringSoon}</div>
+              <div className="stat-label">Expiring</div>
+            </div>
+            <div className="stat-card expired">
+              <div className="stat-value">{stats.expired}</div>
+              <div className="stat-label">Expired</div>
+            </div>
+          </div>
 
-      {/* Certificate Detail Modal */}
-      {selectedCert && (
-        <div className="modal-overlay" onClick={() => setSelectedCert(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{selectedCert.certificateName}</h2>
+          {/* Filter Bar */}
+          <div className="filter-bar">
+            <div className="filter-buttons">
               <button 
-                className="close-btn"
-                onClick={() => setSelectedCert(null)}
+                className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
+                onClick={() => setFilterStatus('all')}
               >
-                ✕
+                All
+              </button>
+              <button 
+                className={`filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
+                onClick={() => setFilterStatus('active')}
+              >
+                Active
+              </button>
+              <button 
+                className={`filter-btn ${filterStatus === 'expiring' ? 'active' : ''}`}
+                onClick={() => setFilterStatus('expiring')}
+              >
+                Expiring
+              </button>
+              <button 
+                className={`filter-btn ${filterStatus === 'expired' ? 'active' : ''}`}
+                onClick={() => setFilterStatus('expired')}
+              >
+                Expired
               </button>
             </div>
-            <div className="modal-body">
-              <div className="detail-row">
-                <span className="detail-label">Position:</span>
-                <span className="detail-value">{selectedCert.positionTitle}</span>
-              </div>
-              {selectedCert.positionDepartment && (
-                <div className="detail-row">
-                  <span className="detail-label">Department:</span>
-                  <span className="detail-value">{selectedCert.positionDepartment}</span>
-                </div>
-              )}
-              <div className="detail-row">
-                <span className="detail-label">Status:</span>
-                <span 
-                  className="detail-value"
-                  style={{ 
-                    color: getStatusColor(selectedCert.status),
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {selectedCert.status}
-                </span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Issue Date:</span>
-                <span className="detail-value">
-                  {new Date(selectedCert.issueDate).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Expiration Date:</span>
-                <span className="detail-value">
-                  {new Date(selectedCert.expirationDate).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </span>
-              </div>
-              {selectedCert.validityPeriod && (
-                <div className="detail-row">
-                  <span className="detail-label">Validity Period:</span>
-                  <span className="detail-value">{selectedCert.validityPeriod} months</span>
-                </div>
-              )}
-              {(selectedCert.gridFsFileId || selectedCert.onedriveFileId) && (
-                <button
-                  className="modal-view-btn"
-                  onClick={() => handleViewImage(selectedCert._id)}
-                >
-                  📎 View Certificate Image
-                </button>
-              )}
+            <div className="search-box">
+              <input
+                type="text"
+                placeholder="Search certificates..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
-        </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
+          {/* Certificates List */}
+          <div className="certificates-container">
+            {filteredCertificates.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">📋</div>
+                <h3>No certificates found</h3>
+                <p>
+                  {filterStatus !== 'all' 
+                    ? `You don't have any ${filterStatus} certificates`
+                    : 'No certificates have been added to your profile yet'}
+                </p>
+              </div>
+            ) : (
+              filteredCertificates.map(cert => (
+                <div 
+                  key={cert._id} 
+                  className="certificate-card"
+                  onClick={() => setSelectedCert(cert)}
+                >
+                  <div className="card-header">
+                    <div className="cert-info">
+                      <h3 className="cert-name">{cert.certificateName}</h3>
+                      <p className="cert-position">
+                        {cert.positionTitle}
+                        {cert.positionDepartment && ` • ${cert.positionDepartment}`}
+                      </p>
+                    </div>
+                    <div 
+                      className="status-badge"
+                      style={{ 
+                        backgroundColor: getStatusColor(cert.status) + '20',
+                        color: getStatusColor(cert.status),
+                        borderColor: getStatusColor(cert.status)
+                      }}
+                    >
+                      {getStatusIcon(cert.status)} {cert.status}
+                    </div>
+                  </div>
+
+                  <div className="card-body">
+                    <div className="cert-dates">
+                      <div className="date-item">
+                        <span className="date-label">Issued:</span>
+                        <span className="date-value">
+                          {new Date(cert.issueDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="date-item">
+                        <span className="date-label">Expires:</span>
+                        <span className="date-value">
+                          {new Date(cert.expirationDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {cert.status === 'EXPIRING SOON' && cert.daysUntilExpiration !== undefined && (
+                      <div className="urgency-banner expiring">
+                        ⚠️ Expires in {cert.daysUntilExpiration} day{cert.daysUntilExpiration !== 1 ? 's' : ''}
+                      </div>
+                    )}
+
+                    {cert.status === 'EXPIRED' && (
+                      <div className="urgency-banner expired">
+                        ✗ This certificate has expired
+                      </div>
+                    )}
+                  </div>
+
+                  {(cert.gridFsFileId || cert.onedriveFileId) && (
+                    <div className="card-footer">
+                      <button
+                        className="view-cert-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewImage(cert._id);
+                        }}
+                      >
+                        📎 View Certificate Image
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Certificate Detail Modal */}
+          {selectedCert && (
+            <div className="modal-overlay" onClick={() => setSelectedCert(null)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2>{selectedCert.certificateName}</h2>
+                  <button 
+                    className="close-btn"
+                    onClick={() => setSelectedCert(null)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <div className="detail-row">
+                    <span className="detail-label">Position:</span>
+                    <span className="detail-value">{selectedCert.positionTitle}</span>
+                  </div>
+                  {selectedCert.positionDepartment && (
+                    <div className="detail-row">
+                      <span className="detail-label">Department:</span>
+                      <span className="detail-value">{selectedCert.positionDepartment}</span>
+                    </div>
+                  )}
+                  <div className="detail-row">
+                    <span className="detail-label">Status:</span>
+                    <span 
+                      className="detail-value"
+                      style={{ 
+                        color: getStatusColor(selectedCert.status),
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {selectedCert.status}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Issue Date:</span>
+                    <span className="detail-value">
+                      {new Date(selectedCert.issueDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Expiration Date:</span>
+                    <span className="detail-value">
+                      {new Date(selectedCert.expirationDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  {selectedCert.validityPeriod && (
+                    <div className="detail-row">
+                      <span className="detail-label">Validity Period:</span>
+                      <span className="detail-value">{selectedCert.validityPeriod} months</span>
+                    </div>
+                  )}
+                  {(selectedCert.gridFsFileId || selectedCert.onedriveFileId) && (
+                    <button
+                      className="modal-view-btn"
+                      onClick={() => handleViewImage(selectedCert._id)}
+                    >
+                      📎 View Certificate Image
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <CompanyDocuments token={token} />
       )}
 
       <style jsx>{`
