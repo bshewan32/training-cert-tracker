@@ -15,6 +15,7 @@ import CertificatesWithDashboard from './components/CertificatesWithDashboard';
 import EmployeeSelfService from './components/EmployeeSelfService';
 import NotificationControl from './components/NotificationControl';
 import DocumentManager from './components/DocumentManager';
+import UserManagement from './components/UserManagement';
 
 
 function App() {
@@ -796,6 +797,20 @@ function App() {
                   </button>
                 </div>
               </div>
+
+              <div className="admin-card">
+                <div className="admin-card-icon">👥</div>
+                <div className="admin-card-content">
+                  <h3>User Management</h3>
+                  <p>View user accounts and reset passwords</p>
+                  <button
+                    onClick={() => setView('userManagement')}
+                    className="admin-action-btn"
+                  >
+                    Manage Users
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Quick Stats Summary */}
@@ -821,6 +836,11 @@ function App() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* User Management View */}
+        {view === 'userManagement' && (
+          <UserManagement token={token} onBack={() => setView('admin')} />
         )}
 
         {/* Document Manager View - SEPARATE FROM ADMIN */}

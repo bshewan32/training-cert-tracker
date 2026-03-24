@@ -11,7 +11,31 @@ if (!SECRET_KEY) {
   throw new Error('JWT_SECRET environment variable is required');
 }
 
-// Rest of the code...
+// ===== INLINE AUTH MIDDLEWARE =====
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'No token provided' });
+  try {
+    req.user = jwt.verify(token, SECRET_KEY);
+    next();
+  } catch {
+    return res.status(403).json({ message: 'Invalid or expired token' });
+  }
+};
+
+const requireAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: 'Error verifying admin status' });
+  }
+};
+// ===== END INLINE AUTH =====
 
 
 // Registration
@@ -50,6 +74,36 @@ router.post('/login', async (req, res) => {
       userId: user._id,
       isAdmin: user.isAdmin
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// List all users (admin only)
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}, 'username email isAdmin');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Admin reset a user's password
+router.put('/:id/reset-password', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.password = newPassword; // pre-save hook in User.js will hash it
+    await user.save();
+
+    res.json({ message: `Password updated for ${user.username}` });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
