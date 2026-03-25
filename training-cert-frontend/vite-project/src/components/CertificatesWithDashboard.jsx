@@ -437,7 +437,12 @@ const CertificatesWithDashboard = ({
     }
   };
 
+  const activeEmployeeNames = new Set(
+    employees.filter(emp => emp.active !== false).map(emp => emp.name)
+  );
+
   const filteredCertificates = certificates.filter(cert => {
+    const activeEmployeeMatch = activeEmployeeNames.has(cert.staffMember);
     const employeeMatch = !selectedFilterEmployee || cert.staffMember === selectedFilterEmployee;
     const positionMatch = !selectedFilterPosition || cert.position === selectedFilterPosition;
     const certTypeMatch = !selectedFilterCertType || 
@@ -445,7 +450,7 @@ const CertificatesWithDashboard = ({
       cert.CertType === selectedFilterCertType || 
       cert.certificateName === selectedFilterCertType ||
       cert.certificateType === selectedFilterCertType;
-    return employeeMatch && positionMatch && certTypeMatch;
+    return activeEmployeeMatch && employeeMatch && positionMatch && certTypeMatch;
   }).sort((a, b) => {
     const nameComparison = (a.staffMember || '').localeCompare(b.staffMember || '');
     if (nameComparison !== 0) return nameComparison;
