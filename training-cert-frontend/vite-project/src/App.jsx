@@ -198,7 +198,7 @@ function App() {
     if (token && (view === 'certificates' || view === 'admin')) {
       (async () => {
         await Promise.all([
-          fetchSetupData(true),
+          fetchSetupData(false),
           fetchCertificates()
         ]);
       })();
@@ -412,12 +412,12 @@ function App() {
 
   const handleViewEmployee = async (employeeName) => {
     try {
-      await fetchSetupData(true);
+      await fetchSetupData(false);
       await fetchCertificates();
       let employee = employees.find(emp => emp.name === employeeName);
 
       if (!employee) {
-        await fetchSetupData(true);
+        await fetchSetupData(false);
         employee = employees.find(emp => emp.name === employeeName);
       }
 
@@ -538,7 +538,7 @@ function App() {
                 <button
                   onClick={() => {
                     // Force a fresh data load when returning to certificates
-                    fetchSetupData(true).then(() => {
+                    fetchSetupData(false).then(() => {
                       setCertificateDashboardKey(prev => prev + 1);
                       setView('certificates');
                     });
@@ -564,7 +564,7 @@ function App() {
                         const result = await response.json();
                         setSelectedEmployeeForEdit(result.employee);
                         setMessage(`${selectedEmployeeForEdit.name} has been reactivated`);
-                        await fetchSetupData(true);
+                        await fetchSetupData(false);
                       } catch (err) {
                         setError(err.message);
                       }
@@ -590,7 +590,7 @@ function App() {
                           const result = await response.json();
                           setSelectedEmployeeForEdit(result.employee);
                           setMessage(`${selectedEmployeeForEdit.name} has been archived`);
-                          await fetchSetupData(true);
+                          await fetchSetupData(false);
                         } catch (err) {
                           setError(err.message);
                         }
@@ -643,7 +643,7 @@ function App() {
                     // Refresh all data to ensure UI components get updated employee positions and certificates,
                     // then force dashboard to remount with fresh data
                     await Promise.all([
-                      fetchSetupData(true),
+                      fetchSetupData(false),
                       fetchCertificates()
                     ]);
                     setCertificateDashboardKey(prev => prev + 1); // <- Add this line here
@@ -662,7 +662,7 @@ function App() {
                 }}
                 onCancel={() => {
                   // Force a fresh data load when returning to certificates
-                  fetchSetupData(true).then(() => {
+                  fetchSetupData(false).then(() => {
                     setCertificateDashboardKey(prev => prev + 1); // <- Add this line
                     setView('certificates');
                   });

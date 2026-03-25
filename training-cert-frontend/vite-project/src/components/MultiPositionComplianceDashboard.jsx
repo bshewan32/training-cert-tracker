@@ -161,8 +161,9 @@ const MultiPositionComplianceDashboard = ({ token }) => {
       const employeeCompliance = [];
       
       for (const employee of employees) {
-        // Skip employees without basic data
+        // Skip employees without basic data or archived employees
         if (!employee || !employee._id || !employee.name) continue;
+        if (employee.active === false) continue;
         
         // Get employee positions
         const employeePositions = employee.positions || [];
